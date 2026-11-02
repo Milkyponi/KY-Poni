@@ -1,25 +1,56 @@
 /**
  * KY-Poni - Native Desktop Application (Electron Main Process)
  * Boots the local broadcaster server and displays the native Studio Window.
+ * Features Single-Instance Locking and EADDRINUSE Port Recovery.
  */
 
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('path');
+const http = require('http');
 const { server, youtubeIngest, themeManager, PORT } = require('./server');
+
+// Enforce single instance lock
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  console.log('[KY-Poni Desktop] Another instance is already running. Focusing existing window and exiting.');
+  app.quit();
+}
 
 let mainWindow = null;
 let serverInstance = null;
 
-function startLocalServer() {
+function checkPortInUse(port) {
   return new Promise((resolve) => {
-    if (!server.listening) {
-      serverInstance = server.listen(PORT, '127.0.0.1', () => {
-        console.log(`[KY-Poni Desktop] Local broadcaster active on port ${PORT}`);
+    const req = http.get(`http://127.0.0.1:${port}/api/status`, { timeout: 1000 }, (res) => {
+      resolve(true); // Existing KY-Poni or HTTP server is listening
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+  });
+}
+
+async function startLocalServer() {
+  const inUse = await checkPortInUse(PORT);
+  if (inUse) {
+    console.log(`[KY-Poni Desktop] Existing server detected on port ${PORT}. Reusing active instance.`);
+    return;
+  }
+
+  return new Promise((resolve) => {
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.warn(`[KY-Poni Desktop] Port ${PORT} was claimed during startup. Proceeding with existing server.`);
         resolve();
-      });
-    } else {
+      } else {
+        console.error('[KY-Poni Desktop] Server error:', err);
+        resolve();
+      }
+    });
+
+    serverInstance = server.listen(PORT, '127.0.0.1', () => {
+      console.log(`[KY-Poni Desktop] Local broadcaster active on port ${PORT}`);
       resolve();
-    }
+    });
   });
 }
 
@@ -63,6 +94,13 @@ async function createWindow() {
 }
 
 // App lifecycle
+app.on('second-instance', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+});
+
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
@@ -81,4 +119,9 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+// Suppress unhandled crash popups in production
+process.on('uncaughtException', (err) => {
+  console.error('[KY-Poni Desktop] Uncaught exception:', err);
 });
