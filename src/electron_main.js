@@ -22,18 +22,44 @@ let serverInstance = null;
 function checkPortInUse(port) {
   return new Promise((resolve) => {
     const req = http.get(`http://127.0.0.1:${port}/api/status`, { timeout: 1000 }, (res) => {
-      resolve(true); // Existing KY-Poni or HTTP server is listening
+      let body = '';
+      res.on('data', c => { body += c; });
+      res.on('end', () => {
+        try {
+          const info = JSON.parse(body);
+          resolve({ inUse: true, version: info.version || null });
+        } catch (e) {
+          resolve({ inUse: true, version: null });
+        }
+      });
     });
-    req.on('error', () => resolve(false));
-    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.on('error', () => resolve({ inUse: false }));
+    req.on('timeout', () => { req.destroy(); resolve({ inUse: false }); });
+  });
+}
+
+function shutdownOldServer(port) {
+  return new Promise((resolve) => {
+    const req = http.request(`http://127.0.0.1:${port}/api/shutdown`, { method: 'POST', timeout: 1500 }, () => {
+      setTimeout(resolve, 500);
+    });
+    req.on('error', () => resolve());
+    req.on('timeout', () => { req.destroy(); resolve(); });
+    req.end();
   });
 }
 
 async function startLocalServer() {
-  const inUse = await checkPortInUse(PORT);
-  if (inUse) {
-    console.log(`[KY-Poni Desktop] Existing server detected on port ${PORT}. Reusing active instance.`);
-    return;
+  const status = await checkPortInUse(PORT);
+  if (status.inUse) {
+    const currentAppVer = app.getVersion();
+    if (status.version && status.version !== currentAppVer) {
+      console.log(`[KY-Poni Desktop] Outdated server v${status.version} detected on port ${PORT}. Upgrading to v${currentAppVer}...`);
+      await shutdownOldServer(PORT);
+    } else {
+      console.log(`[KY-Poni Desktop] Existing server detected on port ${PORT}. Reusing active instance.`);
+      return;
+    }
   }
 
   return new Promise((resolve) => {

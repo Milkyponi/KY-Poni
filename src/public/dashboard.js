@@ -647,7 +647,20 @@ async function checkUpdateAuto() {
     const res = await fetch('/api/updater/check');
     if (!res.ok) return;
     const data = await res.json();
+
+    // Dynamically sync version in Settings tab
+    const currentVerEl = document.getElementById('settings-current-ver');
+    if (currentVerEl && data.currentVersion) {
+      currentVerEl.textContent = `v${data.currentVersion}`;
+    }
+
+    // Only show modal if an update is genuinely newer AND not previously dismissed by user
     if (data.updateAvailable) {
+      const dismissedVer = localStorage.getItem('ky_dismissed_update_version');
+      if (dismissedVer === data.latestVersion) {
+        console.log(`[KY-Poni Updater] Update v${data.latestVersion} was previously dismissed by user.`);
+        return;
+      }
       currentUpdateInfo = data;
       showUpdateModal(data);
     }
@@ -669,11 +682,16 @@ async function checkUpdateManual() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal mengecek update');
 
+    const currentVerEl = document.getElementById('settings-current-ver');
+    if (currentVerEl && data.currentVersion) {
+      currentVerEl.textContent = `v${data.currentVersion}`;
+    }
+
     if (data.updateAvailable) {
       currentUpdateInfo = data;
       showUpdateModal(data);
     } else {
-      alert(`✅ Anda sudah menggunakan versi terbaru (v${data.currentVersion})!\n${data.message || 'Tidak ada pembaruan baru.'}`);
+      alert(`✅ Anda sudah menggunakan versi terbaru (v${data.currentVersion})!\nTidak ada pembaruan baru di GitHub.`);
     }
   } catch (err) {
     alert(`Gagal mengecek pembaruan: ${err.message}`);
@@ -701,6 +719,9 @@ function showUpdateModal(info) {
 }
 
 function dismissUpdateModal() {
+  if (currentUpdateInfo && currentUpdateInfo.latestVersion) {
+    localStorage.setItem('ky_dismissed_update_version', currentUpdateInfo.latestVersion);
+  }
   const modal = document.getElementById('update-modal');
   if (modal) modal.style.display = 'none';
 }

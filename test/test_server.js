@@ -23,10 +23,16 @@ async function runTests() {
   let wsClient = null;
 
   try {
-    // 2. Test GET /api/status
+    // 2. Test GET /api/status & /api/version
     const statusRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/status`);
     assert.strictEqual(statusRes.status, 'idle', 'Status should be idle on start');
-    console.log('[PASS] GET /api/status returned valid idle status');
+    assert(statusRes.version, 'Status must include server version');
+    console.log(`[PASS] GET /api/status returned valid idle status (version=${statusRes.version})`);
+
+    const verRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/version`);
+    assert.strictEqual(verRes.appName, 'KY-Poni');
+    assert(verRes.version, 'Version API must return version');
+    console.log(`[PASS] GET /api/version returned valid version: ${verRes.version}`);
 
     // 3. Test GET /api/themes
     const themesRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/themes`);

@@ -74,7 +74,28 @@ function requestHandler(req, res) {
       target: youtubeIngest.currentTarget,
       liveId: youtubeIngest.activeLiveId,
       messageCount: youtubeIngest.messageCount,
+      version: pkg.version,
     }));
+    return;
+  }
+
+  // 1.1 Version API
+  if (pathname === '/api/version' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      version: pkg.version,
+      appName: 'KY-Poni',
+    }));
+    return;
+  }
+
+  // 1.2 Graceful Shutdown API (for clean version upgrades)
+  if (pathname === '/api/shutdown' && req.method === 'POST') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, message: 'Server shutting down' }));
+    setTimeout(() => {
+      process.exit(0);
+    }, 200);
     return;
   }
 

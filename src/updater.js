@@ -25,8 +25,9 @@ class AppUpdater {
    * Returns: 1 if vA > vB, -1 if vA < vB, 0 if equal
    */
   compareSemver(vA, vB) {
-    const cleanA = vA.replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
-    const cleanB = vB.replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+    if (!vA || !vB) return 0;
+    const cleanA = vA.replace(/^v/, '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
+    const cleanB = vB.replace(/^v/, '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
     for (let i = 0; i < 3; i++) {
       const a = cleanA[i] || 0;
       const b = cleanB[i] || 0;
@@ -59,7 +60,7 @@ class AppUpdater {
               updateAvailable: false,
               currentVersion: this.currentVersion,
               latestVersion: this.currentVersion,
-              message: 'Belum ada rilis publik di GitHub repository.',
+              message: 'Belum ada rilis baru di GitHub.',
             });
           }
 
@@ -70,9 +71,11 @@ class AppUpdater {
           try {
             const data = JSON.parse(body);
             this.latestRelease = data;
-            const latestTag = (data.tag_name || '').replace(/^v/, '');
+            const latestTag = (data.tag_name || '').replace(/^v/, '').split('-')[0];
+            const currentClean = this.currentVersion.replace(/^v/, '').split('-')[0];
 
-            const isNewer = this.compareSemver(latestTag, this.currentVersion) > 0;
+            // STRICT CHECK: update is ONLY available if latest release is strictly NEWER
+            const isNewer = this.compareSemver(latestTag, currentClean) > 0;
 
             // Pick asset matching user platform
             let asset = null;
@@ -100,7 +103,9 @@ class AppUpdater {
             reject(new Error(`Gagal mem-parse respon GitHub release: ${e.message}`));
           }
         });
-      }).on('error', reject);
+      }).on('error', (err) => {
+        reject(err);
+      });
     });
   }
 
