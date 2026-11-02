@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700;800&family=Montserrat:wght@600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    .p5-widget-container {
+      width: 550px;
+      max-width: 100%;
+      box-sizing: border-box;
+      padding: 16px;
+      border: 2px solid var(--border, #2d3748);
+      border-radius: 12px;
+      background: #1e1e24; /* Match dark gray backdrop of Image 2 */
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+      --live-msg-font: 'Space Grotesk', sans-serif;
+      --live-msg-color: #FFFFFF;
+      --live-scale: 1;
+    }
+
+    .p5-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px dashed #D03D3D;
+      padding-bottom: 10px;
+    }
+
+    .p5-logo {
+      background: #D03D3D;
+      color: #FFF;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 1.15rem;
+      padding: 3px 12px;
+      transform: skewX(-12deg);
+      box-shadow: 2px 2px 0 #FFF;
+      letter-spacing: 0.5px;
+    }
+
+    .p5-badge-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #00F0FF;
+      background: #151922;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid #262D3D;
+    }
+
+    /* Position Buttons Grid */
+    .p5-pos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .p5-pos-btn {
+      background: #151922;
+      border: 1px solid #262D3D;
+      color: #9CA3AF;
+      padding: 6px 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .p5-pos-btn:hover { background: #1C222E; color: #FFF; }
+    .p5-pos-btn.active {
+      background: #D03D3D;
+      color: #FFF;
+      border-color: #D03D3D;
+      box-shadow: 0 0 8px rgba(208, 61, 61, 0.6);
+    }
+
+    /* Customization Bar inside Widget */
+    .custom-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: #151922;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #262D3D;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .custom-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .custom-group label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #9CA3AF;
+      text-transform: uppercase;
+    }
+
+    .custom-select {
+      background: #0E121A;
+      color: #FFF;
+      border: 1px solid #3B4660;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .swatch-mini {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1.5px solid #3B4660;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .swatch-mini:hover { transform: scale(1.2); border-color: #FFF; }
+
+    /* Canvas Mock Area */
+    .p5-canvas-mock {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      height: 330px;
+      background: #252528; /* Exact background of Image 2 */
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 16px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      gap: 16px;
+    }
+
+    /* 4 Anchor Positions */
+    .p5-canvas-mock.pos-bottom-left { justify-content: flex-end; align-items: flex-start; }
+    .p5-canvas-mock.pos-bottom-right { justify-content: flex-end; align-items: flex-end; }
+    .p5-canvas-mock.pos-top-left { justify-content: flex-start; align-items: flex-start; }
+    .p5-canvas-mock.pos-top-right { justify-content: flex-start; align-items: flex-end; }
+
+    /* Chat Entry Layout (Image 2) */
+    .p5-entry-wrap {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      max-width: 95%;
+      flex-shrink: 0 !important;
+      position: relative;
+      animation: p5-slam-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .p5-canvas-mock.pos-bottom-right .p5-entry-wrap,
+    .p5-canvas-mock.pos-top-right .p5-entry-wrap {
+      flex-direction: row-reverse;
+    }
+
+    /* Tilted Square Polaroid Avatar (Image 2) */
+    .p5-avatar-box {
+      position: relative;
+      flex-shrink: 0;
+      z-index: 10;
+      margin-right: -14px;
+    }
+
+    .p5-canvas-mock.pos-bottom-right .p5-avatar-box,
+    .p5-canvas-mock.pos-top-right .p5-avatar-box {
+      margin-right: 0;
+      margin-left: -14px;
+    }
+
+    .p5-avatar-img {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border: 3.5px solid #FFFFFF;
+      background: #000000;
+      transform: rotate(-12deg);
+      box-shadow: 3.5px 3.5px 0px #000000;
+      display: block;
+    }
+
+    .p5-canvas-mock.pos-bottom-right .p5-avatar-img,
+    .p5-canvas-mock.pos-top-right .p5-avatar-img {
+      transform: rotate(12deg);
+      box-shadow: -3.5px 3.5px 0px #000000;
+    }
+
+    /* Comic Spike Behind Avatar */
+    .p5-avatar-shard {
+      position: absolute;
+      bottom: -4px;
+      left: -4px;
+      width: 16px;
+      height: 16px;
+      background: #000000;
+      border: 2px solid #FFFFFF;
+      transform: rotate(20deg);
+      z-index: -1;
+      clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+    }
+
+    /* Bubble Container */
+    .p5-bubble-stack {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Slanted Username Tag on Top Border */
+    .p5-name-tab {
+      position: absolute;
+      top: -14px;
+      left: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 14px 2px 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      transform: skewX(-14deg);
+      z-index: 8;
+      border: 2px solid #000000;
+      box-shadow: 2px 2px 0px #FFFFFF;
+    }
+    .p5-canvas-mock.pos-bottom-right .p5-name-tab,
+    .p5-canvas-mock.pos-top-right .p5-name-tab {
+      left: auto;
+      right: 20px;
+      transform: skewX(14deg);
+      box-shadow: -2px 2px 0px #FFFFFF;
+    }
+    .p5-name-tab span { transform: skewX(14deg); display: inline-block; line-height: 1.1; }
+    .p5-canvas-mock.pos-bottom-right .p5-name-tab span,
+    .p5-canvas-mock.pos-top-right .p5-name-tab span {
+      transform: skewX(-14deg);
+    }
+
+    /* Exact Tag Colors Sampled from Image 2 */
+    .tag-purple { background: #6D64FD; color: #FFFFFF; }
+    .tag-teal { background: #4BC196; color: #000000; }
+    .tag-yellow { background: #F5BE29; color: #000000; }
+    .tag-white { background: #FFFFFF; color: #000000; }
+
+    /* Slanted Deep Black Parallelogram Body */
+    .p5-bubble-body {
+      position: relative;
+      background: #000000;
+      color: #FFFFFF;
+      padding: 16px 28px 14px 24px;
+      border: 3.5px solid #FFFFFF;
+      box-shadow: 6px 6px 0px #000000;
+      transform: skewX(-14deg);
+      z-index: 5;
+      width: 100%;
+    }
+    .p5-canvas-mock.pos-bottom-right .p5-bubble-body,
+    .p5-canvas-mock.pos-top-right .p5-bubble-body {
+      transform: skewX(14deg);
+      box-shadow: -6px 6px 0px #000000;
+    }
+
+    .p5-bubble-body .p5-msg-text {
+      transform: skewX(14deg);
+      font-family: var(--live-msg-font);
+      color: var(--live-msg-color);
+      font-size: 0.98rem;
+      font-weight: 700;
+      line-height: 1.35;
+      word-break: break-word;
+      letter-spacing: 0.3px;
+      transition: color 0.2s ease;
+    }
+    .p5-canvas-mock.pos-bottom-right .p5-msg-text,
+    .p5-canvas-mock.pos-top-right .p5-msg-text {
+      transform: skewX(-14deg);
+    }
+
+    /* Sharp Speed Shard Arrow on Right Edge (from Image 1 & 2) */
+    .p5-bubble-tail {
+      position: absolute;
+      right: -16px;
+      top: 50%;
+      transform: translateY(-50%) skewX(14deg);
+      width: 20px;
+      height: 20px;
+      background: #FFFFFF;
+      clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+      border: 2px solid #000000;
+      box-shadow: 2px 2px 0px #000000;
+      pointer-events: none;
+    }
+    .p5-canvas-mock.pos-bottom-right .p5-bubble-tail,
+    .p5-canvas-mock.pos-top-right .p5-bubble-tail {
+      right: auto;
+      left: -16px;
+      transform: translateY(-50%) skewX(-14deg);
+      clip-path: polygon(100% 0%, 0% 50%, 100% 100%);
+      box-shadow: -2px 2px 0px #000000;
+    }
+
+    /* Two-Tier Slanted Alert Banners (Sampled from Image 2) */
+    .p5-banner-box {
+      width: 100%;
+      max-width: 96%;
+      border: 3.5px solid #FFFFFF;
+      box-shadow: 6px 6px 0px #000000;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      transform: skewX(-14deg);
+      background: #000000;
+      margin-top: 6px;
+      flex-shrink: 0 !important;
+      position: relative;
+    }
+    .p5-canvas-mock.pos-bottom-right .p5-banner-box,
+    .p5-canvas-mock.pos-top-right .p5-banner-box {
+      transform: skewX(14deg);
+      box-shadow: -6px 6px 0px #000000;
+    }
+
+    .p5-banner-box.superchat .p5-banner-hdr { background: #D03D3D; color: #FFFFFF; }
+    .p5-banner-box.member .p5-banner-hdr { background: #11AA72; color: #FFFFFF; flex-direction: column; gap: 2px; }
+
+    .p5-banner-hdr {
+      padding: 10px 18px 8px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      position: relative;
+    }
+    .banner-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      transform: skewX(14deg);
+    }
+    .banner-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.55rem;
+      font-weight: 900;
+      font-style: italic;
+      color: #FFFFFF;
+      letter-spacing: 1px;
+      transform: skewX(14deg);
+    }
+    .banner-subtext {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 900;
+      font-style: italic;
+      color: #FFFFFF;
+      letter-spacing: 0.8px;
+      transform: skewX(14deg);
+    }
+    .p5-canvas-mock.pos-bottom-right .banner-title,
+    .p5-canvas-mock.pos-bottom-right .banner-amount,
+    .p5-canvas-mock.pos-bottom-right .banner-subtext,
+    .p5-canvas-mock.pos-top-right .banner-title,
+    .p5-canvas-mock.pos-top-right .banner-amount,
+    .p5-canvas-mock.pos-top-right .banner-subtext {
+      transform: skewX(-14deg);
+    }
+
+    .p5-banner-shard {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 22px;
+      height: 22px;
+      background: #FFFFFF;
+      border: 2px solid #000000;
+      clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+      transform: skewX(14deg) rotate(15deg);
+      box-shadow: 2px 2px 0px #000000;
+    }
+    .p5-canvas-mock.pos-bottom-right .p5-banner-shard,
+    .p5-canvas-mock.pos-top-right .p5-banner-shard {
+      right: auto;
+      left: -8px;
+      transform: skewX(-14deg) rotate(-15deg);
+      box-shadow: -2px 2px 0px #000000;
+    }
+
+    .p5-banner-txt {
+      background: #000000;
+      color: #FFFFFF;
+      padding: 10px 18px;
+      font-family: var(--live-msg-font);
+      font-size: 0.98rem;
+      font-weight: 700;
+      border-top: 2.5px solid #000000;
+    }
+    .p5-banner-txt div { transform: skewX(14deg); }
+    .p5-canvas-mock.pos-bottom-right .p5-banner-txt div,
+    .p5-canvas-mock.pos-top-right .p5-banner-txt div {
+      transform: skewX(-14deg);
+    }
+
+    /* Controls */
+    .p5-controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .p5-btn {
+      background: #151922;
+      color: #FFF;
+      border: 1px solid #3B4660;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 7px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+    .p5-btn:hover { background: #2D3748; border-color: #00F0FF; }
+    .p5-btn-red { background: #D03D3D; border-color: #000; box-shadow: 2px 2px 0 #FFF; }
+    .p5-btn-red:hover { background: #E04D4D; }
+
+    @keyframes p5-slam-up {
+      from { opacity: 0; transform: scale(0.6) translateY(24px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="p5-widget-container" id="widget-container">
+  <div class="p5-header">
+    <div class="p5-logo">KY-PONI : CUSTOMIZATION SUITE</div>
+    <div id="corner-indicator" class="p5-badge-tag">LIVE CUSTOMIZATION</div>
+  </div>
+
+  <!-- Live Customization Bar -->
+  <div class="custom-bar">
+    <div class="custom-group">
+      <label>Font:</label>
+      <select id="widget-font" class="custom-select" onchange="changeLiveFont(this.value)">
+        <option value="Space Grotesk" selected>Space Grotesk</option>
+        <option value="Bebas Neue">Bebas Neue</option>
+        <option value="Inter">Inter</option>
+        <option value="Bangers">Bangers</option>
+        <option value="Montserrat">Montserrat</option>
+        <option value="VT323">VT323 (Pixel)</option>
+      </select>
+    </div>
+
+    <div class="custom-group">
+      <label>Warna:</label>
+      <div style="display: flex; gap: 5px;">
+        <button type="button" class="swatch-mini" style="background: #FFFFFF;" onclick="changeLiveColor('#FFFFFF')" title="Putih"></button>
+        <button type="button" class="swatch-mini" style="background: #FFE600;" onclick="changeLiveColor('#FFE600')" title="Kuning"></button>
+        <button type="button" class="swatch-mini" style="background: #00F0FF;" onclick="changeLiveColor('#00F0FF')" title="Cyan"></button>
+        <button type="button" class="swatch-mini" style="background: #FF007F;" onclick="changeLiveColor('#FF007F')" title="Pink"></button>
+        <button type="button" class="swatch-mini" style="background: #00E676;" onclick="changeLiveColor('#00E676')" title="Hijau"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Position Selector Grid -->
+  <div class="p5-pos-grid">
+    <button class="p5-pos-btn" onclick="setPos('top-left')">↖ Kiri Atas</button>
+    <button class="p5-pos-btn" onclick="setPos('top-right')">Kanan Atas ↗</button>
+    <button class="p5-pos-btn active" onclick="setPos('bottom-left')">↙ Kiri Bawah</button>
+    <button class="p5-pos-btn" onclick="setPos('bottom-right')">Kanan Bawah ↘</button>
+  </div>
+
+  <div class="p5-canvas-mock pos-bottom-left" id="canvas-mock">
+    <!-- Regular Bubble 1: Purple Tag (Exact Gambar 2) -->
+    <div class="p5-entry-wrap">
+      <div class="p5-avatar-box">
+        <img class="p5-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=Ren" alt="Avatar" />
+        <div class="p5-avatar-shard"></div>
+      </div>
+      <div class="p5-bubble-stack">
+        <div class="p5-name-tab tag-purple"><span>USERNAME</span></div>
+        <div class="p5-bubble-body">
+          <div class="p5-msg-text">lorem ipsum dolor sit amet, consectetur adipiscing elit</div>
+          <div class="p5-bubble-tail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Regular Bubble 2: Teal Tag (Exact Gambar 2) -->
+    <div class="p5-entry-wrap">
+      <div class="p5-avatar-box">
+        <img class="p5-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=Morgana" alt="Avatar" />
+        <div class="p5-avatar-shard"></div>
+      </div>
+      <div class="p5-bubble-stack">
+        <div class="p5-name-tab tag-teal"><span>USERNAME</span></div>
+        <div class="p5-bubble-body">
+          <div class="p5-msg-text">lorem ipsum dolor sit amet, sed do eiusmod tempor</div>
+          <div class="p5-bubble-tail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Super Chat Two-Tier Red Banner (Exact Gambar 2) -->
+    <div class="p5-banner-box superchat">
+      <div class="p5-banner-hdr">
+        <div class="banner-title">USERNAME</div>
+        <div class="banner-amount">RP 500.000.000</div>
+        <div class="p5-banner-shard"></div>
+      </div>
+      <div class="p5-banner-txt">
+        <div>lorem ipsum dolor sit amet, sed do eiusmod tempor</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="p5-controls-row">
+    <button class="p5-btn" style="background: #2563EB;" onclick="addSampleChat()">💬 Tambah Chat (Rotasi Warna Tag)</button>
+    <button class="p5-btn" style="background: #11AA72;" onclick="addSampleMember()">✦ Test Banner Membership</button>
+    <button class="p5-btn p5-btn-red" onclick="addSampleSuperchat()">💥 Test Banner Super Chat</button>
+  </div>
+</div>
+
+<script>
+  let currentPos = 'bottom-left';
+  const canvas = document.getElementById('canvas-mock');
+  const indicator = document.getElementById('corner-indicator');
+  const widgetContainer = document.getElementById('widget-container');
+
+  function changeLiveFont(fontName) {
+    widgetContainer.style.setProperty('--live-msg-font', `'${fontName}', sans-serif`);
+  }
+
+  function changeLiveColor(hexColor) {
+    widgetContainer.style.setProperty('--live-msg-color', hexColor);
+  }
+
+  function setPos(pos) {
+    currentPos = pos;
+    document.querySelectorAll('.p5-pos-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    canvas.className = `p5-canvas-mock pos-${pos}`;
+
+    const labels = {
+      'top-left': 'POSISI: KIRI ATAS',
+      'top-right': 'POSISI: KANAN ATAS',
+      'bottom-left': 'POSISI: KIRI BAWAH',
+      'bottom-right': 'POSISI: KANAN BAWAH'
+    };
+    indicator.textContent = labels[pos] || pos.toUpperCase();
+  }
+
+  const sampleUsers = [
+    { name: "RYUJI SAKAMOTO", tag: "tag-yellow", seed: "Ryuji", text: "For real?! Sekarang font dan warna chat bisa diganti sesuka hati!" },
+    { name: "MAKOTO NIIJIMA", tag: "tag-teal", seed: "Makoto", text: "Teks tetap tajam dan proporsional di segala resolusi stream." },
+    { name: "ANN TAKAMAKI", tag: "tag-purple", seed: "Ann", text: "Gaya manga action dengan palet warna favorit!" }
+  ];
+  let userIdx = 0;
+
+  function addSampleChat() {
+    const u = sampleUsers[userIdx % sampleUsers.length];
+    userIdx++;
+
+    if (canvas.children.length >= 3) {
+      canvas.removeChild(canvas.firstElementChild);
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'p5-entry-wrap';
+    wrap.innerHTML = `
+      <div class="p5-avatar-box">
+        <img class="p5-avatar-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=${u.seed}" alt="${u.name}" />
+        <div class="p5-avatar-shard"></div>
+      </div>
+      <div class="p5-bubble-stack">
+        <div class="p5-name-tab ${u.tag}"><span>${u.name}</span></div>
+        <div class="p5-bubble-body">
+          <div class="p5-msg-text">${u.text}</div>
+          <div class="p5-bubble-tail"></div>
+        </div>
+      </div>
+    `;
+
+    canvas.appendChild(wrap);
+  }
+
+  function addSampleSuperchat() {
+    if (canvas.children.length >= 3) {
+      canvas.removeChild(canvas.firstElementChild);
+    }
+
+    const banner = document.createElement('div');
+    banner.className = 'p5-banner-box superchat';
+    banner.innerHTML = `
+      <div class="p5-banner-hdr">
+        <div class="banner-title">JOKER</div>
+        <div class="banner-amount">RP 500.000.000</div>
+        <div class="p5-banner-shard"></div>
+      </div>
+      <div class="p5-banner-txt">
+        <div>Take your time! Support penuh untuk Milky Brain HQ!</div>
+      </div>
+    `;
+
+    canvas.appendChild(banner);
+  }
+
+  function addSampleMember() {
+    if (canvas.children.length >= 3) {
+      canvas.removeChild(canvas.firstElementChild);
+    }
+
+    const banner = document.createElement('div');
+    banner.className = 'p5-banner-box member';
+    banner.innerHTML = `
+      <div class="p5-banner-hdr">
+        <div class="banner-title">ANN TAKAMAKI</div>
+        <div class="banner-subtext">WELCOME TO MEMBERSHIP</div>
+        <div class="p5-banner-shard"></div>
+      </div>
+      <div class="p5-banner-txt">
+        <div>Baru saja bergabung menjadi anggota Phantom Thief Tier 1!</div>
+      </div>
+    `;
+
+    canvas.appendChild(banner);
+  }
+</script>
+
+</body>
+</html>

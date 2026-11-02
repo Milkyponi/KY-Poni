@@ -1,0 +1,53 @@
+{
+  "name": "ky-poni",
+  "version": "0.4.0",
+  "description": "Stylized Game-Aesthetic Livestream Chat Overlay for OBS Studio",
+  "main": "src/electron_main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:server": "node src/server.js",
+    "build:linux": "electron-builder --linux AppImage",
+    "build:win": "electron-builder --win portable",
+    "build:all": "electron-builder --linux AppImage --win portable",
+    "test": "node test/test_server.js"
+  },
+  "build": {
+    "electronVersion": "44.9.3",
+    "appId": "com.milkybrain.kyponi",
+    "productName": "KY-Poni",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "AudioVideo",
+      "executableName": "ky-poni"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ]
+    }
+  },
+  "keywords": [
+    "obs",
+    "overlay",
+    "livestream",
+    "youtube",
+    "persona5",
+    "chat-box"
+  ],
+  "author": "Milky Brain (Fonzy)",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.22.1",
+    "youtube-chat": "^2.2.0"
+  }
+}

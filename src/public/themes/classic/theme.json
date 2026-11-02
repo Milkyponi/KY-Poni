@@ -1,0 +1,15 @@
+{
+  "id": "classic",
+  "name": "Clean Modern Minimal",
+  "version": "1.0.0",
+  "author": "Milky Brain (Fonzy)",
+  "description": "Minimalist clean translucent glass bubbles with smooth fade transitions for multi-purpose streams.",
+  "recommendedLayout": "vertical",
+  "previewColor": "#2563EB",
+  "features": [
+    "Frosted glass backdrop",
+    "Subtle modern border",
+    "Clean typography",
+    "Compact vertical spacing"
+  ]
+}

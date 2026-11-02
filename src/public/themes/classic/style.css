@@ -1,0 +1,149 @@
+/* KY-Poni - Classic Clean Theme */
+:root {
+  --bg-bubble: rgba(18, 24, 38, 0.85);
+  --border-bubble: rgba(255, 255, 255, 0.12);
+  --text-main: #F3F4F6;
+  --text-author: #93C5FD;
+}
+
+body {
+  background: transparent;
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#chat-canvas {
+  position: absolute;
+  inset: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  overflow: hidden;
+}
+
+#chat-canvas.pos-bottom-left {
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+#chat-canvas.pos-bottom-right {
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+#chat-canvas.pos-top-left {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+#chat-canvas.pos-top-right {
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+#chat-canvas.pos-bottom-right .chat-entry,
+#chat-canvas.pos-top-right .chat-entry {
+  align-items: flex-end;
+}
+
+#chat-canvas.layout-horizontal {
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-end;
+  overflow-x: hidden;
+  gap: 14px;
+  scroll-behavior: smooth;
+}
+
+#chat-canvas.layout-horizontal.pos-top-left,
+#chat-canvas.layout-horizontal.pos-top-right {
+  align-items: flex-start;
+}
+#chat-canvas.layout-horizontal.pos-bottom-left,
+#chat-canvas.layout-horizontal.pos-bottom-right {
+  align-items: flex-end;
+}
+
+#chat-canvas.layout-horizontal .chat-entry {
+  flex-shrink: 0 !important;
+  width: auto;
+  max-width: 360px;
+  min-width: 200px;
+}
+
+.chat-entry {
+  display: flex;
+  flex-direction: column;
+  max-width: 90%;
+  animation: clean-fade 0.3s ease-out;
+}
+
+.author-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-author);
+  margin-bottom: 4px;
+}
+
+.author-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.bubble-body {
+  background: var(--bg-bubble);
+  border: 1px solid var(--border-bubble);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.chat-emote {
+  height: 24px;
+  vertical-align: middle;
+}
+
+.author-badge {
+  font-size: 0.7rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.badge-owner { background: #EF4444; color: #FFF; }
+.badge-mod { background: #3B82F6; color: #FFF; }
+.badge-member { background: #10B981; color: #FFF; }
+
+.chat-entry.is-superchat .bubble-body {
+  border: 1px solid #F59E0B;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.superchat-amount-banner {
+  color: #FCD34D;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+#cutin-overlay { display: none; }
+
+@keyframes clean-fade {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-entry.is-exiting {
+  animation: clean-fade-out 0.4s ease forwards !important;
+}
+
+@keyframes clean-fade-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-16px) scale(0.9); }
+}

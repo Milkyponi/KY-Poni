@@ -1,0 +1,16 @@
+{
+  "id": "persona5",
+  "name": "Persona 5 Phantom",
+  "version": "1.0.0",
+  "author": "Milky Brain (Fonzy)",
+  "description": "High-contrast comic speech bubble with sharp jagged polygon edges, distressed manga aesthetics, and All-Out Attack cut-in banners.",
+  "recommendedLayout": "vertical",
+  "previewColor": "#E60012",
+  "features": [
+    "Jagged angular comic bubbles",
+    "High-contrast phantom red & black palette",
+    "Skewed character name badges",
+    "All-Out Attack Super Chat Cut-In",
+    "Animated pop-in comic slam"
+  ]
+}

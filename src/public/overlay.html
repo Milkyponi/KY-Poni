@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>KY-Poni - OBS Chat Overlay</title>
+  <!-- Curated Google Fonts for Livestreaming -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700;800&family=Montserrat:wght@600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=VT323&display=swap" rel="stylesheet">
+  <!-- Active Theme Style (Loaded dynamically via JS based on ?theme= parameter) -->
+  <link id="theme-stylesheet" rel="stylesheet" href="/themes/persona5/style.css">
+  <style>
+    /* Base fallbacks */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent !important;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- OBS Chat Canvas -->
+  <div id="chat-canvas" class="layout-vertical">
+    <!-- Messages injected dynamically via overlay.js -->
+  </div>
+
+  <!-- ALL-OUT ATTACK CUT-IN MODAL (For Super Chat & Milestones) -->
+  <div id="cutin-overlay">
+    <div class="cutin-card">
+      <div class="cutin-header">⚡ ALL-OUT ATTACK! ⚡</div>
+      <div class="cutin-user-row">
+        <img id="cutin-avatar" class="cutin-avatar" src="" alt="Avatar" />
+        <div id="cutin-username" class="cutin-username">Sender</div>
+      </div>
+      <div id="cutin-amount" class="cutin-amount">Rp 100.000</div>
+      <div id="cutin-message" class="cutin-message">Message text here!</div>
+    </div>
+  </div>
+
+  <script src="/overlay.js"></script>
+</body>
+</html>

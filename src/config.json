@@ -1,0 +1,12 @@
+{
+  "target": "@MilkyPoni",
+  "theme": "persona5",
+  "layout": "vertical",
+  "pos": "bottom-left",
+  "scale": 120,
+  "fontSize": 18,
+  "fontFamily": "Bebas Neue",
+  "textColor": "#FFE600",
+  "fade": 8,
+  "keep": 1
+}

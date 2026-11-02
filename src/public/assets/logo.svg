@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <filter id="p5-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="8" dy="8" stdDeviation="0" flood-color="#000000" flood-opacity="1" />
+    </filter>
+  </defs>
+
+  <!-- Hard Black Shadow Base -->
+  <polygon points="72,102 430,52 492,408 410,490 102,482 40,192" fill="#000000" />
+
+  <!-- Outer White Cel-Shaded Border -->
+  <polygon points="61,92 420,41 481,399 400,481 92,471 31,179" fill="#FFFFFF" stroke="#000000" stroke-width="4" />
+
+  <!-- Inner Dark Console Body -->
+  <polygon points="72,102 410,56 466,389 389,466 102,456 46,184" fill="#0B0E14" />
+
+  <!-- Phantom Red Angular Shard -->
+  <polygon points="102,92 410,56 451,256 205,451" fill="#D03D3D" opacity="0.9" />
+
+  <!-- Speedlines -->
+  <line x1="77" y1="128" x2="435" y2="67" stroke="#FFFFFF" stroke-width="6" opacity="0.25" stroke-dasharray="14 10" />
+  <line x1="92" y1="205" x2="451" y2="143" stroke="#FFFFFF" stroke-width="8" opacity="0.25" />
+  <line x1="113" y1="282" x2="435" y2="225" stroke="#FFFFFF" stroke-width="6" opacity="0.2" />
+
+  <!-- Yellow Accent Shard -->
+  <polygon points="389,41 451,31 481,113" fill="#F5BE29" stroke="#000000" stroke-width="2" />
+
+  <!-- Letter 'K' (Phantom Red with White Border) -->
+  <g filter="url(#p5-shadow)">
+    <!-- Vertical Stem -->
+    <polygon points="113,143 179,133 148,399 82,410" fill="#FFFFFF" stroke="#000000" stroke-width="4" />
+    <polygon points="123,153 169,143 141,389 95,399" fill="#D03D3D" />
+
+    <!-- Upper Arm -->
+    <polygon points="154,256 266,143 317,179 190,307" fill="#FFFFFF" stroke="#000000" stroke-width="4" />
+    <polygon points="166,256 261,154 302,182 195,297" fill="#D03D3D" />
+
+    <!-- Lower Leg -->
+    <polygon points="164,276 225,256 328,399 256,420" fill="#FFFFFF" stroke="#000000" stroke-width="4" />
+    <polygon points="174,276 218,261 312,391 261,407" fill="#D03D3D" />
+  </g>
+
+  <!-- Letter 'Y' (Crisp White with Black Drop Shadow) -->
+  <g filter="url(#p5-shadow)">
+    <!-- Left Branch -->
+    <polygon points="287,133 343,123 369,246 317,256" fill="#FFFFFF" stroke="#000000" stroke-width="4" />
+    <!-- Right Branch -->
+    <polygon points="420,113 466,143 348,276 307,246" fill="#FFFFFF" stroke="#000000" stroke-width="4" />
+    <!-- Downward Katana Slash Stem -->
+    <polygon points="307,246 369,236 333,430 276,420" fill="#FFFFFF" stroke="#000000" stroke-width="4" />
+  </g>
+
+  <!-- Stylized Label Ribbon: PONI -->
+  <g transform="rotate(-6 256 460)">
+    <polygon points="180,442 340,436 330,472 170,478" fill="#F5BE29" stroke="#000000" stroke-width="3" />
+    <text x="252" y="465" font-family="'Space Grotesk', Impact, sans-serif" font-weight="900" font-size="24" fill="#000000" text-anchor="middle" letter-spacing="3">PONI</text>
+  </g>
+</svg>
