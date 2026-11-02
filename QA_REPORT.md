@@ -26,16 +26,18 @@
 | 14 | Customization & Config Persistence | ✅ PASS | Slider scale, font size, custom fonts, text colors, `/api/config` tested |
 | 15 | Dynamic Theme Downloader & Manager | ✅ PASS | Install zip, HTTP serving dari custom folder, uninstall, dan open-folder |
 | 16 | Native Portable Binaries & GUI Launch | ✅ PASS | Linux `.AppImage` (114M) & Windows `.exe` (106M) verified running |
+| 17 | Gear Lever Integration & GithubUpdater | ✅ PASS | Terintegrasi di `it.mijorus.gearlever` dengan pelacak update GitHub |
+| 18 | EADDRINUSE Resilience & Single Instance | ✅ PASS | Graceful port reuse & auto-focus existing window jika di-klik berulang |
 
-**Total:** 16/16 Tests Passed (100% Green).
+**Total:** 18/18 Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.3.0.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.1.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.3.0.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.1.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---
