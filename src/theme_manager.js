@@ -156,7 +156,22 @@ class ThemeManager {
       if (stats.isDirectory()) {
         copyRecursiveSync(sourceUrlOrPath, targetDir);
       } else if (sourceUrlOrPath.endsWith('.zip')) {
-        await this.extractZip(sourceUrlOrPath, targetDir);
+        // If zip is packaged inside asar, copy to temporary real filesystem first
+        let realZipPath = sourceUrlOrPath;
+        let isTemp = false;
+        if (sourceUrlOrPath.includes('.asar')) {
+          const tempAsarZip = path.join(os.tmpdir(), `ky_theme_extract_${Date.now()}.zip`);
+          fs.writeFileSync(tempAsarZip, fs.readFileSync(sourceUrlOrPath));
+          realZipPath = tempAsarZip;
+          isTemp = true;
+        }
+        try {
+          await this.extractZip(realZipPath, targetDir);
+        } finally {
+          if (isTemp) {
+            try { fs.unlinkSync(realZipPath); } catch (e) {}
+          }
+        }
       }
     } else if (sourceUrlOrPath && (sourceUrlOrPath.startsWith('http://') || sourceUrlOrPath.startsWith('https://'))) {
       // 2. Download remote archive
@@ -165,7 +180,7 @@ class ThemeManager {
       await this.extractZip(tempZip, targetDir);
       try { fs.unlinkSync(tempZip); } catch (e) {}
     } else {
-      throw new Error(`Sumber paket tema tidak valid atau tidak ditemukan: ${sourceUrlOrPath}`);
+      throw new Error(`Tema "${themeId}" belum tersedia di server katalog.`);
     }
 
     // Verify installation

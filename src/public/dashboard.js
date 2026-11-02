@@ -449,7 +449,19 @@ async function loadCatalog() {
     const data = await res.json();
     if (!data.themes) return;
 
-    container.innerHTML = data.themes.map(t => {
+    // Filter: hanya tampilkan tema yang sudah terpasang ATAU memiliki sumber unduhan resmi
+    const validThemes = data.themes.filter(t => t.installed || (t.downloadUrl && !t.downloadUrl.includes('mock') && !t.downloadUrl.includes('example')));
+
+    if (validThemes.length === 0) {
+      container.innerHTML = `
+        <div style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 16px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);">
+          Belum ada tema tambahan di katalog.
+        </div>
+      `;
+      return;
+    }
+
+    const itemsHtml = validThemes.map(t => {
       const isInstalled = t.installed;
       const isBuiltIn = t.id === 'persona5' || t.id === 'classic';
 
@@ -478,6 +490,14 @@ async function loadCatalog() {
         </div>
       `;
     }).join('');
+
+    const footerNote = `
+      <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; margin-top: 8px; padding: 6px 10px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);">
+        ✨ Semua tema resmi saat ini sudah terpasang. Tema game baru akan hadir di katalog pembaruan berikutnya!
+      </div>
+    `;
+
+    container.innerHTML = itemsHtml + footerNote;
   } catch (e) {
     console.error('Failed to load catalog:', e);
   }

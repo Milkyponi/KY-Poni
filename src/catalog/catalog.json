@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "updatedAt": "2026-11-02",
   "themes": [
     {
@@ -9,7 +9,7 @@
       "author": "Milky Brain (Fonzy)",
       "previewColor": "#D03D3D",
       "installed": true,
-      "description": "High-contrast comic speech bubble with sharp jagged polygon cutouts, distressed manga aesthetics, and All-Out Attack cut-in banners.",
+      "description": "Balon kata komik origami bersudut tajam berlatar hitam pekat, cel-shaded outline putih tebal, foto profil polaroid miring, dan animasi cut-in Super Chat All-Out Attack.",
       "tags": ["JRPG", "Comic", "Persona", "All-Out Attack"]
     },
     {
@@ -19,30 +19,8 @@
       "author": "Milky Brain (Fonzy)",
       "previewColor": "#2563EB",
       "installed": true,
-      "description": "Minimalist clean translucent glass bubbles with smooth fade transitions.",
+      "description": "Gelembung chat transparan minimalis (glassmorphism) dengan transisi slide memudar yang halus.",
       "tags": ["Minimal", "Glassmorphism", "Clean"]
-    },
-    {
-      "id": "undertale-box",
-      "name": "Undertale Retro Box",
-      "version": "1.0.0",
-      "author": "Milky Brain (Fonzy)",
-      "previewColor": "#FFFFFF",
-      "packageFile": "undertale-box.zip",
-      "downloadUrl": "https://raw.githubusercontent.com/MilkyBrain/KY-Poni-Themes/main/undertale-box.zip",
-      "description": "Authentic 8-bit black & white retro dialog box with pixel font and sound chime effects.",
-      "tags": ["Pixel", "Retro", "8-bit", "Undertale"]
-    },
-    {
-      "id": "cyberpunk-2077",
-      "name": "Night City HUD",
-      "version": "1.0.0",
-      "author": "Milky Brain (Fonzy)",
-      "previewColor": "#FFE600",
-      "packageFile": "cyberpunk-2077.zip",
-      "downloadUrl": "https://raw.githubusercontent.com/MilkyBrain/KY-Poni-Themes/main/cyberpunk-2077.zip",
-      "description": "Cyberpunk high-tech neon yellow and cyan scanlines with glitch pop-in effects.",
-      "tags": ["Cyberpunk", "Neon", "Sci-Fi"]
     }
   ]
 }
