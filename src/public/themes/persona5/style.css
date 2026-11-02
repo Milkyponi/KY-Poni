@@ -44,38 +44,57 @@ body {
 
 /* ========================================================
    OBS Canvas Container
+   Mathematically Inverse Scaled (Immune to Viewport Clipping)
    ======================================================== */
 
 #chat-canvas {
   position: absolute;
-  inset: 0;
-  padding: 20px;
+  box-sizing: border-box;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 20px;
+  gap: 16px;
   overflow: hidden;
   pointer-events: none;
+  width: calc(100% / var(--canvas-scale, 1));
+  height: calc(100% / var(--canvas-scale, 1));
   transform: scale(var(--canvas-scale, 1));
 }
 
 /* Screen Anchor Positions */
 #chat-canvas.pos-bottom-left {
+  left: 0;
+  bottom: 0;
+  top: auto;
+  right: auto;
   justify-content: flex-end;
   align-items: flex-start;
   transform-origin: bottom left;
 }
 #chat-canvas.pos-bottom-right {
+  right: 0;
+  bottom: 0;
+  top: auto;
+  left: auto;
   justify-content: flex-end;
   align-items: flex-end;
   transform-origin: bottom right;
 }
 #chat-canvas.pos-top-left {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  right: auto;
   justify-content: flex-start;
   align-items: flex-start;
   transform-origin: top left;
 }
 #chat-canvas.pos-top-right {
+  right: 0;
+  top: 0;
+  bottom: auto;
+  left: auto;
   justify-content: flex-start;
   align-items: flex-end;
   transform-origin: top right;
@@ -118,7 +137,7 @@ body {
   display: flex;
   flex-direction: row;
   align-items: center;
-  max-width: 95%;
+  max-width: calc(100% - 28px); /* Safe right gutter for skewed corner and speed arrow */
   animation: p5-slam-in 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   transform-origin: bottom left;
   margin-top: 14px;
@@ -165,6 +184,7 @@ body {
   position: relative;
   flex: 1;
   min-width: 0;
+  margin-right: 20px; /* Essential: protects tail arrow and box shadow from right edge clipping */
 }
 
 /* --- Username Tag (Slanted Parallelogram on Top Border) --- */

@@ -120,15 +120,27 @@ function updateOverlayParams() {
   obsUrlInput.value = url;
   previewFrame.src = url;
 
-  // Adjust preview wrapper size based on layout preset
-  if (layout === 'horizontal') {
-    previewWrapper.style.width = '780px';
-    previewWrapper.style.height = '300px';
-    previewResolution.textContent = `800 x 300 px (${currentPos.toUpperCase()})`;
-  } else {
-    previewWrapper.style.width = '450px';
-    previewWrapper.style.height = '740px';
-    previewResolution.textContent = `450 x 800 px (${currentPos.toUpperCase()})`;
+  const obsDimTip = document.getElementById('obs-dim-tip');
+
+  const PRESET_DIMS = {
+    'vertical': { w: 450, h: 800, previewW: 440, previewH: 680, label: '450 x 800 px (Vertical Standar)' },
+    'vertical-wide': { w: 600, h: 900, previewW: 520, previewH: 680, label: '600 x 900 px (Vertical Lebar ★)' },
+    'vertical-compact': { w: 380, h: 650, previewW: 380, previewH: 640, label: '380 x 650 px (Vertical Ringkas)' },
+    'horizontal': { w: 800, h: 300, previewW: 780, previewH: 300, label: '800 x 300 px (Horizontal Ticker)' },
+    'horizontal-wide': { w: 1200, h: 320, previewW: 860, previewH: 260, label: '1200 x 320 px (Horizontal Ultrawide)' },
+    'fullscreen': { w: 1920, h: 1080, previewW: 860, previewH: 484, label: '1920 x 1080 px (Full-HD 1080p Freeform)' },
+  };
+
+  const preset = PRESET_DIMS[layout] || PRESET_DIMS['vertical'];
+  if (previewWrapper) {
+    previewWrapper.style.width = `${preset.previewW}px`;
+    previewWrapper.style.height = `${preset.previewH}px`;
+  }
+  if (previewResolution) {
+    previewResolution.textContent = `${preset.label} [${currentPos.toUpperCase()}]`;
+  }
+  if (obsDimTip) {
+    obsDimTip.textContent = `💡 Rekomendasi OBS: Width ${preset.w} x Height ${preset.h} px`;
   }
 
   // Auto-Save User Preferences (debounced 500ms)

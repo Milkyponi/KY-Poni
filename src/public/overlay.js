@@ -37,10 +37,13 @@
   // Apply layout and position classes
   const canvas = document.getElementById('chat-canvas');
   canvas.className = '';
-  if (layout === 'horizontal') {
+  if (layout.startsWith('horizontal')) {
     canvas.classList.add('layout-horizontal');
   } else {
     canvas.classList.add('layout-vertical');
+  }
+  if (layout === 'fullscreen') {
+    canvas.classList.add('layout-fullscreen');
   }
   canvas.classList.add(`pos-${pos}`);
 

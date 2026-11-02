@@ -1,7 +1,7 @@
 {
   "target": "@MilkyPoni",
   "theme": "persona5",
-  "layout": "vertical",
+  "layout": "vertical-wide",
   "pos": "bottom-left",
   "scale": 120,
   "fontSize": 18,

@@ -87,8 +87,8 @@
               📋 Salin
             </button>
           </div>
-          <small style="font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;">
-            Tempel URL ini pada Browser Source di OBS Studio.
+          <small id="obs-dim-tip" style="font-size: 0.72rem; color: var(--accent-cyan); font-weight: 700; margin-top: 3px; display: block;">
+            💡 Setting OBS: Width 450 x Height 800 px
           </small>
         </div>
 
@@ -107,10 +107,14 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="select-layout">Preset Resolusi</label>
+              <label for="select-layout">Preset Resolusi Kanvas</label>
               <select id="select-layout">
-                <option value="vertical" selected>Vertical (450 x 800)</option>
-                <option value="horizontal">Bottom Ticker (800 x 300)</option>
+                <option value="vertical" selected>Vertical Standar (450 x 800)</option>
+                <option value="vertical-wide">Vertical Lebar (600 x 900) ★</option>
+                <option value="vertical-compact">Vertical Ringkas (380 x 650)</option>
+                <option value="horizontal">Horizontal Ticker (800 x 300)</option>
+                <option value="horizontal-wide">Horizontal Ultrawide (1200 x 320)</option>
+                <option value="fullscreen">Full-HD 1080p (1920 x 1080)</option>
               </select>
             </div>
           </div>
