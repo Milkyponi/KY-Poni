@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.4.3-alpha` (Phase 4 Milestone: 3-Tab Segmented UI/UX Redesign Complete)  
+**Current Version:** `v0.4.4-alpha` (Phase 4 Milestone: Anti-Clipping Inverse Scaling & Wide Presets Suite)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux)  

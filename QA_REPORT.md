@@ -30,16 +30,17 @@
 | 18 | EADDRINUSE Resilience & Single Instance | ✅ PASS | Graceful port reuse & auto-focus existing window jika di-klik berulang |
 | 19 | Remote Theme Catalog Sanitization | ✅ PASS | Tema mock disembunyikan; hanya tema resmi terpasang yang tampil di katalog |
 | 20 | Segmented 3-Tab UI/UX Navigation | ✅ PASS | Tab Studio, Katalog Tema, dan Pengaturan teruji bebas glitch visual |
+| 21 | Anti-Clipping Inverse Scaling & Presets | ✅ PASS | Skala 150% teruji aman tanpa clipping pada preset Standar maupun Lebar |
 
-**Total:** 20/20 Tests Passed (100% Green).
+**Total:** 21/21 Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.3.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.4.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.3.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.4.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---
