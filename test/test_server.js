@@ -127,7 +127,14 @@ async function runTests() {
     assert.strictEqual(delRes.success, true);
     console.log('[PASS] POST /api/themes/delete successfully uninstalled custom theme');
 
-    console.log('\n🎉 ALL 9 TESTS PASSED SUCCESSFULLY! Clean architecture verified.');
+    // 10. Test In-App Auto-Updater API (/api/updater/check)
+    console.log('[TEST] Testing In-App GitHub Releases Auto-Updater API...');
+    const updaterRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/updater/check`);
+    assert(typeof updaterRes.updateAvailable === 'boolean', 'Updater must return updateAvailable boolean');
+    assert(updaterRes.currentVersion, 'Updater must return currentVersion');
+    console.log(`[PASS] GET /api/updater/check verified (currentVersion=${updaterRes.currentVersion}, latestRelease=${updaterRes.latestVersion})`);
+
+    console.log('\n🎉 ALL 10 TESTS PASSED SUCCESSFULLY! Clean architecture verified.');
   } finally {
     if (wsClient && wsClient.readyState === WebSocket.OPEN) {
       wsClient.terminate();
