@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,14 +11,30 @@
 
   <!-- App Header -->
   <header>
+    <!-- Brand -->
     <div class="brand-wrapper">
-      <img src="/assets/logo.svg" alt="KY Logo" style="width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000);">
+      <img src="/assets/logo.svg" alt="KY Logo" style="width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000);">
       <div>
         <div class="brand-title">KY-Poni Chat Studio</div>
-        <div class="brand-subtitle">Stylized Game Aesthetics for OBS Studio</div>
+        <div class="brand-subtitle">Game-Aesthetic Overlays for OBS</div>
       </div>
     </div>
-    <div style="display: flex; align-items: center; gap: 10px;">
+
+    <!-- Centered Segmented Navigation Tabs -->
+    <nav class="top-nav">
+      <button type="button" class="nav-tab active" data-tab="tab-studio" onclick="switchTab('tab-studio')">
+        <span>🎛️</span> Studio
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-catalog" onclick="switchTab('tab-catalog')">
+        <span>🎨</span> Katalog Tema
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-settings" onclick="switchTab('tab-settings')">
+        <span>⚙️</span> Pengaturan
+      </button>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
       <button id="btn-check-update" class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 12px;" onclick="checkUpdateManual()">
         🔄 Cek Update
       </button>
@@ -29,225 +45,330 @@
     </div>
   </header>
 
-  <!-- Main Split Layout -->
-  <div class="app-container">
+  <!-- ========================================================
+       TAB 1: STUDIO (OBS Workspace & Live Controls)
+       ======================================================== -->
+  <div id="tab-studio" class="tab-content active">
+    <div class="studio-layout">
 
-    <!-- Controls Panel -->
-    <div class="controls-panel">
+      <!-- Left Sidebar Controls -->
+      <div class="controls-panel">
 
-      <!-- 1. YouTube Live Connection Card -->
-      <div class="card-section">
-        <div class="card-title">
-          <span>📺</span> YouTube Live Ingest (Zero-Quota)
-        </div>
-        <div class="form-group">
-          <label for="yt-target">Channel Handle / Live URL / Video ID</label>
-          <input type="text" id="yt-target" placeholder="Contoh: @MilkyPoni atau URL live" value="@MilkyPoni">
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button id="btn-connect" class="btn btn-primary" style="flex: 1;">
-            <span>⚡</span> Hubungkan Stream
-          </button>
-          <button id="btn-disconnect" class="btn btn-danger" style="display: none;">
-            Putus
-          </button>
-        </div>
-        <div id="stream-info" style="font-size: 0.78rem; color: var(--text-dim); display: none;">
-          Active ID: <span id="info-liveid" style="color: var(--accent-cyan);">-</span> | Messages: <span id="info-msgcount">0</span>
-        </div>
-      </div>
-
-      <!-- 2. Overlay Setup & OBS Source URL -->
-      <div class="card-section">
-        <div class="card-title">
-          <span>🎨</span> OBS Theme & Canvas Preset
-        </div>
-
-        <div class="form-group">
-          <label for="select-theme">Active Theme</label>
-          <select id="select-theme">
-            <option value="persona5" selected>Persona 5 Phantom (Comic Cutout)</option>
-            <option value="classic">Clean Modern Minimal (Glass)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="select-layout">Canvas Preset</label>
-          <select id="select-layout">
-            <option value="vertical" selected>Vertical Sidebar (450 x 800 px)</option>
-            <option value="horizontal">Bottom Ticker (800 x 300 px)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Posisi Sudut Layar (Screen Corner)</label>
-          <div class="position-grid" id="position-selector">
-            <button type="button" class="btn-pos" data-pos="top-left">↖ Kiri Atas</button>
-            <button type="button" class="btn-pos" data-pos="top-right">Kanan Atas ↗</button>
-            <button type="button" class="btn-pos active" data-pos="bottom-left">↙ Kiri Bawah</button>
-            <button type="button" class="btn-pos" data-pos="bottom-right">Kanan Bawah ↘</button>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <div class="form-group">
-            <label for="input-fade">Auto-Hide (Detik)</label>
-            <input type="number" id="input-fade" min="0" max="60" value="8" style="background: var(--bg-base); border: 1px solid var(--border-subtle); color: var(--text-main); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.88rem; outline: none;">
+        <!-- 1. YouTube Live Connection Card -->
+        <div class="card-section">
+          <div class="card-title">
+            <span>📺</span> YouTube Live (Zero-Quota)
           </div>
           <div class="form-group">
-            <label for="select-keep">Sisakan Terakhir</label>
-            <select id="select-keep" style="padding: 8px 10px;">
-              <option value="1" selected>1 Chat (Disarankan)</option>
-              <option value="0">0 (Hilang Semua)</option>
-              <option value="2">2 Chat</option>
-              <option value="3">3 Chat</option>
-            </select>
+            <label for="yt-target">Channel Handle / Live URL</label>
+            <input type="text" id="yt-target" placeholder="Contoh: @MilkyPoni" value="@MilkyPoni">
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-connect" class="btn btn-primary" style="flex: 1;">
+              <span>⚡</span> Hubungkan Stream
+            </button>
+            <button id="btn-disconnect" class="btn btn-danger" style="display: none;">
+              Putus
+            </button>
+          </div>
+          <div id="stream-info" style="font-size: 0.76rem; color: var(--text-dim); display: none;">
+            Active ID: <span id="info-liveid" style="color: var(--accent-cyan);">-</span> | Pesan: <span id="info-msgcount">0</span>
           </div>
         </div>
 
-        <div class="form-group">
-          <label>OBS Browser Source URL</label>
+        <!-- 2. OBS Browser Source URL (Prominent Card) -->
+        <div class="card-section obs-highlight-card">
+          <div class="card-title" style="color: #FFF;">
+            <span>🔗</span> URL OBS Browser Source
+          </div>
           <div class="obs-url-container">
             <input type="text" id="obs-url" class="obs-url-input" readonly value="http://localhost:19840/overlay?theme=persona5&layout=vertical">
-            <button id="btn-copy-url" class="btn btn-secondary" title="Salin ke Clipboard">
+            <button id="btn-copy-url" class="btn btn-primary" title="Salin ke Clipboard" style="white-space: nowrap;">
               📋 Salin
             </button>
           </div>
-          <small style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">
-            Masukkan URL ini ke OBS Browser Source. Centang <i>"Shutdown source when not visible"</i>.
+          <small style="font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;">
+            Tempel URL ini pada Browser Source di OBS Studio.
           </small>
         </div>
-      </div>
 
-      <!-- 2.5 Live Customization & Typography Card -->
-      <div class="card-section">
-        <div class="card-title">
-          <span>⚙️</span> Kustomisasi Tampilan & Tipografi
-        </div>
+        <!-- 3. Overlay Setup & Customization -->
+        <div class="card-section">
+          <div class="card-title">
+            <span>🎨</span> Tampilan & Posisi Overlay
+          </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <!-- Overall Scale Slider -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label for="select-theme">Tema Aktif</label>
+              <select id="select-theme">
+                <option value="persona5" selected>Persona 5 Phantom</option>
+                <option value="classic">Clean Modern Minimal</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="select-layout">Preset Resolusi</label>
+              <select id="select-layout">
+                <option value="vertical" selected>Vertical (450 x 800)</option>
+                <option value="horizontal">Bottom Ticker (800 x 300)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 4 Corner Anchors -->
           <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label for="input-scale">Skala Canvas</label>
-              <span id="label-scale-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">100%</span>
+            <label>Sudut Layar (Screen Corner)</label>
+            <div class="position-grid" id="position-selector">
+              <button type="button" class="btn-pos" data-pos="top-left">↖ Kiri Atas</button>
+              <button type="button" class="btn-pos" data-pos="top-right">Kanan Atas ↗</button>
+              <button type="button" class="btn-pos active" data-pos="bottom-left">↙ Kiri Bawah</button>
+              <button type="button" class="btn-pos" data-pos="bottom-right">Kanan Bawah ↘</button>
             </div>
-            <input type="range" id="input-scale" min="70" max="150" step="5" value="100">
           </div>
 
-          <!-- Font Size Slider -->
+          <!-- Auto-Hide & Retention -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label for="input-fade">Auto-Hide (Detik)</label>
+              <input type="number" id="input-fade" min="0" max="60" value="8">
+            </div>
+            <div class="form-group">
+              <label for="select-keep">Tahan Chat</label>
+              <select id="select-keep">
+                <option value="1" selected>1 Chat</option>
+                <option value="0">0 (Semua)</option>
+                <option value="2">2 Chat</option>
+                <option value="3">3 Chat</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Typography & Scaling -->
+          <div class="form-row-2col" style="margin-top: 4px;">
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between;">
+                <label for="input-scale">Skala</label>
+                <span id="label-scale-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">100%</span>
+              </div>
+              <input type="range" id="input-scale" min="70" max="150" step="5" value="100">
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between;">
+                <label for="input-fsize">Ukuran Teks</label>
+                <span id="label-fsize-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">16px</span>
+              </div>
+              <input type="range" id="input-fsize" min="12" max="26" step="1" value="16">
+            </div>
+          </div>
+
           <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label for="input-fsize">Ukuran Teks</label>
-              <span id="label-fsize-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">16px</span>
-            </div>
-            <input type="range" id="input-fsize" min="12" max="26" step="1" value="16">
+            <label for="select-font">Font Pesan</label>
+            <select id="select-font">
+              <option value="Space Grotesk" selected>Space Grotesk (Default Anime)</option>
+              <option value="Bebas Neue">Bebas Neue (Punchy Comic All-Caps)</option>
+              <option value="Inter">Inter (Clean Ultra Legible)</option>
+              <option value="Bangers">Bangers (Western Comic)</option>
+              <option value="Montserrat">Montserrat (Modern Bold)</option>
+              <option value="VT323">VT323 (Retro 8-Bit Pixel)</option>
+            </select>
           </div>
-        </div>
 
-        <!-- Font Family Selector -->
-        <div class="form-group">
-          <label for="select-font">Jenis Font Pesan</label>
-          <select id="select-font">
-            <option value="Space Grotesk" selected>Space Grotesk (Default - Anime/Manga)</option>
-            <option value="Bebas Neue">Bebas Neue (Punchy Comic All-Caps)</option>
-            <option value="Inter">Inter (Clean & Ultra Legible)</option>
-            <option value="Bangers">Bangers (Western Comic)</option>
-            <option value="Montserrat">Montserrat (Sleek Modern Bold)</option>
-            <option value="VT323">VT323 (Retro 8-Bit Pixel)</option>
-          </select>
-        </div>
-
-        <!-- Text Color Selector & Swatches -->
-        <div class="form-group">
-          <label>Warna Teks Pesan</label>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="color" id="input-color" value="#ffffff" style="width: 38px; height: 36px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; background: transparent; padding: 2px;">
-            <input type="text" id="input-color-hex" value="#FFFFFF" style="width: 85px; font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;">
-            <div class="color-swatches" style="display: flex; gap: 6px; flex: 1; justify-content: flex-end; align-items: center;">
-              <button type="button" class="btn-swatch" data-color="#FFFFFF" style="background: #FFFFFF;" title="Putih"></button>
-              <button type="button" class="btn-swatch" data-color="#FFE600" style="background: #FFE600;" title="Kuning Neon"></button>
-              <button type="button" class="btn-swatch" data-color="#00F0FF" style="background: #00F0FF;" title="Cyan Mint"></button>
-              <button type="button" class="btn-swatch" data-color="#FF007F" style="background: #FF007F;" title="Neon Pink"></button>
-              <button type="button" class="btn-swatch" data-color="#00E676" style="background: #00E676;" title="Neon Green"></button>
+          <div class="form-group">
+            <label>Warna Teks Pesan</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="color" id="input-color" value="#ffffff" style="width: 36px; height: 32px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; background: transparent; padding: 2px;">
+              <input type="text" id="input-color-hex" value="#FFFFFF" style="width: 80px; font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase;">
+              <div class="color-swatches" style="display: flex; gap: 6px; flex: 1; justify-content: flex-end;">
+                <button type="button" class="btn-swatch" data-color="#FFFFFF" style="background: #FFFFFF;" title="Putih"></button>
+                <button type="button" class="btn-swatch" data-color="#FFE600" style="background: #FFE600;" title="Kuning Neon"></button>
+                <button type="button" class="btn-swatch" data-color="#00F0FF" style="background: #00F0FF;" title="Cyan Mint"></button>
+                <button type="button" class="btn-swatch" data-color="#FF007F" style="background: #FF007F;" title="Neon Pink"></button>
+                <button type="button" class="btn-swatch" data-color="#00E676" style="background: #00E676;" title="Neon Green"></button>
+              </div>
             </div>
           </div>
         </div>
+
       </div>
 
-      <!-- 3. Simulator / Test Events -->
-      <div class="card-section">
-        <div class="card-title">
-          <span>🧪</span> Live Testing Simulator
-        </div>
-        <p style="font-size: 0.76rem; color: var(--text-muted);">
-          Uji animasi balon kata, badge, dan efek All-Out Attack langsung tanpa harus streaming:
-        </p>
-
-        <div class="simulator-grid">
-          <button class="btn btn-sim" onclick="simulateEvent('chat_ryuji')">
-            🗣️ Normal: Ryuji
-          </button>
-          <button class="btn btn-sim" onclick="simulateEvent('chat_morgana')">
-            👑 Owner: Morgana
-          </button>
-          <button class="btn btn-sim" onclick="simulateEvent('chat_makoto')">
-            🛡️ Mod: Makoto
-          </button>
-          <button class="btn btn-sim" onclick="simulateEvent('member_ann')">
-            ✦ New Member: Ann
-          </button>
-        </div>
-
-        <button class="btn btn-primary" onclick="simulateEvent('superchat_50k')" style="width: 100%; margin-top: 4px; background: #E60012;">
-          💥 Test Super Chat (All-Out Attack Cut-In)
-        </button>
-
-        <div style="display: flex; gap: 8px; margin-top: 6px;">
-          <input type="text" id="custom-message" placeholder="Tulis pesan uji custom..." style="flex: 1;">
-          <button class="btn btn-secondary" onclick="simulateCustom()">Kirim</button>
-        </div>
-      </div>
-
-      <!-- 4. Theme Catalog Preview -->
-      <div class="card-section">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="card-title" style="margin: 0;">
-            <span>📦</span> Remote Theme Catalog
+      <!-- Right Panel: Live Workspace & Integrated Simulator -->
+      <div class="preview-panel">
+        <div class="preview-topbar">
+          <div class="preview-badge">Live Canvas Preview (OBS Realtime)</div>
+          <div id="preview-resolution" class="preview-badge" style="color: var(--accent-cyan); font-family: var(--font-mono);">
+            450 x 800 px
           </div>
-          <button class="btn btn-secondary" style="font-size: 0.72rem; padding: 4px 8px;" onclick="openThemesFolder()">
-            📂 Folder Tema
-          </button>
         </div>
-        <div id="catalog-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
-          <!-- Dynamically loaded from catalog.json -->
+
+        <!-- Canvas Viewport -->
+        <div class="canvas-viewport">
+          <div id="preview-wrapper" class="preview-canvas-wrapper" style="width: 450px; height: 680px;">
+            <iframe id="preview-frame" class="preview-iframe" src="/overlay?theme=persona5&layout=vertical"></iframe>
+          </div>
         </div>
+
+        <!-- Bottom Integrated Simulator Toolbar -->
+        <div class="simulator-bottom-bar">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">
+              🧪 Live Testing Simulator (Coba Animasi Langsung)
+            </div>
+          </div>
+
+          <div class="sim-btn-row">
+            <button type="button" class="btn-sim" onclick="simulateEvent('chat_ryuji')">
+              🗣️ Ryuji (Normal)
+            </button>
+            <button type="button" class="btn-sim" onclick="simulateEvent('chat_morgana')">
+              👑 Morgana (Owner)
+            </button>
+            <button type="button" class="btn-sim" onclick="simulateEvent('chat_makoto')">
+              🛡️ Makoto (Mod)
+            </button>
+            <button type="button" class="btn-sim" onclick="simulateEvent('member_ann')">
+              ✦ Ann (Membership)
+            </button>
+            <button type="button" class="btn-sim btn-sim-superchat" onclick="simulateEvent('superchat_50k')">
+              💥 Super Chat All-Out Attack
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="custom-message" placeholder="Ketik pesan uji custom di sini..." style="flex: 1; padding: 7px 10px;">
+            <button type="button" class="btn btn-secondary" onclick="simulateCustom()" style="padding: 7px 16px;">
+              Kirim
+            </button>
+          </div>
+        </div>
+
       </div>
 
     </div>
-
-    <!-- Right Live Preview Panel -->
-    <div class="preview-panel">
-      <div class="preview-header-bar">
-        <div class="preview-badge">Live Canvas Preview (OBS Realtime)</div>
-        <div id="preview-resolution" class="preview-badge" style="color: var(--accent-cyan);">450 x 800 px</div>
-      </div>
-
-      <div id="preview-wrapper" class="preview-canvas-wrapper" style="width: 450px; height: 740px;">
-        <iframe id="preview-frame" class="preview-iframe" src="/overlay?theme=persona5&layout=vertical"></iframe>
-      </div>
-    </div>
-
   </div>
 
-  <!-- IN-APP AUTO-UPDATER MODAL -->
+  <!-- ========================================================
+       TAB 2: THEME CATALOG SHOWCASE (Full Width Gallery)
+       ======================================================== -->
+  <div id="tab-catalog" class="tab-content">
+    <div class="catalog-page">
+      <div class="catalog-header-bar">
+        <div>
+          <div class="catalog-title">🎨 Katalog Tema Game KY-Poni</div>
+          <div class="catalog-subtitle">Pilih gaya estetika video game favorit Anda untuk mempercantik siaran livestreaming.</div>
+        </div>
+        <button class="btn btn-secondary" onclick="openThemesFolder()">
+          📂 Buka Folder Tema Kustom
+        </button>
+      </div>
+
+      <!-- Theme Showcase Grid -->
+      <div id="catalog-showcase-grid" class="theme-showcase-grid">
+        <!-- Rendered dynamically by loadCatalog() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       TAB 3: SETTINGS & MAINTENANCE
+       ======================================================== -->
+  <div id="tab-settings" class="tab-content">
+    <div class="settings-page">
+      <div class="settings-section-title">
+        ⚙️ Pengaturan Aplikasi & Status Sistem
+      </div>
+
+      <div class="settings-grid">
+
+        <!-- Card 1: Server Status -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🌐</span> Server Lokal & WebSocket
+          </div>
+          <div class="settings-list">
+            <div class="settings-list-item">
+              <span>Port Server</span>
+              <span style="font-family: var(--font-mono); color: var(--accent-cyan);">19840 (HTTP / WS)</span>
+            </div>
+            <div class="settings-list-item">
+              <span>Binding Interface</span>
+              <span style="font-family: var(--font-mono); color: #FFF;">127.0.0.1 (Localhost Only)</span>
+            </div>
+            <div class="settings-list-item">
+              <span>InnerTube Ingest</span>
+              <span style="color: var(--accent-green); font-weight: 700;">Aktif (Zero-Quota)</span>
+            </div>
+            <div class="settings-list-item">
+              <span>Status Koneksi</span>
+              <span id="settings-status-text" style="color: var(--text-muted); font-weight: 600;">Disconnected</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Auto-Updater Center -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🚀</span> Pembaruan Aplikasi
+          </div>
+          <div class="settings-list">
+            <div class="settings-list-item">
+              <span>Versi Terpasang</span>
+              <span id="settings-current-ver" style="font-weight: 700; color: #FFF;">v0.4.3</span>
+            </div>
+            <div class="settings-list-item">
+              <span>Kanal Distribusi</span>
+              <span style="color: var(--accent-yellow);">GitHub Releases</span>
+            </div>
+            <div class="settings-list-item">
+              <span>Repository</span>
+              <a href="https://github.com/Milkyponi/KY-Poni" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">Milkyponi/KY-Poni</a>
+            </div>
+          </div>
+          <button class="btn btn-secondary" onclick="checkUpdateManual()" style="margin-top: 6px;">
+            🔄 Periksa Pembaruan Sekarang
+          </button>
+        </div>
+
+        <!-- Card 3: OBS Setup Guide -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>📺</span> Panduan Pemasangan OBS Studio
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; display: flex; flex-direction: column; gap: 6px;">
+            <div>1. Buka <b>OBS Studio</b>, klik tanda <b>+</b> pada panel <i>Sources</i> lalu pilih <b>Browser</b>.</div>
+            <div>2. Salin URL dari tab <b>Studio</b> dan tempelkan pada kolom URL.</div>
+            <div>3. Atur resolusi: <b>450 x 800</b> (Vertical) atau <b>800 x 300</b> (Horizontal Ticker).</div>
+            <div>4. Centang <i>"Shutdown source when not visible"</i> dan <i>"Refresh browser when scene becomes active"</i>.</div>
+          </div>
+        </div>
+
+        <!-- Card 4: Preferences Reset -->
+        <div class="settings-card">
+          <div class="settings-card-title">
+            <span>🔄</span> Reset Pengaturan
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+            Kembalikan seluruh preferensi skala kanvas, ukuran font, jenis font, dan warna teks ke setelan default pabrik.
+          </p>
+          <button class="btn btn-secondary" onclick="resetAllPreferences()" style="margin-top: auto; color: #EF4444; border-color: rgba(239, 68, 68, 0.4);">
+            ⚠️ Reset Preferensi ke Default
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       IN-APP AUTO-UPDATER MODAL POPUP
+       ======================================================== -->
   <div id="update-modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: #151922; border: 2px solid #D03D3D; border-radius: 12px; width: 90%; max-width: 480px; padding: 24px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; align-items: center; gap: 12px;">
         <img src="/assets/logo.svg" style="width: 42px; height: 42px; object-fit: contain;">
         <div>
           <div style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Pembaruan Tersedia!</div>
-          <div id="modal-update-version" style="font-size: 0.82rem; color: #00F0FF; font-weight: 700;">KY-Poni v0.4.0</div>
+          <div id="modal-update-version" style="font-size: 0.82rem; color: #00F0FF; font-weight: 700;">KY-Poni v0.4.3</div>
         </div>
       </div>
 

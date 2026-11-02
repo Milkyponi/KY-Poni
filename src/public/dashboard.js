@@ -270,8 +270,61 @@ btnDisconnect.addEventListener('click', async () => {
 });
 
 function setUIStatus(state, label) {
-  statusDot.className = `status-dot ${state}`;
-  statusText.textContent = label;
+  if (statusDot) statusDot.className = `status-dot ${state}`;
+  if (statusText) statusText.textContent = label;
+  const settingsStatus = document.getElementById('settings-status-text');
+  if (settingsStatus) {
+    settingsStatus.textContent = label;
+    if (state === 'connected') settingsStatus.style.color = 'var(--accent-green)';
+    else if (state === 'connecting') settingsStatus.style.color = 'var(--accent-yellow)';
+    else settingsStatus.style.color = 'var(--text-muted)';
+  }
+}
+
+// Topbar Tab Navigation
+function switchTab(tabId) {
+  document.querySelectorAll('.top-nav .nav-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+  });
+
+  document.querySelectorAll('.tab-content').forEach(pane => {
+    pane.classList.toggle('active', pane.id === tabId);
+  });
+
+  if (tabId === 'tab-catalog') {
+    loadCatalog();
+  }
+}
+
+function selectThemeFromCatalog(themeId) {
+  if (selectTheme) {
+    selectTheme.value = themeId;
+    updateOverlayParams();
+    loadCatalog();
+    switchTab('tab-studio');
+  }
+}
+
+async function resetAllPreferences() {
+  if (!confirm('Apakah Anda yakin ingin mereset seluruh preferensi tampilan ke setelan awal pabrik?')) return;
+
+  if (inputScale) inputScale.value = 100;
+  if (labelScaleVal) labelScaleVal.textContent = '100%';
+  if (inputFsize) inputFsize.value = 16;
+  if (labelFsizeVal) labelFsizeVal.textContent = '16px';
+  if (selectFont) selectFont.value = 'Space Grotesk';
+  if (inputColor) inputColor.value = '#ffffff';
+  if (inputColorHex) inputColorHex.value = '#FFFFFF';
+  if (inputFade) inputFade.value = 8;
+  if (selectKeep) selectKeep.value = '1';
+
+  currentPos = 'bottom-left';
+  document.querySelectorAll('#position-selector .btn-pos').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-pos') === 'bottom-left');
+  });
+
+  updateOverlayParams();
+  alert('✅ Preferensi tampilan berhasil dikembalikan ke default pabrik!');
 }
 
 // Simulator Trigger
@@ -441,49 +494,81 @@ async function openThemesFolder() {
   }
 }
 
-// Fetch Catalog with Action Buttons
+// Fetch Catalog and render showcase grid in Tab 2
 async function loadCatalog() {
-  const container = document.getElementById('catalog-list');
+  const container = document.getElementById('catalog-showcase-grid');
+  if (!container) return;
+
   try {
     const res = await fetch('/api/catalog');
     const data = await res.json();
     if (!data.themes) return;
 
-    // Filter: hanya tampilkan tema yang sudah terpasang ATAU memiliki sumber unduhan resmi
-    const validThemes = data.themes.filter(t => t.installed || (t.downloadUrl && !t.downloadUrl.includes('mock') && !t.downloadUrl.includes('example')));
+    const currentActiveTheme = selectTheme ? selectTheme.value : 'persona5';
 
-    if (validThemes.length === 0) {
-      container.innerHTML = `
-        <div style="font-size: 0.78rem; color: var(--text-muted); text-align: center; padding: 16px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);">
-          Belum ada tema tambahan di katalog.
-        </div>
-      `;
-      return;
-    }
+    const themeCardsHtml = data.themes.map(t => {
+      const isCurrentlyActive = t.id === currentActiveTheme;
+      const isP5 = t.id === 'persona5';
 
-    const itemsHtml = validThemes.map(t => {
-      const isInstalled = t.installed;
-      const isBuiltIn = t.id === 'persona5' || t.id === 'classic';
+      let bannerVisual = '';
+      if (isP5) {
+        bannerVisual = `
+          <div class="theme-banner-preview theme-banner-p5">
+            <div style="background: #000; border: 3px solid #FFF; padding: 12px 20px; transform: skewX(-12deg); box-shadow: 4px 4px 0 #D03D3D; display: flex; align-items: center; gap: 12px;">
+              <div style="width: 32px; height: 32px; background: #FFF; border: 2px solid #000; transform: rotate(-8deg); display: flex; align-items: center; justify-content: center; font-weight: 900; color: #D03D3D; font-size: 0.9rem;">
+                🎭
+              </div>
+              <div style="transform: skewX(12deg);">
+                <div style="background: #D03D3D; color: #FFF; font-weight: 800; font-size: 0.72rem; padding: 2px 6px; display: inline-block;">RYUJI</div>
+                <div style="color: #FFF; font-weight: 700; font-size: 0.85rem; margin-top: 2px;">For real?! Lookin' cool!</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        bannerVisual = `
+          <div class="theme-banner-preview theme-banner-classic">
+            <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); display: flex; align-items: center; gap: 12px;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #FFF;">
+                ✨
+              </div>
+              <div>
+                <div style="color: #60A5FA; font-weight: 700; font-size: 0.75rem;">MilkyViewer</div>
+                <div style="color: #F3F4F6; font-size: 0.85rem;">Clean minimalist translucent style...</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
 
       return `
-        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 10px 12px; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-          <div style="flex: 1; min-width: 0;">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${t.previewColor || 'var(--text-main)'};"></span>
-              <span style="font-size: 0.85rem; font-weight: 700; color: #FFF;">
-                ${t.name}
+        <div class="theme-card-large ${isCurrentlyActive ? 'active-theme' : ''}">
+          ${bannerVisual}
+          <div class="theme-body">
+            <div class="theme-name-row">
+              <div class="theme-name">${t.name}</div>
+              <span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: ${isCurrentlyActive ? 'var(--primary)' : 'var(--bg-input)'}; color: #FFF; border: 1px solid ${isCurrentlyActive ? 'var(--primary)' : 'var(--border-subtle)'};">
+                ${isCurrentlyActive ? '★ AKTIF DIGUNAKAN' : 'TERPASANG'}
               </span>
             </div>
-            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+
+            <div class="theme-tag-row">
+              ${(t.tags || []).map(tag => `<span class="theme-tag">${tag}</span>`).join('')}
+            </div>
+
+            <div class="theme-desc">
               ${t.description}
             </div>
           </div>
-          <div style="display: flex; gap: 6px; align-items: center;">
-            ${isInstalled 
-              ? `<span style="font-size: 0.68rem; color: var(--accent-green); font-weight: 700; border: 1px solid var(--accent-green); padding: 3px 6px; border-radius: 4px;">TERPASANG</span>
-                 ${!isBuiltIn ? `<button class="btn btn-secondary" style="font-size: 0.68rem; padding: 3px 6px; color: #EF4444;" onclick="deleteTheme('${t.id}', this)" title="Hapus Tema">🗑️</button>` : ''}`
-              : `<button class="btn btn-primary" style="font-size: 0.72rem; padding: 4px 10px;" onclick="installTheme('${t.id}', '${t.downloadUrl}', this)">
-                   📥 Pasang
+
+          <div class="theme-card-footer">
+            <span style="font-size: 0.75rem; color: var(--text-dim);">By ${t.author || 'Milky Brain'}</span>
+            ${isCurrentlyActive 
+              ? `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; opacity: 0.7; cursor: default;" disabled>
+                   ✓ Sedang Digunakan
+                 </button>`
+              : `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px;" onclick="selectThemeFromCatalog('${t.id}')">
+                   ⚡ Gunakan Tema Ini
                  </button>`
             }
           </div>
@@ -491,13 +576,34 @@ async function loadCatalog() {
       `;
     }).join('');
 
-    const footerNote = `
-      <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; margin-top: 8px; padding: 6px 10px; border: 1px dashed var(--border-subtle); border-radius: var(--radius-sm);">
-        ✨ Semua tema resmi saat ini sudah terpasang. Tema game baru akan hadir di katalog pembaruan berikutnya!
+    // Upcoming Themes Card
+    const upcomingCardHtml = `
+      <div class="theme-card-large" style="border: 1px dashed var(--border-highlight); background: rgba(21, 25, 34, 0.4);">
+        <div class="theme-banner-preview" style="background: radial-gradient(circle at center, #1B1A2E 0%, #0C0B17 100%); flex-direction: column; gap: 8px;">
+          <div style="font-size: 2rem;">🚀</div>
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.5px;">KOLEKSI GAME BERIKUTNYA</div>
+        </div>
+        <div class="theme-body">
+          <div class="theme-name" style="color: var(--text-muted);">Undertale, Cyberpunk, & Retro JRPG</div>
+          <div class="theme-tag-row">
+            <span class="theme-tag">Coming Soon</span>
+            <span class="theme-tag">Community</span>
+            <span class="theme-tag">Pixel Art</span>
+          </div>
+          <div class="theme-desc">
+            Tema-tema game legendaris lainnya sedang dalam kurasi untuk pembaruan berikutnya. Anda juga dapat memasang tema CSS kustom sendiri melalui folder tema lokal.
+          </div>
+        </div>
+        <div class="theme-card-footer">
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Dukungan CSS Modular</span>
+          <button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px;" onclick="openThemesFolder()">
+            📂 Folder Tema Kustom
+          </button>
+        </div>
       </div>
     `;
 
-    container.innerHTML = itemsHtml + footerNote;
+    container.innerHTML = themeCardsHtml + upcomingCardHtml;
   } catch (e) {
     console.error('Failed to load catalog:', e);
   }
