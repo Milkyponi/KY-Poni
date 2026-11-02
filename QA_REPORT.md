@@ -31,16 +31,17 @@
 | 19 | Remote Theme Catalog Sanitization | ✅ PASS | Tema mock disembunyikan; hanya tema resmi terpasang yang tampil di katalog |
 | 20 | Segmented 3-Tab UI/UX Navigation | ✅ PASS | Tab Studio, Katalog Tema, dan Pengaturan teruji bebas glitch visual |
 | 21 | Anti-Clipping Inverse Scaling & Presets | ✅ PASS | Skala 150% teruji aman tanpa clipping pada preset Standar maupun Lebar |
+| 22 | Strict Semver & Anti-Spam Auto-Updater | ✅ PASS | Tidak memunculkan notif jika versi sama, auto-upgrade server versi lama |
 
-**Total:** 21/21 Tests Passed (100% Green).
+**Total:** 22/22 Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.4.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.5.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.4.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.5.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---
