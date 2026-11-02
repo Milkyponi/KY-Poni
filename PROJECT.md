@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.4.1-alpha` (Phase 4 Milestone: Gear Lever Tested & EADDRINUSE Resilient)  
+**Current Version:** `v0.4.2-alpha` (Phase 4 Milestone: Catalog Sanitized & Production Ready)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux)  
