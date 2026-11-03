@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.4.7-alpha` (Phase 4 Milestone: One-Click Seamless Auto-Update & Restart)  
+**Current Version:** `v0.4.8-alpha` (Phase 4 Milestone: Anti-RTO Watchdog & Production Livestream Ingest Verified)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux)  

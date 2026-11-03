@@ -626,6 +626,15 @@ async function pollStatus() {
       streamInfo.style.display = 'block';
       if (data.liveId) infoLiveId.textContent = data.liveId;
       infoMsgCount.textContent = data.messageCount;
+    } else if (data.status === 'reconnecting') {
+      setUIStatus('connecting', '⚠️ Sinyal drop, memulihkan koneksi stream...');
+      btnConnect.style.display = 'none';
+      btnDisconnect.style.display = 'inline-flex';
+      streamInfo.style.display = 'block';
+    } else if (data.status === 'idle') {
+      btnConnect.style.display = 'inline-flex';
+      btnDisconnect.style.display = 'none';
+      streamInfo.style.display = 'none';
     }
   } catch (e) {
     // offline
@@ -798,7 +807,7 @@ async function openDownloadedFile(filePath) {
   }
 }
 
-// WebSocket Listen for Update Progress
+// WebSocket Listen for Update Progress & Realtime Stream Status
 function setupUpdaterWS() {
   try {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -811,6 +820,24 @@ function setupUpdaterWS() {
           const progressPct = document.getElementById('update-progress-pct');
           if (progressBar) progressBar.style.width = `${payload.pct}%`;
           if (progressPct) progressPct.textContent = `${payload.pct}%`;
+        } else if (payload.type === 'SYSTEM_STATUS') {
+          const s = payload.data;
+          if (s.status === 'connected') {
+            setUIStatus('connected', `Live: ${s.target}`);
+            btnConnect.style.display = 'none';
+            btnDisconnect.style.display = 'inline-flex';
+            streamInfo.style.display = 'block';
+            if (s.liveId) infoLiveId.textContent = s.liveId;
+          } else if (s.status === 'reconnecting') {
+            setUIStatus('connecting', '⚠️ Sinyal drop, memulihkan koneksi...');
+            btnConnect.style.display = 'none';
+            btnDisconnect.style.display = 'inline-flex';
+          } else if (s.status === 'idle') {
+            setUIStatus('idle', 'Disconnected');
+            btnConnect.style.display = 'inline-flex';
+            btnDisconnect.style.display = 'none';
+            streamInfo.style.display = 'none';
+          }
         }
       } catch (e) {}
     };

@@ -1,18 +1,29 @@
 /**
  * KY-Poni - YouTube Live Chat Ingest Worker
  * Uses reverse-engineered InnerTube protocol without Google API keys.
+ * Hardened with Anti-RTO resilience, exponential backoff, and self-healing watchdog.
  */
 const { EventEmitter } = require('events');
 const { LiveChat } = require('youtube-chat');
+const axios = require('axios');
+
+// Set global timeout on axios so requests don't hang indefinitely during network RTO
+try {
+  axios.defaults.timeout = 10000;
+} catch (e) {}
 
 class YouTubeChatIngest extends EventEmitter {
   constructor() {
     super();
     this.liveChat = null;
-    this.status = 'idle'; // 'idle' | 'connecting' | 'connected' | 'error'
+    this.status = 'idle'; // 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error'
     this.currentTarget = null;
     this.activeLiveId = null;
     this.messageCount = 0;
+    this.consecutiveErrors = 0;
+    this.reconnectAttempts = 0;
+    this.reconnectTimer = null;
+    this.isManuallyStopped = false;
   }
 
   parseTarget(input) {
@@ -46,13 +57,25 @@ class YouTubeChatIngest extends EventEmitter {
   }
 
   async connect(rawTarget) {
+    this.isManuallyStopped = false;
+    this.consecutiveErrors = 0;
+    this.reconnectAttempts = 0;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    return this.startSession(rawTarget);
+  }
+
+  async startSession(rawTarget) {
     const targetObj = this.parseTarget(rawTarget);
     if (!targetObj) {
       throw new Error(`Target YouTube channel atau livestream tidak valid: "${rawTarget}"`);
     }
 
     if (this.liveChat) {
-      await this.disconnect();
+      try { this.liveChat.stop('Restarting session'); } catch (e) {}
+      this.liveChat = null;
     }
 
     this.status = 'connecting';
@@ -61,33 +84,7 @@ class YouTubeChatIngest extends EventEmitter {
 
     try {
       this.liveChat = new LiveChat(targetObj);
-
-      this.liveChat.on('start', (liveId) => {
-        this.status = 'connected';
-        this.activeLiveId = liveId;
-        this.emit('status_change', {
-          status: this.status,
-          target: this.currentTarget,
-          liveId: this.activeLiveId,
-        });
-      });
-
-      this.liveChat.on('end', (reason) => {
-        this.status = 'idle';
-        this.emit('status_change', { status: this.status, reason });
-      });
-
-      this.liveChat.on('chat', (chatItem) => {
-        this.messageCount++;
-        const standardized = this.standardizeChatItem(chatItem);
-        this.emit('message', standardized);
-      });
-
-      this.liveChat.on('error', (err) => {
-        console.error('[KY-Poni YouTube] Error:', err.message || err);
-        this.status = 'error';
-        this.emit('status_change', { status: this.status, error: err.message || String(err) });
-      });
+      this.setupListeners(this.liveChat);
 
       const ok = await this.liveChat.start();
       if (!ok) {
@@ -96,13 +93,56 @@ class YouTubeChatIngest extends EventEmitter {
 
       return true;
     } catch (err) {
-      this.status = 'error';
-      this.emit('status_change', { status: this.status, error: err.message });
+      if (this.status !== 'reconnecting') {
+        this.status = 'error';
+        this.emit('status_change', { status: this.status, error: err.message });
+      }
       throw err;
     }
   }
 
+  triggerSelfHealingReconnect() {
+    if (this.reconnectTimer || this.isManuallyStopped || !this.currentTarget) return;
+
+    this.status = 'reconnecting';
+    this.emit('status_change', {
+      status: this.status,
+      target: this.currentTarget,
+      liveId: this.activeLiveId,
+      message: 'Sinyal terputus sebentar, memulihkan koneksi stream...'
+    });
+
+    if (this.liveChat) {
+      try { this.liveChat.stop('Self-healing reconnect'); } catch (e) {}
+      this.liveChat = null;
+    }
+
+    const backoff = Math.min(15000, 2000 * Math.pow(1.5, Math.min(4, this.reconnectAttempts)));
+    this.reconnectAttempts++;
+    console.log(`[KY-Poni YouTube Anti-RTO] Reconnecting in ${(backoff / 1000).toFixed(1)}s (Attempt #${this.reconnectAttempts})...`);
+
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
+      if (this.isManuallyStopped || !this.currentTarget) return;
+
+      try {
+        await this.startSession(this.currentTarget);
+        this.consecutiveErrors = 0;
+        this.reconnectAttempts = 0;
+        console.log('[KY-Poni YouTube Anti-RTO] Reconnected successfully!');
+      } catch (err) {
+        console.warn(`[KY-Poni YouTube Anti-RTO] Reconnect failed: ${err.message}. Retrying...`);
+        this.triggerSelfHealingReconnect();
+      }
+    }, backoff);
+  }
+
   async disconnect() {
+    this.isManuallyStopped = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.liveChat) {
       try {
         this.liveChat.stop('User requested disconnect');
@@ -113,7 +153,73 @@ class YouTubeChatIngest extends EventEmitter {
     }
     this.status = 'idle';
     this.activeLiveId = null;
+    this.consecutiveErrors = 0;
+    this.reconnectAttempts = 0;
     this.emit('status_change', { status: this.status });
+  }
+
+  setupListeners(liveChat) {
+    liveChat.on('start', (liveId) => {
+      this.status = 'connected';
+      this.activeLiveId = liveId;
+      this.consecutiveErrors = 0;
+      this.reconnectAttempts = 0;
+      console.log(`[KY-Poni YouTube] Live Chat connected. Stream ID: ${liveId}`);
+      this.emit('status_change', {
+        status: this.status,
+        target: this.currentTarget,
+        liveId: this.activeLiveId,
+      });
+    });
+
+    liveChat.on('end', (reason) => {
+      console.log(`[KY-Poni YouTube] Live Chat ended: ${reason}`);
+      if (!this.isManuallyStopped && this.currentTarget) {
+        console.warn('[KY-Poni YouTube] Stream ended unexpectedly. Self-healing reconnect scheduled...');
+        this.triggerSelfHealingReconnect();
+      } else {
+        this.status = 'idle';
+        this.emit('status_change', { status: this.status, reason });
+      }
+    });
+
+    liveChat.on('chat', (chatItem) => {
+      // Automatic recovery when new messages arrive after transient network drops
+      if (this.consecutiveErrors > 0 || this.status !== 'connected') {
+        this.consecutiveErrors = 0;
+        this.status = 'connected';
+        this.emit('status_change', {
+          status: this.status,
+          target: this.currentTarget,
+          liveId: this.activeLiveId,
+        });
+      }
+      this.messageCount++;
+      const standardized = this.standardizeChatItem(chatItem);
+      this.emit('message', standardized);
+    });
+
+    liveChat.on('error', (err) => {
+      this.consecutiveErrors++;
+      const errMsg = err?.message || String(err);
+      console.warn(`[KY-Poni YouTube] Transient network/polling error (#${this.consecutiveErrors}): ${errMsg}`);
+
+      // Mark as reconnecting instead of fatal error so UI shows soft warning
+      if (this.status === 'connected') {
+        this.status = 'reconnecting';
+        this.emit('status_change', {
+          status: this.status,
+          target: this.currentTarget,
+          liveId: this.activeLiveId,
+          error: errMsg,
+        });
+      }
+
+      // If network outage or RTO persists for 4+ consecutive polling cycles (~4-8s)
+      if (this.consecutiveErrors >= 4 && !this.isManuallyStopped) {
+        this.triggerSelfHealingReconnect();
+      }
+    });
   }
 
   standardizeChatItem(item) {

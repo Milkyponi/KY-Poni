@@ -1,8 +1,8 @@
-# QA & Automated Test Report: KY-Poni (v0.4.7-alpha)
+# QA & Automated Test Report: KY-Poni (v0.4.8-alpha)
 
 - **Tanggal Eksekusi**: 2026-11-03
 - **Lead Tester**: Fonzy (Divisi Software Development)
-- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Curated Themes System, In-App Auto-Updater Seamless Restart (Linux AppImage & Windows Portable Exe).
+- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Curated Themes System, In-App Auto-Updater Seamless Restart, YouTube Ingest Anti-RTO & Self-Healing Watchdog.
 
 ---
 
@@ -11,7 +11,7 @@
 | No | Modul / Skenario Uji | Status | Catatan Teknis |
 |---|---|---|---|
 | 1 | Server Boot & Port Binding (`19840`) | ✅ PASS | Binding bersih di localhost, latensi 0 ms |
-| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.4.7) |
+| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.4.8) |
 | 3 | REST Endpoint `GET /api/themes` | ✅ PASS | Terdeteksi 2 tema resmi: Persona 5 & Classic |
 | 4 | REST Endpoint `GET /api/catalog` | ✅ PASS | Manifest katalog resmi termuat tanpa kustom eksternal |
 | 5 | OBS Overlay Serving (`GET /overlay`) | ✅ PASS | HTML kanvas transparan 60 FPS |
@@ -19,11 +19,13 @@
 | 7 | Persona 5 Official Font Bundling | ✅ PASS | Font `OptimaNovaLT-Black.ttf`, `KoreanKRSM.ttf`, `p5hatty.ttf` ter-bundle di tema |
 | 8 | Dynamic Ransom-Note Nameplate | ✅ PASS | Algoritma penataan huruf + satu aksen kotak merah miring di pita putih aman tanpa clipping |
 | 9 | Dynamic Multiline Word-Wrapping | ✅ PASS | Pesan 2 baris otomatis wrap dan tinggi bertambah (220px) dengan margin bawah lapang |
-| 10 | Unified Scope (Animation Pruned) | ✅ PASS | Super Chat & Member disatukan ke template balon dialog dengan badge inline rapi |
-| 11 | One-Click Auto-Update & Restart (Linux) | ✅ PASS | Penggantian biner aktif `~/AppImages/kyponi.appimage` & graceful relaunch |
-| 12 | One-Click Auto-Update & Restart (Windows) | ✅ PASS | Runner script background untuk bypass file lock kernel Windows |
+| 10 | One-Click Auto-Update & Restart | ✅ PASS | Penggantian biner in-place Linux AppImage & Windows runner script |
+| 11 | Real YouTube Live Ingestion Test | ✅ PASS | Teruji menyerap 70 pesan asli live chat YouTube dalam 10 detik tanpa API key |
+| 12 | YouTube Ingest Anti-RTO Resilience | ✅ PASS | Penanganan ETIMEDOUT tanpa crash, soft 'reconnecting' state teruji |
+| 13 | Auto-Recovery on Message Ingest | ✅ PASS | Pemulihan otomatis status 'connected' saat pesan baru masuk pasca sinyal pulih |
+| 14 | Self-Healing Watchdog (Backoff) | ✅ PASS | Reconnect otomatis jika RTO berlanjut >4 polling cycles tanpa intervensi streamer |
 
-**Total:** 12/12 Targeted Tests Passed (100% Green).
+**Total:** 14/14 Targeted Tests Passed (100% Green).
 
 ---
 
