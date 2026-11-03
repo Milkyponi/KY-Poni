@@ -518,14 +518,27 @@ async function loadCatalog() {
       let bannerVisual = '';
       if (isP5) {
         bannerVisual = `
-          <div class="theme-banner-preview theme-banner-p5">
-            <div style="background: #000; border: 3px solid #FFF; padding: 12px 20px; transform: skewX(-12deg); box-shadow: 4px 4px 0 #D03D3D; display: flex; align-items: center; gap: 12px;">
-              <div style="width: 32px; height: 32px; background: #FFF; border: 2px solid #000; transform: rotate(-8deg); display: flex; align-items: center; justify-content: center; font-weight: 900; color: #D03D3D; font-size: 0.9rem;">
-                🎭
+          <div class="theme-banner-preview theme-banner-p5" style="background: radial-gradient(circle at center, #2A1015 0%, #100608 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
+            <div style="position: relative; width: 330px; height: 105px; filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.95)); flex-shrink: 0;">
+              <!-- 3-Piece Sliced Skin -->
+              <div style="position: absolute; inset: 0; display: flex; flex-direction: row; pointer-events: none;">
+                <div style="width: 34.3%; height: 100%; background: url('/themes/persona5/assets/bubble_left.png') no-repeat left top; background-size: 100% 100%; flex-shrink: 0;"></div>
+                <div style="flex: 1; height: 100%; background: url('/themes/persona5/assets/bubble_mid.png') no-repeat center top; background-size: 100% 100%; margin-left: -1px; margin-right: -1px;"></div>
+                <div style="width: 34.6%; height: 100%; background: url('/themes/persona5/assets/bubble_right.png') no-repeat right top; background-size: 100% 100%; flex-shrink: 0;"></div>
               </div>
-              <div style="transform: skewX(12deg);">
-                <div style="background: #D03D3D; color: #FFF; font-weight: 800; font-size: 0.72rem; padding: 2px 6px; display: inline-block;">RYUJI</div>
-                <div style="color: #FFF; font-weight: 700; font-size: 0.85rem; margin-top: 2px;">For real?! Lookin' cool!</div>
+              <!-- Ransom Nameplate -->
+              <div style="position: absolute; top: 15px; left: 17%; width: 22%; height: 18px; display: flex; align-items: center; justify-content: center; z-index: 5; font-family: 'P5Hatty', sans-serif; font-size: 11px; font-weight: 900; transform: skewX(-14deg); pointer-events: none; letter-spacing: 0.8px;">
+                <span style="color:#000;">R</span>
+                <span style="background:#D03D3D; color:#FFF; padding:0 2.5px; margin:0 1px; border:1px solid #000; box-shadow:1px 1px 0 #000; transform:rotate(-2deg);">Y</span>
+                <span style="color:#000;">U</span>
+                <span style="color:#000;">J</span>
+                <span style="color:#000;">I</span>
+              </div>
+              <!-- Message Content -->
+              <div style="position: absolute; top: 38px; bottom: 12px; left: 18%; right: 17%; z-index: 5; display: flex; align-items: center; justify-content: flex-start;">
+                <div style="color: #FFFFFF; font-family: 'OptimaNova', 'Space Grotesk', sans-serif; font-size: 0.86rem; font-weight: 900; line-height: 1.22; word-break: break-word;">
+                  For real?! Lookin' cool, Joker!
+                </div>
               </div>
             </div>
           </div>
@@ -591,19 +604,19 @@ async function loadCatalog() {
         <div class="theme-body">
           <div class="theme-name" style="color: var(--text-muted);">Undertale, Cyberpunk, & Retro JRPG</div>
           <div class="theme-tag-row">
-            <span class="theme-tag">Coming Soon</span>
-            <span class="theme-tag">Community</span>
+            <span class="theme-tag">Segera Hadir</span>
             <span class="theme-tag">Pixel Art</span>
+            <span class="theme-tag">Cyberpunk</span>
           </div>
           <div class="theme-desc">
-            Tema-tema game legendaris lainnya sedang dalam kurasi untuk pembaruan berikutnya. Anda juga dapat memasang tema CSS kustom sendiri melalui folder tema lokal.
+            Tema-tema game legendaris lainnya sedang dalam kurasi untuk pembaruan berikutnya. Seluruh koleksi tema dioptimalkan khusus untuk OBS Studio.
           </div>
         </div>
         <div class="theme-card-footer">
-          <span style="font-size: 0.75rem; color: var(--text-dim);">Dukungan CSS Modular</span>
-          <button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px;" onclick="openThemesFolder()">
-            📂 Folder Tema Kustom
-          </button>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Milky Brain Themes</span>
+          <span style="font-size: 0.76rem; color: var(--accent-cyan); font-weight: 700; border: 1px solid rgba(0, 240, 255, 0.3); padding: 4px 10px; border-radius: 4px;">
+            🚀 Segera Hadir
+          </span>
         </div>
       </div>
     `;

@@ -7,6 +7,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { WebSocketServer } = require('ws');
 const { YouTubeChatIngest } = require('./youtube_ingest');
 const { ThemeManager } = require('./theme_manager');
@@ -15,7 +16,48 @@ const PORT = parseInt(process.env.PORT || '19840', 10);
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const CATALOG_PATH = path.join(__dirname, 'catalog', 'catalog.json');
 const PACKAGES_DIR = path.join(__dirname, 'catalog', 'packages');
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+
+/**
+ * Resolves persistent OS user configuration directory.
+ * Survives across app updates, Linux AppImage mounts, and Windows exe replacements.
+ */
+function resolvePersistentConfigPath() {
+  let configDir = '';
+  if (process.platform === 'win32') {
+    const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+    configDir = path.join(appData, 'KY-Poni');
+  } else if (process.platform === 'darwin') {
+    configDir = path.join(os.homedir(), 'Library', 'Application Support', 'KY-Poni');
+  } else {
+    const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+    configDir = path.join(configHome, 'ky-poni');
+  }
+
+  try {
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+  } catch (e) {
+    console.warn('[KY-Poni Server] Failed to create persistent config directory:', e.message);
+  }
+
+  const persistentPath = path.join(configDir, 'config.json');
+
+  // One-time migration: migrate legacy local config.json if persistent doesn't exist yet
+  const legacyLocalConfig = path.join(__dirname, 'config.json');
+  if (!fs.existsSync(persistentPath) && fs.existsSync(legacyLocalConfig)) {
+    try {
+      fs.copyFileSync(legacyLocalConfig, persistentPath);
+      console.log(`[KY-Poni Server] Migrated legacy local config to persistent path: ${persistentPath}`);
+    } catch (e) {
+      console.warn('[KY-Poni Server] Legacy config migration failed:', e.message);
+    }
+  }
+
+  return persistentPath;
+}
+
+const CONFIG_PATH = resolvePersistentConfigPath();
 
 const DEFAULT_CONFIG = {
   target: '@MilkyPoni',

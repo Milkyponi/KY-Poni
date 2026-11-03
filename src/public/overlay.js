@@ -9,7 +9,15 @@
   const theme = urlParams.get('theme') || 'persona5';
   const layout = urlParams.get('layout') || 'vertical';
   const pos = urlParams.get('pos') || 'bottom-left'; // 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'
+  const isHorizontal = layout.startsWith('horizontal');
+  const isRightPos = pos.endsWith('-right');
   const isTopPos = pos.startsWith('top-');
+
+  // In horizontal mode: Left anchors (bottom-left, top-left) MUST prepend so new chat is at the left anchor and pushes older chats rightward.
+  // Right anchors (bottom-right, top-right) MUST append so new chat is at the right anchor and pushes older chats leftward.
+  // In vertical mode: Top anchors prepend (pushes down), Bottom anchors append (pushes up).
+  const isPrependFlow = isHorizontal ? !isRightPos : isTopPos;
+
   const maxMessages = parseInt(urlParams.get('max') || '8', 10);
   const fadeSeconds = parseInt(urlParams.get('fade') || '8', 10); // 0 = never hide
   const keepLastN = parseInt(urlParams.get('keep') !== null ? urlParams.get('keep') : '1', 10); // default keep 1
@@ -78,7 +86,7 @@
     let excess = active.length - keepLastN;
     if (excess <= 0) return;
 
-    if (isTopPos) {
+    if (isPrependFlow) {
       for (let i = active.length - 1; i >= 0; i--) {
         const entry = active[i];
         if (entry.dataset.expired === 'true' && excess > 0) {
@@ -100,7 +108,7 @@
     // 1. Enforce maxMessages limit
     const existing = getActiveEntries();
     if (existing.length >= maxMessages) {
-      if (isTopPos) {
+      if (isPrependFlow) {
         animateAndRemove(existing[existing.length - 1]);
       } else {
         animateAndRemove(existing[0]);
@@ -237,8 +245,8 @@
       entry.appendChild(bubbleBody);
     }
 
-    // 3. Insert into canvas (prepend for top, append for bottom)
-    if (isTopPos) {
+    // 3. Insert into canvas (prepend vs append based on anchor flow)
+    if (isPrependFlow) {
       canvas.prepend(entry);
     } else {
       canvas.appendChild(entry);
@@ -248,11 +256,18 @@
     flushExpiredEntries();
 
     // 5. Smooth scroll / slide
-    if (layout === 'horizontal') {
-      canvas.scrollTo({
-        left: canvas.scrollWidth,
-        behavior: 'smooth',
-      });
+    if (isHorizontal) {
+      if (isRightPos) {
+        canvas.scrollTo({
+          left: canvas.scrollWidth,
+          behavior: 'smooth',
+        });
+      } else {
+        canvas.scrollTo({
+          left: 0,
+          behavior: 'smooth',
+        });
+      }
     } else {
       if (isTopPos) {
         canvas.scrollTop = 0;

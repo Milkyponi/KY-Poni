@@ -24,16 +24,20 @@
 | 12 | YouTube Ingest Anti-RTO Resilience | ✅ PASS | Penanganan ETIMEDOUT tanpa crash, soft 'reconnecting' state teruji |
 | 13 | Auto-Recovery on Message Ingest | ✅ PASS | Pemulihan otomatis status 'connected' saat pesan baru masuk pasca sinyal pulih |
 | 14 | Self-Healing Watchdog (Backoff) | ✅ PASS | Reconnect otomatis jika RTO berlanjut >4 polling cycles tanpa intervensi streamer |
+| 15 | Cross-Version Persistent Preferences | ✅ PASS | Penyimpanan di OS path (`~/.config/ky-poni/config.json`) bertahan lintas update |
+| 16 | Anchor-Sensitive Horizontal Chat Flow | ✅ PASS | Chat baru muncul di sisi anchor (`bottom-left` / `bottom-right`) & dorong chat lama |
+| 17 | Authentic Persona 5 Catalog Showcase | ✅ PASS | Banner preview P5 menampilkan 3-piece asset bubble, ransom nameplate, & font Atlus |
+| 18 | Curated Catalog Sanitization | ✅ PASS | Tombol custom folder tema dibersihkan, kartu masa depan berstatus 'Segera Hadir' |
 
-**Total:** 14/14 Targeted Tests Passed (100% Green).
+**Total:** 18/18 Targeted Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.5.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.9.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.5.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.9.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---

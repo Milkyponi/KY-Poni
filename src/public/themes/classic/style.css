@@ -90,6 +90,15 @@ body {
   align-items: flex-end;
 }
 
+#chat-canvas.layout-horizontal.pos-bottom-left,
+#chat-canvas.layout-horizontal.pos-top-left {
+  justify-content: flex-start;
+}
+#chat-canvas.layout-horizontal.pos-bottom-right,
+#chat-canvas.layout-horizontal.pos-top-right {
+  justify-content: flex-end;
+}
+
 #chat-canvas.layout-horizontal .chat-entry {
   flex-shrink: 0 !important;
   width: auto;
