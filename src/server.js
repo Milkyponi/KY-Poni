@@ -236,6 +236,23 @@ function requestHandler(req, res) {
     return;
   }
 
+  if (pathname === '/api/updater/restart' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const result = appUpdater.installAndRestart(payload.filePath);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   // 3. Preferences API
   if (pathname === '/api/config' && req.method === 'GET') {
     try {

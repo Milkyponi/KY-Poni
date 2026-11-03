@@ -8,7 +8,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 
 const REPO_OWNER = 'Milkyponi';
 const REPO_NAME = 'KY-Poni';
@@ -179,6 +179,105 @@ class AppUpdater {
     return new Promise((resolve) => {
       exec(cmd, () => resolve(filePath));
     });
+  }
+
+  /**
+   * One-Click Seamless Auto-Update & Restart
+   * Supports Linux (.AppImage) and Windows (.exe portable)
+   */
+  installAndRestart(downloadedFilePath) {
+    if (!downloadedFilePath || !fs.existsSync(downloadedFilePath)) {
+      throw new Error(`Berkas pembaruan tidak ditemukan di: ${downloadedFilePath}`);
+    }
+
+    if (process.platform === 'win32') {
+      // ----------------------------------------------------
+      // Windows Portable: Self-Replacement via Background Batch
+      // ----------------------------------------------------
+      let targetExe = process.env.PORTABLE_EXECUTABLE_FILE;
+      if (!targetExe || !fs.existsSync(targetExe)) {
+        targetExe = process.execPath;
+      }
+
+      const currentPid = process.pid;
+      const scriptPath = path.join(os.tmpdir(), `ky_poni_updater_${Date.now()}.cmd`);
+
+      const batchScript = `@echo off
+chcp 65001 >nul
+timeout /t 1 /nobreak >nul
+:wait_loop
+tasklist /fi "PID eq ${currentPid}" 2>nul | find "${currentPid}" >nul
+if not errorlevel 1 (
+    timeout /t 1 /nobreak >nul
+    goto wait_loop
+)
+timeout /t 1 /nobreak >nul
+copy /y "${downloadedFilePath}" "${targetExe}" >nul
+if errorlevel 1 (
+    move /y "${downloadedFilePath}" "${targetExe}" >nul
+)
+start "" "${targetExe}"
+del "%~f0"
+`;
+
+      fs.writeFileSync(scriptPath, batchScript, 'utf-8');
+
+      const child = spawn('cmd.exe', ['/c', scriptPath], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+      child.unref();
+
+      setTimeout(() => {
+        process.exit(0);
+      }, 500);
+
+      return { success: true, platform: 'win32', targetPath: targetExe };
+
+    } else {
+      // ----------------------------------------------------
+      // Linux AppImage: Atomic Replacement & Relaunch
+      // ----------------------------------------------------
+      try {
+        fs.chmodSync(downloadedFilePath, 0o755);
+      } catch (e) {}
+
+      let targetAppImage = process.env.APPIMAGE;
+      if (!targetAppImage || !fs.existsSync(targetAppImage)) {
+        const defaultAppImage = path.join(os.homedir(), 'AppImages', 'kyponi.appimage');
+        if (fs.existsSync(defaultAppImage)) {
+          targetAppImage = defaultAppImage;
+        }
+      }
+
+      if (targetAppImage && fs.existsSync(targetAppImage)) {
+        try {
+          fs.copyFileSync(downloadedFilePath, targetAppImage);
+          fs.chmodSync(targetAppImage, 0o755);
+        } catch (err) {
+          console.warn('[Updater] Direct copy failed, launching downloaded file:', err.message);
+          targetAppImage = downloadedFilePath;
+        }
+      } else {
+        targetAppImage = downloadedFilePath;
+      }
+
+      console.log(`[Updater] Launching updated version from: ${targetAppImage}`);
+
+      const child = spawn(targetAppImage, [], {
+        detached: true,
+        stdio: 'ignore',
+        env: { ...process.env, DESKTOPINTEGRATION: '1' },
+      });
+      child.unref();
+
+      setTimeout(() => {
+        process.exit(0);
+      }, 500);
+
+      return { success: true, platform: 'linux', targetPath: targetAppImage };
+    }
   }
 }
 

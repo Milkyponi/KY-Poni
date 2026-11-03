@@ -1,8 +1,8 @@
-# QA & Automated Test Report: KY-Poni (v0.4.6-alpha)
+# QA & Automated Test Report: KY-Poni (v0.4.7-alpha)
 
 - **Tanggal Eksekusi**: 2026-11-03
 - **Lead Tester**: Fonzy (Divisi Software Development)
-- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine (3-Piece Sliced Skin, Alpha-Hardened Assets, Ransom Note Typography, Dynamic Multiline Auto-Height, Curated Theme System).
+- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Curated Themes System, In-App Auto-Updater Seamless Restart (Linux AppImage & Windows Portable Exe).
 
 ---
 
@@ -11,7 +11,7 @@
 | No | Modul / Skenario Uji | Status | Catatan Teknis |
 |---|---|---|---|
 | 1 | Server Boot & Port Binding (`19840`) | ✅ PASS | Binding bersih di localhost, latensi 0 ms |
-| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.4.6) |
+| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.4.7) |
 | 3 | REST Endpoint `GET /api/themes` | ✅ PASS | Terdeteksi 2 tema resmi: Persona 5 & Classic |
 | 4 | REST Endpoint `GET /api/catalog` | ✅ PASS | Manifest katalog resmi termuat tanpa kustom eksternal |
 | 5 | OBS Overlay Serving (`GET /overlay`) | ✅ PASS | HTML kanvas transparan 60 FPS |
@@ -20,10 +20,10 @@
 | 8 | Dynamic Ransom-Note Nameplate | ✅ PASS | Algoritma penataan huruf + satu aksen kotak merah miring di pita putih aman tanpa clipping |
 | 9 | Dynamic Multiline Word-Wrapping | ✅ PASS | Pesan 2 baris otomatis wrap dan tinggi bertambah (220px) dengan margin bawah lapang |
 | 10 | Unified Scope (Animation Pruned) | ✅ PASS | Super Chat & Member disatukan ke template balon dialog dengan badge inline rapi |
-| 11 | Custom Theme Pruning & Security | ✅ PASS | Folder tema kustom ditutup; hanya tema resmi Milky Brain yang dieksekusi |
-| 12 | Visual Verification vs Image 2 | ✅ PASS | Nilai kemiripan visual mencapai ~96–98% (standar 'plek ketiplek') |
+| 11 | One-Click Auto-Update & Restart (Linux) | ✅ PASS | Penggantian biner aktif `~/AppImages/kyponi.appimage` & graceful relaunch |
+| 12 | One-Click Auto-Update & Restart (Windows) | ✅ PASS | Runner script background untuk bypass file lock kernel Windows |
 
-**Total:** 12/12 Targeted Persona 5 & Theme Tests Passed (100% Green).
+**Total:** 12/12 Targeted Tests Passed (100% Green).
 
 ---
 

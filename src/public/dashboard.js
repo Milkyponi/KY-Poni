@@ -753,7 +753,7 @@ async function startInAppUpdate() {
     if (btnContainer) {
       btnContainer.innerHTML = `
         <button type="button" class="btn btn-secondary" onclick="dismissUpdateModal()">Tutup</button>
-        <button type="button" class="btn btn-primary" onclick="openDownloadedFile('${data.filePath.replace(/\\/g, '\\\\')}')">📂 Buka Berkas</button>
+        <button type="button" class="btn btn-primary" style="background: linear-gradient(135deg, #10B981, #059669); border-color: #059669;" onclick="installAndRestart('${data.filePath.replace(/\\/g, '\\\\')}')">⚡ Pasang & Mulai Ulang</button>
       `;
       btnContainer.style.display = 'flex';
     }
@@ -761,6 +761,28 @@ async function startInAppUpdate() {
     alert(`Error unduhan: ${err.message}`);
     if (btnContainer) btnContainer.style.display = 'flex';
     if (progressContainer) progressContainer.style.display = 'none';
+  }
+}
+
+async function installAndRestart(filePath) {
+  const btnContainer = document.getElementById('update-modal-buttons');
+  const progressStatus = document.getElementById('update-progress-status');
+  
+  if (btnContainer) btnContainer.style.display = 'none';
+  if (progressStatus) progressStatus.innerHTML = `⏳ <b>Memasang pembaruan & memuat ulang aplikasi...</b>`;
+
+  try {
+    const res = await fetch('/api/updater/restart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Gagal memulai ulang');
+    console.log('[Updater] Restart triggered:', data);
+  } catch (err) {
+    alert(`Gagal memasang pembaruan: ${err.message}`);
+    if (btnContainer) btnContainer.style.display = 'flex';
   }
 }
 
