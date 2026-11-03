@@ -1,6 +1,6 @@
 /**
  * KY-Poni - OBS Overlay Client Script
- * Authentic Persona 5 UI V2 (Tilted Square Avatar, Origami Ribbon, Slanted Colored Tabs, Two-Tier Banners)
+ * Authentic Persona 5 UI V4 (Game-Asset Sliced 3-Piece Bubble, Ransom Nameplate)
  * Handles 4 Screen Corners, Horizontal/Vertical Layouts, Smooth Slides, and Auto-Hide with "Keep Last N".
  */
 
@@ -51,38 +51,6 @@
   const themeLink = document.getElementById('theme-stylesheet');
   if (themeLink) {
     themeLink.href = `/themes/${theme}/style.css`;
-  }
-
-  // Cut-in elements
-  const cutinOverlay = document.getElementById('cutin-overlay');
-  const cutinAvatar = document.getElementById('cutin-avatar');
-  const cutinUsername = document.getElementById('cutin-username');
-  const cutinAmount = document.getElementById('cutin-amount');
-  const cutinMessage = document.getElementById('cutin-message');
-
-  let cutinTimeout = null;
-
-  function triggerCutin(item) {
-    if (!cutinOverlay) return;
-
-    if (cutinTimeout) {
-      clearTimeout(cutinTimeout);
-    }
-
-    cutinAvatar.referrerPolicy = 'no-referrer';
-    cutinAvatar.onerror = () => {
-      cutinAvatar.src = 'https://api.dicebear.com/7.x/bottts/svg?seed=' + encodeURIComponent(item.author.name);
-    };
-    cutinAvatar.src = item.author.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=P5';
-    cutinUsername.textContent = item.author.name;
-    cutinAmount.textContent = item.superchat?.amount || 'SPECIAL REWARD';
-    cutinMessage.innerHTML = item.message || 'Thank you for the phantom support!';
-
-    cutinOverlay.classList.add('active');
-
-    cutinTimeout = setTimeout(() => {
-      cutinOverlay.classList.remove('active');
-    }, 4500);
   }
 
   // Get active (non-exiting) chat entries
@@ -139,97 +107,97 @@
       }
     }
 
-    // 2. Build DOM element based on message type
+    // 2. Build DOM element based on active theme
     const entry = document.createElement('div');
     entry.className = `chat-entry ${item.type === 'superchat' ? 'is-superchat' : ''} ${item.type === 'membership' ? 'is-membership' : ''}`;
     entry.id = `msg-${item.id}`;
 
-    if (item.type === 'superchat' && item.superchat) {
-      // Two-Tier Slanted Red Banner (Image 2)
-      const bannerBox = document.createElement('div');
-      bannerBox.className = 'p5-banner-box banner-superchat';
+    if (theme === 'persona5') {
+      // ========================================================
+      // Authentic Persona 5 Dialogue Bubble (Asset-Based Sliced)
+      // ========================================================
+      const rawText = (item.message || '').replace(/<[^>]*>/g, '').trim();
+      const isMultiline = rawText.length > 28 || rawText.includes('\n') || (item.type === 'superchat');
 
-      const header = document.createElement('div');
-      header.className = 'p5-banner-header';
-      header.innerHTML = `
-        <div class="banner-user">${escapeText(item.author.name)}</div>
-        <div class="banner-amount">${escapeText(item.superchat.amount)}</div>
-        <div class="p5-shard-accent"></div>
+      const bubble = document.createElement('div');
+      bubble.className = `p5-dialogue-bubble ${isMultiline ? 'multiline' : ''}`;
+
+      // A. 3-Piece Background Skin
+      const skin = document.createElement('div');
+      skin.className = 'p5-skin';
+      skin.innerHTML = `
+        <div class="p5-skin-left"></div>
+        <div class="p5-skin-mid"></div>
+        <div class="p5-skin-right"></div>
       `;
-      bannerBox.appendChild(header);
+      bubble.appendChild(skin);
 
-      const body = document.createElement('div');
-      body.className = 'p5-banner-body';
-      body.innerHTML = `<div class="message-text">${item.message}</div>`;
-      bannerBox.appendChild(body);
+      // B. Nameplate with Ransom-Note Letter Styling
+      const nameplate = document.createElement('div');
+      nameplate.className = 'p5-nameplate';
 
-      entry.appendChild(bannerBox);
-    } else if (item.type === 'membership') {
-      // Two-Tier Slanted Green Banner (Image 2)
-      const bannerBox = document.createElement('div');
-      bannerBox.className = 'p5-banner-box banner-membership';
-
-      const header = document.createElement('div');
-      header.className = 'p5-banner-header';
-      header.innerHTML = `
-        <div class="banner-user-group">
-          <div class="banner-user">${escapeText(item.author.name)}</div>
-          <div class="banner-subtext">WELCOME TO MEMBERSHIP</div>
-        </div>
-        <div class="p5-shard-accent"></div>
-      `;
-      bannerBox.appendChild(header);
-
-      const body = document.createElement('div');
-      body.className = 'p5-banner-body';
-      body.innerHTML = `<div class="message-text">${item.message}</div>`;
-      bannerBox.appendChild(body);
-
-      entry.appendChild(bannerBox);
-    } else {
-      // Regular Chat: Tilted Square Polaroid Avatar + Origami Ribbon + Slanted Colored Tag
-
-      // A. Avatar Slot
-      const avatarSlot = document.createElement('div');
-      avatarSlot.className = 'p5-avatar-slot';
-
-      const avatarImg = document.createElement('img');
-      avatarImg.className = 'author-avatar';
-      avatarImg.referrerPolicy = 'no-referrer';
-      avatarImg.onerror = () => {
-        avatarImg.src = 'https://api.dicebear.com/7.x/bottts/svg?seed=' + encodeURIComponent(item.author.name);
-      };
-      avatarImg.src = item.author.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=' + encodeURIComponent(item.author.name);
-      avatarImg.alt = item.author.name;
-      avatarSlot.appendChild(avatarImg);
-
-      const shard = document.createElement('div');
-      shard.className = 'p5-avatar-shard';
-      avatarSlot.appendChild(shard);
-
-      entry.appendChild(avatarSlot);
-
-      // B. Bubble Container
-      const bubbleContainer = document.createElement('div');
-      bubbleContainer.className = 'p5-bubble-container';
-
-      // Pick tag color class (Purple, Teal, Yellow, White, Red)
-      let tagColor = 'tag-purple';
-      if (item.author.badges && item.author.badges.some(b => b.type === 'owner')) {
-        tagColor = 'tag-red';
-      } else if (item.author.badges && item.author.badges.some(b => b.type === 'mod')) {
-        tagColor = 'tag-teal';
-      } else if (item.author.badges && item.author.badges.some(b => b.type === 'member')) {
-        tagColor = 'tag-yellow';
-      } else {
-        const palette = ['tag-purple', 'tag-teal', 'tag-yellow', 'tag-white'];
-        const hash = (item.author.name || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        tagColor = palette[hash % palette.length];
+      const rawName = (item.author.name || 'ANON').toUpperCase();
+      // Pick one letter for the red ransom box (deterministic hash or index 1)
+      let redIdx = 1;
+      if (rawName.length > 3) {
+        const hash = rawName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        redIdx = 1 + (hash % Math.max(1, rawName.length - 2));
+      } else if (rawName.length <= 1) {
+        redIdx = 0;
       }
 
-      // Author Tab (Slanted Tab on top border)
+      let nameHtml = '';
+      for (let i = 0; i < rawName.length; i++) {
+        const char = rawName[i];
+        if (char === ' ') {
+          nameHtml += '<span class="p5-char-space">&nbsp;</span>';
+          continue;
+        }
+        const rot = ((i * 3 + char.charCodeAt(0)) % 5) - 2;
+        if (i === redIdx) {
+          nameHtml += `<span class="p5-char ransom-red">${escapeText(char)}</span>`;
+        } else {
+          nameHtml += `<span class="p5-char" style="--r: ${rot};">${escapeText(char)}</span>`;
+        }
+      }
+      nameplate.innerHTML = nameHtml;
+      bubble.appendChild(nameplate);
+
+      // C. Message Content Overlay (Inside Safe Black Panel)
+      const messageBox = document.createElement('div');
+      messageBox.className = 'p5-message-box';
+
+      let prefixHtml = '';
+      if (item.type === 'superchat' && item.superchat) {
+        prefixHtml = `<span class="p5-badge-amount">${escapeText(item.superchat.amount)}</span>`;
+      } else if (item.type === 'membership') {
+        prefixHtml = `<span class="p5-badge-member">NEW MEMBER</span>`;
+      }
+
+      const messageText = document.createElement('div');
+      messageText.className = 'p5-message-text';
+      messageText.innerHTML = prefixHtml + item.message;
+      messageBox.appendChild(messageText);
+
+      bubble.appendChild(messageBox);
+      entry.appendChild(bubble);
+
+    } else {
+      // ========================================================
+      // Classic Clean Translucent Theme
+      // ========================================================
       const authorTab = document.createElement('div');
-      authorTab.className = `author-tab ${tagColor}`;
+      authorTab.className = 'author-tab';
+
+      if (item.author.avatar) {
+        const avatar = document.createElement('img');
+        avatar.className = 'author-avatar';
+        avatar.referrerPolicy = 'no-referrer';
+        avatar.src = item.author.avatar;
+        avatar.alt = item.author.name;
+        avatar.onerror = () => { avatar.style.display = 'none'; };
+        authorTab.appendChild(avatar);
+      }
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'author-name';
@@ -244,27 +212,29 @@
           authorTab.appendChild(badgeSpan);
         });
       }
-      bubbleContainer.appendChild(authorTab);
+      entry.appendChild(authorTab);
 
-      // Speech Bubble Body (Black Origami Ribbon with folded corner tab)
       const bubbleBody = document.createElement('div');
       bubbleBody.className = 'bubble-body';
 
-      const foldedTab = document.createElement('div');
-      foldedTab.className = 'p5-folded-tab';
-      bubbleBody.appendChild(foldedTab);
+      if (item.type === 'superchat' && item.superchat) {
+        const scAmount = document.createElement('div');
+        scAmount.className = 'superchat-amount-banner';
+        scAmount.textContent = item.superchat.amount;
+        bubbleBody.appendChild(scAmount);
+      } else if (item.type === 'membership') {
+        const memBanner = document.createElement('div');
+        memBanner.className = 'superchat-amount-banner';
+        memBanner.textContent = '★ NEW MEMBER';
+        bubbleBody.appendChild(memBanner);
+      }
 
       const msgSpan = document.createElement('div');
       msgSpan.className = 'message-text';
       msgSpan.innerHTML = item.message;
       bubbleBody.appendChild(msgSpan);
 
-      const tail = document.createElement('div');
-      tail.className = 'p5-bubble-tail';
-      bubbleBody.appendChild(tail);
-
-      bubbleContainer.appendChild(bubbleBody);
-      entry.appendChild(bubbleContainer);
+      entry.appendChild(bubbleBody);
     }
 
     // 3. Insert into canvas (prepend for top, append for bottom)
@@ -302,11 +272,6 @@
         }
       }, fadeSeconds * 1000);
     }
-
-    // 7. Trigger cutin for Super Chat
-    if (item.type === 'superchat') {
-      triggerCutin(item);
-    }
   }
 
   function escapeText(text) {
@@ -333,8 +298,6 @@
         const payload = JSON.parse(event.data);
         if (payload.type === 'CHAT_MESSAGE') {
           appendChatMessage(payload.data);
-        } else if (payload.type === 'TRIGGER_CUTIN') {
-          triggerCutin(payload.data);
         }
       } catch (e) {
         console.error('[KY-Poni Overlay] Error parsing WS event:', e);
@@ -353,4 +316,11 @@
   }
 
   connectWebSocket();
+
+  // Optional Test Seed via ?test=p5 or ?demo=1
+  if (urlParams.get('test') === 'p5' || urlParams.get('demo') === '1') {
+    appendChatMessage({ id: 'test-1', author: { name: 'Sae' }, message: 'The P5 Generator rocks, baby!' });
+    appendChatMessage({ id: 'test-2', author: { name: 'Ren' }, message: "I should write something. I'll just add this." });
+    appendChatMessage({ id: 'test-3', author: { name: 'Joker' }, message: 'Take your time.' });
+  }
 })();

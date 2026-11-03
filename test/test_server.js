@@ -49,12 +49,12 @@ async function runTests() {
     // 5. Test Static HTML & CSS Serving
     const overlayHtml = await fetchText(`http://127.0.0.1:${TEST_PORT}/overlay`);
     assert(overlayHtml.includes('id="chat-canvas"'), 'Overlay HTML must contain #chat-canvas');
-    assert(overlayHtml.includes('id="cutin-overlay"'), 'Overlay HTML must contain #cutin-overlay');
+    assert(overlayHtml.includes('src="/overlay.js"'), 'Overlay HTML must link /overlay.js');
     console.log('[PASS] GET /overlay served valid OBS canvas HTML');
 
     const p5Css = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/persona5/style.css`);
     assert(p5Css.includes('--p5-red: #D03D3D') || p5Css.includes('--p5-red:'), 'Persona 5 CSS must contain --p5-red variable');
-    assert(p5Css.includes('clip-path: polygon'), 'Persona 5 CSS must contain polygon clip-path');
+    assert(p5Css.includes('.p5-dialogue-bubble'), 'Persona 5 CSS must contain .p5-dialogue-bubble');
     console.log('[PASS] GET /themes/persona5/style.css served valid styling');
 
     // 6. Test WebSocket & Simulated Message Broadcast

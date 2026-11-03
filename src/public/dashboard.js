@@ -495,15 +495,8 @@ async function deleteTheme(themeId, btn) {
 }
 
 async function openThemesFolder() {
-  try {
-    const res = await fetch('/api/themes/open-folder');
-    const data = await res.json();
-    if (data.path) {
-      console.log('Folder tema dibuka:', data.path);
-    }
-  } catch (e) {
-    console.warn('Gagal membuka folder tema:', e);
-  }
+  // Custom user themes disabled by design: themes are strictly official from Milky Brain.
+  console.log('Custom theme directory is disabled. Themes are strictly official.');
 }
 
 // Fetch Catalog and render showcase grid in Tab 2

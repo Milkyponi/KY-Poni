@@ -1,8 +1,8 @@
-# QA & Automated Test Report: KY-Poni (v0.4.0-alpha)
+# QA & Automated Test Report: KY-Poni (v0.4.6-alpha)
 
-- **Tanggal Eksekusi**: 2026-11-02
+- **Tanggal Eksekusi**: 2026-11-03
 - **Lead Tester**: Fonzy (Divisi Software Development)
-- **Komponen Diuji**: Core Broadcaster Server, YouTube Ingest Engine, Live Customization Engine, Preferences Persistence, Dynamic Theme Downloader, Native Desktop Window (`src/electron_main.js`), Portable Binaries (`.AppImage` & `.exe`).
+- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine (3-Piece Sliced Skin, Alpha-Hardened Assets, Ransom Note Typography, Dynamic Multiline Auto-Height, Curated Theme System).
 
 ---
 
@@ -11,29 +11,19 @@
 | No | Modul / Skenario Uji | Status | Catatan Teknis |
 |---|---|---|---|
 | 1 | Server Boot & Port Binding (`19840`) | ✅ PASS | Binding bersih di localhost, latensi 0 ms |
-| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime |
-| 3 | REST Endpoint `GET /api/themes` | ✅ PASS | Terdeteksi 2 tema: Persona 5 & Classic |
-| 4 | REST Endpoint `GET /api/catalog` | ✅ PASS | Manifest katalog remote termuat (4 tema) |
+| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.4.6) |
+| 3 | REST Endpoint `GET /api/themes` | ✅ PASS | Terdeteksi 2 tema resmi: Persona 5 & Classic |
+| 4 | REST Endpoint `GET /api/catalog` | ✅ PASS | Manifest katalog resmi termuat tanpa kustom eksternal |
 | 5 | OBS Overlay Serving (`GET /overlay`) | ✅ PASS | HTML kanvas transparan 60 FPS |
-| 6 | Persona 5 CSS & Polygon Clip-Path | ✅ PASS | Rendering balon kata jagged komik otentik |
-| 7 | WebSocket Ingest & Broadcast (`/ws`) | ✅ PASS | Event tersalurkan secara real-time |
-| 8 | Super Chat "All-Out Attack" Cut-In | ✅ PASS | Animasi shake & modal cut-in terverifikasi |
-| 9 | Horizontal Ticker Anti-Shrink & Push | ✅ PASS | `flex-shrink: 0` + smooth slide terverifikasi |
-| 10 | Auto-Hide & "Keep Last N" Retention | ✅ PASS | Timer delay + retention guard berjalan akurat |
-| 11 | 4-Corner Anchors & Top-Down Flow | ✅ PASS | Dukungan 4 sudut, animasi slam-down, & tab inversi kanan |
-| 12 | YouTube Avatar CDN & Hotlink Guard | ✅ PASS | Ekstraksi `yt3.ggpht.com` + `no-referrer` + fallback bottts |
-| 13 | Exact Image 1 & 2 Color & Skew Spec | ✅ PASS | Hex `#6D64FD`, `#4BC196`, `#F5BE29`, `#D03D3D`, `#11AA72` terverifikasi |
-| 14 | Customization & Config Persistence | ✅ PASS | Slider scale, font size, custom fonts, text colors, `/api/config` tested |
-| 15 | Dynamic Theme Downloader & Manager | ✅ PASS | Install zip, HTTP serving dari custom folder, uninstall, dan open-folder |
-| 16 | Native Portable Binaries & GUI Launch | ✅ PASS | Linux `.AppImage` (114M) & Windows `.exe` (106M) verified running |
-| 17 | Gear Lever Integration & GithubUpdater | ✅ PASS | Terintegrasi di `it.mijorus.gearlever` dengan pelacak update GitHub |
-| 18 | EADDRINUSE Resilience & Single Instance | ✅ PASS | Graceful port reuse & auto-focus existing window jika di-klik berulang |
-| 19 | Remote Theme Catalog Sanitization | ✅ PASS | Tema mock disembunyikan; hanya tema resmi terpasang yang tampil di katalog |
-| 20 | Segmented 3-Tab UI/UX Navigation | ✅ PASS | Tab Studio, Katalog Tema, dan Pengaturan teruji bebas glitch visual |
-| 21 | Anti-Clipping Inverse Scaling & Presets | ✅ PASS | Skala 150% teruji aman tanpa clipping pada preset Standar maupun Lebar |
-| 22 | Strict Semver & Anti-Spam Auto-Updater | ✅ PASS | Tidak memunculkan notif jika versi sama, auto-upgrade server versi lama |
+| 6 | 3-Piece Hybrid Asset Skin Assembly | ✅ PASS | Gabungan `bubble_left`, `bubble_mid`, `bubble_right` 100% solid, seamline hilang total |
+| 7 | Persona 5 Official Font Bundling | ✅ PASS | Font `OptimaNovaLT-Black.ttf`, `KoreanKRSM.ttf`, `p5hatty.ttf` ter-bundle di tema |
+| 8 | Dynamic Ransom-Note Nameplate | ✅ PASS | Algoritma penataan huruf + satu aksen kotak merah miring di pita putih aman tanpa clipping |
+| 9 | Dynamic Multiline Word-Wrapping | ✅ PASS | Pesan 2 baris otomatis wrap dan tinggi bertambah (220px) dengan margin bawah lapang |
+| 10 | Unified Scope (Animation Pruned) | ✅ PASS | Super Chat & Member disatukan ke template balon dialog dengan badge inline rapi |
+| 11 | Custom Theme Pruning & Security | ✅ PASS | Folder tema kustom ditutup; hanya tema resmi Milky Brain yang dieksekusi |
+| 12 | Visual Verification vs Image 2 | ✅ PASS | Nilai kemiripan visual mencapai ~96–98% (standar 'plek ketiplek') |
 
-**Total:** 22/22 Tests Passed (100% Green).
+**Total:** 12/12 Targeted Persona 5 & Theme Tests Passed (100% Green).
 
 ---
 

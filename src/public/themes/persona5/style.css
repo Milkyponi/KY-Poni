@@ -1,30 +1,51 @@
 /* ========================================================
-   KY-Poni - Persona 5 Phantom Theme (Pixel-Perfect V3)
-   Directly reconstructed from Atlus P5 UI & Comic Ribbons (Image 1 & 2)
-   - Dynamic slanted parallelogram speech bubbles (skewX -14deg)
-   - Heavy solid white stroke (3.5px) + hard cel-shaded black drop shadow
-   - Tilted square polaroid avatar (-12deg) with comic shard accent
-   - Slanted modular username tags (Purple #6D64FD, Teal #4BC196, Yellow #F5BE29)
-   - Sharp speed shard / lightning arrow on the right edge
-   - Slanted two-tier Super Chat (Red #D03D3D) and Membership (Green #11AA72) alert banners
+   KY-Poni - Persona 5 Phantom Theme (Pixel-Perfect Sliced V4)
+   Authentic Dialogue Bubble Reconstructed from Game Assets:
+   - 3-Piece Hybrid Asset Skin (bubble_left.png, bubble_mid.png, bubble_right.png)
+   - Authentic P5 Fonts: OptimaNovaLT-Black, KoreanKRSM, Bebas Neue
+   - Persona 5 Ransom-Note Nameplate with dynamic Red Box accent
+   - Dynamic Height text container with auto word-wrapping
+   - Smooth entry/exit animations (60 FPS GPU-accelerated)
    ======================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Space+Grotesk:wght@600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@700;800;900&display=swap');
+
+@font-face {
+  font-family: 'OptimaNova';
+  src: url('/themes/persona5/assets/fonts/OptimaNovaLT-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KoreanKRSM';
+  src: url('/themes/persona5/assets/fonts/KoreanKRSM.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'P5Hatty';
+  src: url('/themes/persona5/assets/fonts/p5hatty.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --canvas-scale: 1;
-  --msg-font-size: 1.02rem;
-  --msg-font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --msg-font-size: 1.35rem;
+  --msg-font-family: 'OptimaNova', 'KoreanKRSM', -apple-system, sans-serif;
   --msg-font-color: #FFFFFF;
   --p5-red: #D03D3D;
   --p5-green: #11AA72;
-  --p5-purple: #6D64FD;
-  --p5-teal: #4BC196;
   --p5-yellow: #F5BE29;
   --p5-black: #000000;
   --p5-white: #FFFFFF;
   --p5-font: var(--msg-font-family);
-  --p5-font-title: 'Space Grotesk', 'Bebas Neue', Impact, sans-serif;
+  --p5-font-title: 'Bebas Neue', 'OptimaNova', sans-serif;
 }
 
 * {
@@ -43,8 +64,7 @@ body {
 }
 
 /* ========================================================
-   OBS Canvas Container
-   Mathematically Inverse Scaled (Immune to Viewport Clipping)
+   OBS Canvas Container (Inverse Scaled, Zero Clipping)
    ======================================================== */
 
 #chat-canvas {
@@ -54,7 +74,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 16px;
+  gap: 14px;
   overflow: hidden;
   pointer-events: none;
   width: calc(100% / var(--canvas-scale, 1));
@@ -106,7 +126,7 @@ body {
   justify-content: flex-start;
   align-items: flex-end;
   overflow-x: hidden;
-  gap: 24px;
+  gap: 16px;
   scroll-behavior: smooth;
 }
 
@@ -121,156 +141,154 @@ body {
 
 #chat-canvas.layout-horizontal .chat-entry {
   flex-shrink: 0 !important;
-  width: auto;
-  max-width: 440px;
-  min-width: 280px;
+  width: 520px;
+  max-width: 540px;
+  min-width: 380px;
   margin-top: 0;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 /* ========================================================
-   Chat Message Entry (Persona 5 Image 2 Reconstruction)
+   Chat Message Entry (Persona 5 Dialogue Bubble)
    ======================================================== */
 
 .chat-entry {
   position: relative;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  max-width: calc(100% - 28px); /* Safe right gutter for skewed corner and speed arrow */
-  animation: p5-slam-in 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  flex-direction: column;
+  width: 100%;
+  max-width: 620px;
+  animation: p5-slam-in 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
   transform-origin: bottom left;
-  margin-top: 14px;
   margin-bottom: 6px;
 }
 
-/* --- Tilted Square Polaroid Avatar --- */
-.p5-avatar-slot {
+/* --- Dialogue Bubble Container --- */
+.p5-dialogue-bubble {
   position: relative;
+  width: 100%;
+  height: 165px; /* Base height for 1-line chat */
+  filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.95));
   flex-shrink: 0;
-  z-index: 10;
-  margin-right: -14px; /* Slight overlap into bubble */
+  transition: height 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
-.author-avatar {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border: 3.5px solid var(--p5-white);
-  background: var(--p5-black);
-  transform: rotate(-12deg);
-  box-shadow: 3.5px 3.5px 0px #000000;
-  display: block;
+.p5-dialogue-bubble.multiline {
+  height: 220px; /* Expanded height for 2-line/longer chat */
 }
 
-/* Comic Spike Behind Avatar */
-.p5-avatar-shard {
+/* --- 3-Piece Hybrid Asset Skin --- */
+.p5-skin {
   position: absolute;
-  bottom: -4px;
-  left: -4px;
-  width: 16px;
-  height: 16px;
-  background: var(--p5-black);
-  border: 2px solid var(--p5-white);
-  transform: rotate(20deg);
-  z-index: -1;
-  clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
-}
-
-/* --- Bubble Wrapper --- */
-.p5-bubble-container {
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  margin-right: 20px; /* Essential: protects tail arrow and box shadow from right edge clipping */
+  flex-direction: row;
+  align-items: stretch;
+  pointer-events: none;
+  z-index: 1;
 }
 
-/* --- Username Tag (Slanted Parallelogram on Top Border) --- */
-.author-tab {
+.p5-skin-left {
+  width: 34.3%;
+  height: 100%;
+  background: url('/themes/persona5/assets/bubble_left.png') no-repeat left top;
+  background-size: 100% 100%;
+  flex-shrink: 0;
+}
+
+.p5-skin-mid {
+  flex: 1;
+  height: 100%;
+  background: url('/themes/persona5/assets/bubble_mid.png') no-repeat center top;
+  background-size: 100% 100%;
+  margin-left: -1px;
+  margin-right: -1px;
+}
+
+.p5-skin-right {
+  width: 34.6%;
+  height: 100%;
+  background: url('/themes/persona5/assets/bubble_right.png') no-repeat right top;
+  background-size: 100% 100%;
+  flex-shrink: 0;
+}
+
+/* --- Authentic Nameplate Overlay --- */
+.p5-nameplate {
   position: absolute;
-  top: -14px;
-  left: 20px;
+  top: 24px;
+  left: 17%;
+  width: 19%;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  font-family: var(--p5-font-title);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+  line-height: 1;
+  transform: skewX(-14deg);
+  pointer-events: none;
+}
+
+.p5-dialogue-bubble.multiline .p5-nameplate {
+  top: 28px;
+}
+
+.p5-char {
+  color: #000000;
+  font-weight: 900;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 14px 2px 10px;
-  font-family: var(--p5-font);
-  font-size: 0.84rem;
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  transform: skewX(-14deg);
-  z-index: 8;
-  border: 2px solid #000000;
-  box-shadow: 2px 2px 0px var(--p5-white);
-}
-
-.author-tab span.author-name {
-  transform: skewX(14deg);
-  display: inline-block;
-  line-height: 1.1;
-}
-
-/* Authentic Colors from Image 2 */
-.author-tab.tag-purple {
-  background: var(--p5-purple);
-  color: var(--p5-white);
-}
-.author-tab.tag-teal {
-  background: var(--p5-teal);
-  color: var(--p5-black);
-}
-.author-tab.tag-yellow {
-  background: var(--p5-yellow);
-  color: var(--p5-black);
-}
-.author-tab.tag-white {
-  background: var(--p5-white);
-  color: var(--p5-black);
-}
-.author-tab.tag-red {
-  background: var(--p5-red);
-  color: var(--p5-white);
-}
-
-.author-badge {
-  font-size: 0.65rem;
-  font-weight: 900;
-  padding: 1px 4px;
-  border-radius: 2px;
-  text-transform: uppercase;
-  transform: skewX(14deg);
+  justify-content: center;
   line-height: 1;
+  transform: rotate(calc(var(--r, 0) * 1deg));
 }
-.badge-owner { background: #000; color: #FFF; }
-.badge-mod { background: #000; color: var(--p5-teal); }
-.badge-member { background: #000; color: #FFF; }
 
-/* --- Main Bubble Body (Slanted Deep Black Parallelogram) --- */
-.bubble-body {
-  position: relative;
-  background: var(--p5-black);
-  color: var(--p5-white);
-  padding: 16px 28px 14px 24px;
-  border: 3.5px solid var(--p5-white);
-  box-shadow: 6px 6px 0px #000000;
-  transform: skewX(-14deg);
+.p5-char.ransom-red {
+  background: #D03D3D;
+  color: #FFFFFF !important;
+  padding: 1px 3.5px;
+  margin: 0 1.5px;
+  border: 1.2px solid #000;
+  box-shadow: 1px 1px 0 #000;
+  transform: rotate(-2deg);
+}
+
+.p5-char-space {
+  display: inline-block;
+  width: 4px;
+}
+
+/* --- Message Content Overlay (Safe Interior Panel) --- */
+.p5-message-box {
+  position: absolute;
+  top: 60px;
+  bottom: 24px;
+  left: 18%;
+  right: 17%;
   z-index: 5;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
-/* White message text (un-skewed for perfect legibility) */
-.message-text {
-  transform: skewX(14deg);
-  font-family: var(--msg-font-family, var(--p5-font));
-  font-size: var(--msg-font-size, 1.02rem);
+.p5-dialogue-bubble.multiline .p5-message-box {
+  top: 68px;
+  bottom: 36px;
+}
+
+.p5-message-text {
   color: var(--msg-font-color, var(--p5-white));
-  font-weight: 700;
-  line-height: 1.38;
+  font-family: var(--msg-font-family, var(--p5-font));
+  font-size: var(--msg-font-size, 1.35rem);
+  font-weight: 900;
+  line-height: 1.24;
+  letter-spacing: 0.2px;
   word-break: break-word;
-  letter-spacing: 0.3px;
+  max-width: 440px;
 }
 
 .chat-emote {
@@ -281,135 +299,35 @@ body {
   filter: drop-shadow(1px 1px 0 #000);
 }
 
-/* Sharp Speed Shard Arrow on Right Edge (from Image 1 & 2) */
-.p5-bubble-tail {
-  position: absolute;
-  right: -16px;
-  top: 50%;
-  transform: translateY(-50%) skewX(14deg);
-  width: 20px;
-  height: 20px;
-  background: var(--p5-white);
-  clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
-  border: 2px solid #000;
-  box-shadow: 2px 2px 0px #000;
-  pointer-events: none;
-}
-
-/* Folded Tab on Upper Right */
-.p5-folded-tab {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  width: 16px;
-  height: 16px;
-  background: var(--p5-white);
-  clip-path: polygon(100% 0%, 0% 0%, 100% 100%);
-  border-left: 2px solid #000;
-  border-bottom: 2px solid #000;
-}
-
-/* ========================================================
-   Super Chat & Membership Two-Tier Banners (Image 2)
-   ======================================================== */
-
-.chat-entry.is-superchat,
-.chat-entry.is-membership {
-  display: block;
-  width: 100%;
-  max-width: 96%;
-}
-
-.p5-banner-box {
-  width: 100%;
-  border: 3.5px solid var(--p5-white);
-  box-shadow: 6px 6px 0px #000000;
-  overflow: visible;
-  display: flex;
-  flex-direction: column;
-  transform: skewX(-14deg);
-  background: var(--p5-black);
-  position: relative;
-}
-
-/* Two-Tier Upper Section (70% Height) */
-.p5-banner-header {
-  padding: 10px 18px 8px 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  position: relative;
-}
-
-/* Super Chat Vibrant Red (#D03D3D) */
-.p5-banner-box.banner-superchat .p5-banner-header {
+/* --- Inline Badges for Donations & Members --- */
+.p5-badge-amount {
+  display: inline-block;
   background: var(--p5-red);
-  color: var(--p5-white);
+  color: #FFF;
+  font-family: var(--p5-font-title);
+  font-size: 1.05rem;
+  font-weight: 900;
+  padding: 1px 7px;
+  margin-right: 8px;
+  transform: skewX(-12deg);
+  border: 1.5px solid #FFF;
+  box-shadow: 2px 2px 0 #000;
+  vertical-align: middle;
 }
 
-/* Membership Emerald Green (#11AA72) */
-.p5-banner-box.banner-membership .p5-banner-header {
+.p5-badge-member {
+  display: inline-block;
   background: var(--p5-green);
-  color: var(--p5-white);
-  flex-direction: column;
-  gap: 2px;
-}
-
-.banner-user {
-  font-family: var(--p5-font);
-  font-size: 1.15rem;
+  color: #FFF;
+  font-family: var(--p5-font-title);
+  font-size: 0.95rem;
   font-weight: 900;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  transform: skewX(14deg);
-}
-
-.banner-amount {
-  font-family: var(--p5-font);
-  font-size: 1.6rem;
-  font-weight: 900;
-  font-style: italic;
-  color: var(--p5-white);
-  letter-spacing: 1px;
-  transform: skewX(14deg);
-}
-
-.banner-subtext {
-  font-family: var(--p5-font);
-  font-size: 1.3rem;
-  font-weight: 900;
-  font-style: italic;
-  color: var(--p5-white);
-  letter-spacing: 0.8px;
-  transform: skewX(14deg);
-}
-
-/* Decorative Sticker Shard Accent on Top Right */
-.p5-shard-accent {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 22px;
-  height: 22px;
-  background: var(--p5-white);
-  border: 2px solid #000;
-  clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
-  transform: skewX(14deg) rotate(15deg);
-  box-shadow: 2px 2px 0px #000;
-}
-
-/* Two-Tier Lower Section (30% Height - Solid Black) */
-.p5-banner-body {
-  background: var(--p5-black);
-  color: var(--p5-white);
-  padding: 10px 18px;
-  border-top: 2.5px solid #000000;
-}
-
-.p5-banner-body .message-text {
-  transform: skewX(14deg);
-  font-size: 0.98rem;
-  font-weight: 700;
+  padding: 1px 7px;
+  margin-right: 8px;
+  transform: skewX(-12deg);
+  border: 1.5px solid #FFF;
+  box-shadow: 2px 2px 0 #000;
+  vertical-align: middle;
 }
 
 /* ========================================================
@@ -418,269 +336,57 @@ body {
 
 #chat-canvas.pos-bottom-right .chat-entry,
 #chat-canvas.pos-top-right .chat-entry {
-  flex-direction: row-reverse;
-  align-items: center;
   align-self: flex-end;
   transform-origin: bottom right;
 }
 
-#chat-canvas.pos-bottom-right .p5-avatar-slot,
-#chat-canvas.pos-top-right .p5-avatar-slot {
-  margin-right: 0;
-  margin-left: -14px;
-}
-
-#chat-canvas.pos-bottom-right .author-avatar,
-#chat-canvas.pos-top-right .author-avatar {
-  transform: rotate(12deg);
-  box-shadow: -3.5px 3.5px 0px #000000;
-}
-
-#chat-canvas.pos-bottom-right .author-tab,
-#chat-canvas.pos-top-right .author-tab {
-  left: auto;
-  right: 20px;
-  transform: skewX(14deg);
-  box-shadow: -2px 2px 0px var(--p5-white);
-}
-
-#chat-canvas.pos-bottom-right .author-tab span.author-name,
-#chat-canvas.pos-top-right .author-tab span.author-name {
-  transform: skewX(-14deg);
-}
-
-#chat-canvas.pos-bottom-right .bubble-body,
-#chat-canvas.pos-top-right .bubble-body {
-  transform: skewX(14deg);
-  box-shadow: -6px 6px 0px #000000;
-}
-
-#chat-canvas.pos-bottom-right .message-text,
-#chat-canvas.pos-top-right .message-text {
-  transform: skewX(-14deg);
-}
-
-#chat-canvas.pos-bottom-right .p5-bubble-tail,
-#chat-canvas.pos-top-right .p5-bubble-tail {
-  right: auto;
-  left: -16px;
-  transform: translateY(-50%) skewX(-14deg);
-  clip-path: polygon(100% 0%, 0% 50%, 100% 100%);
-  box-shadow: -2px 2px 0px #000;
-}
-
-#chat-canvas.pos-bottom-right .p5-folded-tab,
-#chat-canvas.pos-top-right .p5-folded-tab {
-  right: auto;
-  left: -3px;
-  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
-  border-left: none;
-  border-right: 2px solid #000;
-}
-
-#chat-canvas.pos-bottom-right .p5-banner-box,
-#chat-canvas.pos-top-right .p5-banner-box {
-  transform: skewX(14deg);
-  box-shadow: -6px 6px 0px #000000;
-}
-
-#chat-canvas.pos-bottom-right .banner-user,
-#chat-canvas.pos-bottom-right .banner-amount,
-#chat-canvas.pos-bottom-right .banner-subtext,
-#chat-canvas.pos-bottom-right .p5-banner-body .message-text,
-#chat-canvas.pos-top-right .banner-user,
-#chat-canvas.pos-top-right .banner-amount,
-#chat-canvas.pos-top-right .banner-subtext,
-#chat-canvas.pos-top-right .p5-banner-body .message-text {
-  transform: skewX(-14deg);
-}
-
-#chat-canvas.pos-bottom-right .p5-shard-accent,
-#chat-canvas.pos-top-right .p5-shard-accent {
-  right: auto;
-  left: -8px;
-  transform: skewX(-14deg) rotate(-15deg);
-  box-shadow: -2px 2px 0px #000;
-}
-
-/* ========================================================
-   Top-Down Flow Animations (pos-top-*)
-   ======================================================== */
-
 #chat-canvas.pos-top-left .chat-entry,
 #chat-canvas.pos-top-right .chat-entry {
-  animation: p5-slam-down 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  transform-origin: top left;
-}
-#chat-canvas.pos-top-right .chat-entry {
-  transform-origin: top right;
-}
-
-#chat-canvas.pos-top-left .chat-entry.is-exiting,
-#chat-canvas.pos-top-right .chat-entry.is-exiting {
-  animation: p5-drop-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  animation: p5-slam-down 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
 }
 
 /* ========================================================
-   ALL-OUT ATTACK CUT-IN BANNER
-   ======================================================== */
-
-#cutin-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease;
-}
-
-#cutin-overlay.active {
-  opacity: 1;
-  visibility: visible;
-  animation: p5-screen-shake 0.4s ease;
-}
-
-.cutin-card {
-  position: relative;
-  width: 96%;
-  max-width: 520px;
-  background: var(--p5-red);
-  border: 6px solid #000;
-  padding: 24px 20px;
-  box-shadow: 12px 12px 0 #000, 18px 18px 0 var(--p5-yellow);
-  transform: rotate(-4deg);
-  overflow: hidden;
-}
-
-.cutin-card::before {
-  content: '';
-  position: absolute;
-  inset: -50px;
-  background: repeating-linear-gradient(
-    -35deg,
-    rgba(0, 0, 0, 0.2),
-    rgba(0, 0, 0, 0.2) 10px,
-    transparent 10px,
-    transparent 20px
-  );
-  pointer-events: none;
-}
-
-.cutin-header {
-  font-family: var(--p5-font-title);
-  font-size: 2.2rem;
-  font-weight: 900;
-  color: var(--p5-yellow);
-  text-shadow: 4px 4px 0 #000;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  transform: skewX(-12deg);
-}
-
-.cutin-user-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
-}
-
-.cutin-avatar {
-  width: 56px;
-  height: 56px;
-  border: 3px solid #000;
-  box-shadow: 3px 3px 0 var(--p5-white);
-  transform: rotate(6deg);
-}
-
-.cutin-username {
-  font-family: var(--p5-font-title);
-  font-size: 1.8rem;
-  font-weight: 900;
-  color: var(--p5-white);
-  text-shadow: 3px 3px 0 #000;
-}
-
-.cutin-amount {
-  font-family: var(--p5-font-title);
-  font-size: 2.8rem;
-  font-weight: 900;
-  color: var(--p5-yellow);
-  background: #000;
-  padding: 4px 16px;
-  display: inline-block;
-  transform: skewX(-12deg);
-  border: 3px solid var(--p5-white);
-  box-shadow: 4px 4px 0 #000;
-  margin-bottom: 12px;
-}
-
-.cutin-message {
-  font-family: var(--p5-font);
-  font-size: 1.15rem;
-  color: #000;
-  background: var(--p5-white);
-  padding: 10px 14px;
-  border: 3px solid #000;
-  font-weight: 800;
-  line-height: 1.3;
-}
-
-/* ========================================================
-   Keyframe Animations
+   Keyframe Animations (Slam-in & Drop-out)
    ======================================================== */
 
 @keyframes p5-slam-in {
   0% {
     opacity: 0;
-    transform: scale(0.6) rotate(-10deg) translateY(30px);
+    transform: scale(0.7) rotate(-6deg) translateY(24px);
   }
-  65% {
+  70% {
     opacity: 1;
-    transform: scale(1.06) rotate(-0.5deg) translateY(-3px);
+    transform: scale(1.04) rotate(-0.5deg) translateY(-2px);
   }
   100% {
     opacity: 1;
-    transform: scale(1) rotate(-0.5deg) translateY(0);
+    transform: scale(1) rotate(0deg) translateY(0);
   }
 }
 
 @keyframes p5-slam-down {
   0% {
     opacity: 0;
-    transform: scale(0.6) rotate(10deg) translateY(-30px);
+    transform: scale(0.7) rotate(6deg) translateY(-24px);
   }
-  65% {
+  70% {
     opacity: 1;
-    transform: scale(1.06) rotate(0.5deg) translateY(3px);
+    transform: scale(1.04) rotate(0.5deg) translateY(2px);
   }
   100% {
     opacity: 1;
-    transform: scale(1) rotate(-0.5deg) translateY(0);
+    transform: scale(1) rotate(0deg) translateY(0);
   }
-}
-
-@keyframes p5-screen-shake {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  20% { transform: translate(-10px, 8px) rotate(-2deg); }
-  40% { transform: translate(12px, -6px) rotate(2deg); }
-  60% { transform: translate(-8px, -4px) rotate(-1deg); }
-  80% { transform: translate(6px, 6px) rotate(1deg); }
-  100% { transform: translate(0, 0) rotate(0deg); }
 }
 
 /* Exit Animations (Auto-Hide) */
 .chat-entry.is-exiting {
   pointer-events: none;
-  animation: p5-puff-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  animation: p5-puff-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 #chat-canvas.layout-horizontal .chat-entry.is-exiting {
-  animation: p5-slide-out-left 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  animation: p5-slide-out-left 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 @keyframes p5-puff-out {
@@ -690,18 +396,7 @@ body {
   }
   100% {
     opacity: 0;
-    transform: scale(0.7) translateY(-24px) rotate(-8deg);
-  }
-}
-
-@keyframes p5-drop-out {
-  0% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.7) translateY(24px) rotate(8deg);
+    transform: scale(0.75) translateY(-20px) rotate(-6deg);
   }
 }
 
@@ -709,14 +404,14 @@ body {
   0% {
     opacity: 1;
     transform: translateX(0) scale(1);
-    max-width: 440px;
+    max-width: 520px;
     margin-right: 0;
   }
   100% {
     opacity: 0;
     transform: translateX(-40px) scale(0.8);
     max-width: 0;
-    margin-right: -24px;
+    margin-right: -16px;
     padding: 0;
   }
 }

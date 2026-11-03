@@ -15,19 +15,7 @@ class ThemeManager {
   constructor(publicThemesDir, catalogPath) {
     this.publicThemesDir = publicThemesDir;
     this.catalogPath = catalogPath;
-    this.userThemesDir = this.resolveUserThemesDir();
     this.ensureDirs();
-  }
-
-  resolveUserThemesDir() {
-    // Cross-platform theme storage
-    if (process.platform === 'win32') {
-      const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
-      return path.join(appData, 'KY-Poni', 'themes');
-    } else {
-      const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
-      return path.join(configHome, 'ky-poni', 'themes');
-    }
   }
 
   ensureDirs() {
@@ -35,21 +23,18 @@ class ThemeManager {
       if (!fs.existsSync(this.publicThemesDir)) {
         fs.mkdirSync(this.publicThemesDir, { recursive: true });
       }
-      if (!fs.existsSync(this.userThemesDir)) {
-        fs.mkdirSync(this.userThemesDir, { recursive: true });
-      }
     } catch (e) {
       console.warn('[KY-Poni Themes] Failed to create directories:', e.message);
     }
   }
 
   /**
-   * Returns list of all installed themes (both built-in and user-installed)
+   * Returns list of all installed themes (curated official themes only)
    */
   getInstalledThemes() {
     const themeMap = new Map();
 
-    const scanDirectory = (dir, isBuiltIn) => {
+    const scanDirectory = (dir) => {
       if (!fs.existsSync(dir)) return;
       try {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -65,8 +50,8 @@ class ThemeManager {
                 id: themeId,
                 name: themeId,
                 version: '1.0.0',
-                author: isBuiltIn ? 'Milky Brain' : 'Custom',
-                isBuiltIn,
+                author: 'Milky Brain',
+                isBuiltIn: true,
                 installed: true,
                 path: themeDir,
               };
@@ -74,7 +59,7 @@ class ThemeManager {
               if (fs.existsSync(metaPath)) {
                 try {
                   const parsed = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
-                  meta = { ...meta, ...parsed, isBuiltIn, installed: true, path: themeDir };
+                  meta = { ...meta, ...parsed, isBuiltIn: true, installed: true, path: themeDir };
                 } catch (e) {
                   // ignore json parse error
                 }
@@ -88,23 +73,16 @@ class ThemeManager {
       }
     };
 
-    // Scan user themes first, then built-in
-    scanDirectory(this.userThemesDir, false);
-    scanDirectory(this.publicThemesDir, true);
+    // Only scan official built-in themes directory
+    scanDirectory(this.publicThemesDir);
 
     return Array.from(themeMap.values());
   }
 
   /**
-   * Resolves the absolute directory path of an installed theme
+   * Resolves the absolute directory path of an official theme
    */
   getThemePath(themeId) {
-    // Check user custom themes first
-    const userTheme = path.join(this.userThemesDir, themeId);
-    if (fs.existsSync(path.join(userTheme, 'style.css'))) {
-      return userTheme;
-    }
-    // Check built-in public themes
     const builtInTheme = path.join(this.publicThemesDir, themeId);
     if (fs.existsSync(path.join(builtInTheme, 'style.css'))) {
       return builtInTheme;
@@ -138,14 +116,14 @@ class ThemeManager {
   }
 
   /**
-   * Installs a theme from a local package path, zip file, or remote URL
+   * Installs an official theme package into the themes directory
    */
   async installTheme(themeId, sourceUrlOrPath) {
     if (!themeId || typeof themeId !== 'string') {
       throw new Error('themeId wajib diisi');
     }
 
-    const targetDir = path.join(this.userThemesDir, themeId);
+    const targetDir = path.join(this.publicThemesDir, themeId);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
@@ -198,17 +176,16 @@ class ThemeManager {
   }
 
   /**
-   * Deletes a user-installed theme (cannot delete built-in themes)
+   * Deletes an installed theme package (cannot delete core themes: persona5, classic)
    */
   deleteTheme(themeId) {
-    const builtInPath = path.join(this.publicThemesDir, themeId);
-    if (fs.existsSync(builtInPath)) {
-      throw new Error(`Tema "${themeId}" adalah tema bawaan dan tidak dapat dihapus.`);
+    if (themeId === 'persona5' || themeId === 'classic') {
+      throw new Error(`Tema "${themeId}" adalah tema inti bawaan dan tidak dapat dihapus.`);
     }
 
-    const userThemePath = path.join(this.userThemesDir, themeId);
-    if (fs.existsSync(userThemePath)) {
-      fs.rmSync(userThemePath, { recursive: true, force: true });
+    const themePath = path.join(this.publicThemesDir, themeId);
+    if (fs.existsSync(themePath)) {
+      fs.rmSync(themePath, { recursive: true, force: true });
       return { success: true, themeId, deleted: true };
     }
 
@@ -216,10 +193,10 @@ class ThemeManager {
   }
 
   /**
-   * Opens the user custom themes folder in the OS file manager
+   * Opens the official themes folder in the OS file manager
    */
   openThemesFolder() {
-    const dir = this.userThemesDir;
+    const dir = this.publicThemesDir;
     let cmd = '';
     if (process.platform === 'win32') {
       cmd = `explorer "${dir}"`;
