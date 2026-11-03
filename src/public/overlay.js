@@ -125,10 +125,18 @@
       // Authentic Persona 5 Dialogue Bubble (Asset-Based Sliced)
       // ========================================================
       const rawText = (item.message || '').replace(/<[^>]*>/g, '').trim();
-      const isMultiline = rawText.length > 28 || rawText.includes('\n') || (item.type === 'superchat');
+      const rawLength = rawText.length;
+
+      // Dynamic 3-Tier Height Classification based on content volume
+      let tierClass = 'tier-1';
+      if (rawLength > 95 || (rawText.match(/\n/g) || []).length >= 2) {
+        tierClass = 'tier-3';
+      } else if (rawLength > 42 || rawText.includes('\n') || (item.type === 'superchat') || (item.type === 'membership')) {
+        tierClass = 'tier-2';
+      }
 
       const bubble = document.createElement('div');
-      bubble.className = `p5-dialogue-bubble ${isMultiline ? 'multiline' : ''}`;
+      bubble.className = `p5-dialogue-bubble ${tierClass} ${tierClass !== 'tier-1' ? 'multiline' : ''}`;
 
       // A. 3-Piece Background Skin
       const skin = document.createElement('div');
@@ -184,6 +192,26 @@
 
       const messageText = document.createElement('div');
       messageText.className = 'p5-message-text';
+
+      // Auto-fit font scaling so text remains 100% enclosed without border breaches
+      if (fsize && fsize > 0) {
+        let effFsize = fsize;
+        if (rawLength > 130) {
+          effFsize = Math.min(fsize, 16);
+        } else if (rawLength > 80) {
+          effFsize = Math.min(fsize, 19);
+        } else if (rawLength > 45) {
+          effFsize = Math.min(fsize, 22);
+        }
+        messageText.style.fontSize = `${effFsize}px`;
+      } else {
+        if (rawLength > 130) {
+          messageText.style.fontSize = '1.05rem';
+        } else if (rawLength > 80) {
+          messageText.style.fontSize = '1.18rem';
+        }
+      }
+
       messageText.innerHTML = prefixHtml + item.message;
       messageBox.appendChild(messageText);
 

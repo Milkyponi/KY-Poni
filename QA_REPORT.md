@@ -28,16 +28,18 @@
 | 16 | Anchor-Sensitive Horizontal Chat Flow | ✅ PASS | Chat baru muncul di sisi anchor (`bottom-left` / `bottom-right`) & dorong chat lama |
 | 17 | Authentic Persona 5 Catalog Showcase | ✅ PASS | Banner preview P5 menampilkan 3-piece asset bubble, ransom nameplate, & font Atlus |
 | 18 | Curated Catalog Sanitization | ✅ PASS | Tombol custom folder tema dibersihkan, kartu masa depan berstatus 'Segera Hadir' |
+| 19 | Dynamic Horizontal Text Expansion | ✅ PASS | Potongan bodi tengah melebar mengikuti teks; ornamen kiri/kanan terkunci tanpa distorsi |
+| 20 | Multi-Tier Height & Anti-Overflow | ✅ PASS | Pesan 165 karakter font 25px 100% tertampung utuh di dalam balon tanpa bocor garis bawah |
 
-**Total:** 18/18 Targeted Tests Passed (100% Green).
+**Total:** 20/20 Targeted Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.9.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.10.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.9.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.10.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---

@@ -166,7 +166,7 @@ body {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 620px;
+  max-width: calc(100% - 24px);
   animation: p5-slam-in 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
   transform-origin: bottom left;
   margin-bottom: 6px;
@@ -176,15 +176,16 @@ body {
 .p5-dialogue-bubble {
   position: relative;
   width: 100%;
-  height: 165px; /* Base height for 1-line chat */
+  height: 165px; /* Base Tier 1 (1-line) */
   filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.95));
   flex-shrink: 0;
   transition: height 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
-.p5-dialogue-bubble.multiline {
-  height: 220px; /* Expanded height for 2-line/longer chat */
-}
+.p5-dialogue-bubble.tier-1 { height: 165px; }
+.p5-dialogue-bubble.tier-2 { height: 200px; }
+.p5-dialogue-bubble.tier-3 { height: 235px; }
+.p5-dialogue-bubble.multiline { height: 200px; }
 
 /* --- 3-Piece Hybrid Asset Skin --- */
 .p5-skin {
@@ -225,7 +226,7 @@ body {
 /* --- Authentic Nameplate Overlay --- */
 .p5-nameplate {
   position: absolute;
-  top: 24px;
+  top: 22px;
   left: 17%;
   width: 19%;
   height: 26px;
@@ -242,7 +243,12 @@ body {
   pointer-events: none;
 }
 
+.p5-dialogue-bubble.tier-2 .p5-nameplate,
 .p5-dialogue-bubble.multiline .p5-nameplate {
+  top: 26px;
+}
+
+.p5-dialogue-bubble.tier-3 .p5-nameplate {
   top: 28px;
 }
 
@@ -274,7 +280,7 @@ body {
 /* --- Message Content Overlay (Safe Interior Panel) --- */
 .p5-message-box {
   position: absolute;
-  top: 60px;
+  top: 62px;
   bottom: 24px;
   left: 18%;
   right: 17%;
@@ -284,9 +290,15 @@ body {
   justify-content: flex-start;
 }
 
+.p5-dialogue-bubble.tier-2 .p5-message-box,
 .p5-dialogue-bubble.multiline .p5-message-box {
-  top: 68px;
-  bottom: 36px;
+  top: 66px;
+  bottom: 28px;
+}
+
+.p5-dialogue-bubble.tier-3 .p5-message-box {
+  top: 70px;
+  bottom: 30px;
 }
 
 .p5-message-text {
@@ -294,10 +306,11 @@ body {
   font-family: var(--msg-font-family, var(--p5-font));
   font-size: var(--msg-font-size, 1.35rem);
   font-weight: 900;
-  line-height: 1.24;
+  line-height: 1.25;
   letter-spacing: 0.2px;
   word-break: break-word;
-  max-width: 440px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .chat-emote {
