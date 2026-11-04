@@ -13,7 +13,7 @@
 @font-face {
   font-family: 'OptimaNova';
   src: url('/themes/persona5/assets/fonts/OptimaNovaLT-Black.ttf') format('truetype');
-  font-weight: 900;
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
@@ -173,8 +173,8 @@ body {
   display: flex;
   flex-direction: column;
   width: fit-content;
-  min-width: 380px;
-  max-width: 520px;
+  min-width: 440px;
+  max-width: 540px;
   animation: p5-slam-in 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
   flex-shrink: 0;
   margin-bottom: 2px;
@@ -184,18 +184,18 @@ body {
 .p5-dialogue-bubble {
   position: relative;
   width: 100%;
-  min-width: 380px;
-  max-width: 520px;
-  height: 165px; /* Base Tier 1 (1-line) */
+  min-width: 440px;
+  max-width: 540px;
+  height: 128px; /* Base Tier 1: Sleek Authentic Persona 5 Ratio (~3.45 : 1) */
   filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.95));
   flex-shrink: 0;
   transition: height 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
-.p5-dialogue-bubble.tier-1 { height: 165px; }
-.p5-dialogue-bubble.tier-2 { height: 200px; }
-.p5-dialogue-bubble.tier-3 { height: 235px; }
-.p5-dialogue-bubble.multiline { height: 200px; }
+.p5-dialogue-bubble.tier-1 { height: 128px; }
+.p5-dialogue-bubble.tier-2 { height: 148px; }
+.p5-dialogue-bubble.tier-3 { height: 170px; }
+.p5-dialogue-bubble.multiline { height: 148px; }
 
 /* --- 3-Piece Hybrid Asset Skin --- */
 .p5-skin {
@@ -236,30 +236,35 @@ body {
 /* --- Authentic Nameplate Overlay --- */
 .p5-nameplate {
   position: absolute;
-  top: 22px;
-  left: 17%;
-  width: 19%;
-  height: 26px;
-  display: flex;
+  top: 15px;
+  left: 15%;
+  height: 20px;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   z-index: 5;
   font-family: var(--p5-font-title);
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 900;
-  letter-spacing: 1.2px;
+  letter-spacing: 0.8px;
   line-height: 1;
   transform: skewX(-14deg);
   pointer-events: none;
+  background: #FFFFFF;
+  padding: 0 8px 0 5px;
+  border-left: 2px solid #000;
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.95);
+  max-width: 50%;
+  white-space: nowrap;
 }
 
 .p5-dialogue-bubble.tier-2 .p5-nameplate,
 .p5-dialogue-bubble.multiline .p5-nameplate {
-  top: 26px;
+  top: 17px;
 }
 
 .p5-dialogue-bubble.tier-3 .p5-nameplate {
-  top: 28px;
+  top: 19px;
 }
 
 .p5-char {
@@ -290,10 +295,10 @@ body {
 /* --- Message Content Overlay (Safe Interior Panel) --- */
 .p5-message-box {
   position: absolute;
-  top: 62px;
-  bottom: 24px;
-  left: 18%;
-  right: 17%;
+  top: 42px;
+  bottom: 14px;
+  left: 17%;
+  right: 16%;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -302,19 +307,19 @@ body {
 
 .p5-dialogue-bubble.tier-2 .p5-message-box,
 .p5-dialogue-bubble.multiline .p5-message-box {
-  top: 66px;
-  bottom: 28px;
+  top: 46px;
+  bottom: 16px;
 }
 
 .p5-dialogue-bubble.tier-3 .p5-message-box {
-  top: 70px;
-  bottom: 30px;
+  top: 48px;
+  bottom: 18px;
 }
 
 .p5-message-text {
   color: var(--msg-font-color, var(--p5-white));
-  font-family: var(--msg-font-family, var(--p5-font));
-  font-size: var(--msg-font-size, 1.35rem);
+  font-family: var(--msg-font-family, 'OptimaNova', 'Space Grotesk', sans-serif);
+  font-size: var(--msg-font-size, 1.15rem);
   font-weight: 900;
   line-height: 1.25;
   letter-spacing: 0.2px;

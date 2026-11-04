@@ -37,16 +37,19 @@
 | 25 | Catalog Gallery Purification | ✅ PASS | Deskripsi dan kredit dihapus; fokus murni pada visual kartu dan nama tema |
 | 26 | Content-Driven Intrinsic Bubble Sizing | ✅ PASS | Balon chat `fit-content` (min 380px, max 520px), terlepas dari lebar kanvas OBS |
 | 27 | Pure Proportional Scale (25% - 150%) | ✅ PASS | Skala 25% proporsional sudut layar (tanpa stretching pancake); skala 150% gagah (tanpa shrink) |
+| 28 | Persona 5 True Silhouette Restoration | ✅ PASS | Rasio 3.45:1 (440x128px), bentuk pipih aerodinamis 1:1 identik dengan kartu katalog |
+| 29 | Origami Ribbon Nameplate Enclosure | ✅ PASS | Huruf nameplate 100% di atas pita putih solid, zero bleeding/spill ke ruang hitam kosong |
+| 30 | Universal Theme-Agnostic Simulator | ✅ PASS | Data simulasi netral (ViewerOne, MilkyPoni, ModTeam, MemberStar, Supporter) siap multi-tema |
 
-**Total:** 27/27 Targeted Tests Passed (100% Green).
+**Total:** 30/30 Targeted Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.2.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.3.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.2.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.3.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---

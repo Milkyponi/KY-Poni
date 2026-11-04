@@ -143,6 +143,18 @@ function updateOverlayParams() {
     obsDimTip.textContent = `💡 Rekomendasi OBS: Width ${preset.w} x Height ${preset.h} px`;
   }
 
+  // Auto-scroll preview viewport based on anchor position
+  const viewport = document.querySelector('.canvas-viewport');
+  if (viewport) {
+    setTimeout(() => {
+      if (currentPos.startsWith('bottom')) {
+        viewport.scrollTop = viewport.scrollHeight;
+      } else {
+        viewport.scrollTop = 0;
+      }
+    }, 150);
+  }
+
   // Auto-Save User Preferences (debounced 500ms)
   if (saveConfigTimeout) clearTimeout(saveConfigTimeout);
   saveConfigTimeout = setTimeout(saveUserConfig, 500);
@@ -346,40 +358,41 @@ async function simulateEvent(preset) {
   if (preset === 'chat_ryuji') {
     payload = {
       type: 'chat',
-      author: 'Ryuji Sakamoto',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ryuji',
-      message: 'For real?! Ini overlay chat beneran gokil abis, Bos!',
+      author: 'ViewerOne',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ViewerOne',
+      message: 'Halo streamer! Keren banget overlay live chat-nya!',
     };
   } else if (preset === 'chat_morgana') {
     payload = {
       type: 'chat',
-      author: 'Morgana',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Morgana',
+      author: 'MilkyPoni',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=MilkyPoni',
       badges: [{ type: 'owner', label: 'OWNER' }],
-      message: "Lookin' cool, Joker! Ayo gas terus live streamnya!",
+      message: 'Halo semuanya, selamat datang di live stream!',
     };
   } else if (preset === 'chat_makoto') {
     payload = {
       type: 'chat',
-      author: 'Makoto Niijima',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Makoto',
+      author: 'ModTeam',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=ModTeam',
       badges: [{ type: 'mod', label: 'MOD' }],
-      message: 'Mohon jaga sopan santun dan patuhi aturan stream ya.',
+      message: 'Mohon jaga ketertiban dan patuhi aturan stream ya.',
     };
   } else if (preset === 'member_ann') {
     payload = {
       type: 'membership',
-      author: 'Ann Takamaki',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Ann',
-      message: 'Baru saja bergabung menjadi anggota Phantom Thief Tier 1!',
+      author: 'MemberStar',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=MemberStar',
+      badges: [{ type: 'member', label: 'MEMBER' }],
+      message: 'Baru saja bergabung menjadi Member Tier 1!',
     };
   } else if (preset === 'superchat_50k') {
     payload = {
       type: 'superchat',
-      author: 'Joker (Ren)',
-      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Joker',
-      amount: 'Rp 500.000.000',
-      message: 'Take your time! Donasi spesial untuk support Milky Brain HQ!',
+      author: 'Supporter',
+      avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Supporter',
+      amount: 'Rp 50.000',
+      message: 'Semangat terus live streaming-nya, Bos!',
     };
   }
 

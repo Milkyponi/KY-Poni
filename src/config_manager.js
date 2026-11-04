@@ -19,7 +19,7 @@ const DEFAULT_CONFIG = {
   pos: 'bottom-left',
   scale: 100,
   fontSize: 16,
-  fontFamily: 'Space Grotesk',
+  fontFamily: 'OptimaNova',
   textColor: '#FFFFFF',
   fade: 8,
   keep: 1,

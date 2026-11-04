@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.5.2-alpha` (Phase 5 Milestone: Pure Proportional Scaling & Content-Driven Intrinsic Sizing Verified)  
+**Current Version:** `v0.5.3-alpha` (Phase 5 Milestone: Persona 5 True Silhouette Restoration & Universal Simulator Verified)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  

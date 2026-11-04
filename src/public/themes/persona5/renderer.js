@@ -27,9 +27,9 @@
 
       // Dynamic 3-Tier Height Classification based on content volume
       let tierClass = 'tier-1';
-      if (rawLength > 95 || (rawText.match(/\n/g) || []).length >= 2) {
+      if (rawLength > 110 || (rawText.match(/\n/g) || []).length >= 2) {
         tierClass = 'tier-3';
-      } else if (rawLength > 42 || rawText.includes('\n') || (item.type === 'superchat') || (item.type === 'membership')) {
+      } else if (rawLength > 55 || rawText.includes('\n') || (item.type === 'superchat') || (item.type === 'membership')) {
         tierClass = 'tier-2';
       }
 
@@ -51,6 +51,12 @@
       nameplate.className = 'p5-nameplate';
 
       const rawName = (item.author.name || 'ANON').toUpperCase();
+      if (rawName.length > 11) {
+        nameplate.style.fontSize = '10.5px';
+      } else if (rawName.length > 8) {
+        nameplate.style.fontSize = '12px';
+      }
+
       // Pick one letter for the red ransom box (deterministic hash or index 1)
       let redIdx = 1;
       if (rawName.length > 3) {
@@ -95,18 +101,18 @@
       const fsize = context && context.fsize;
       if (fsize && fsize > 0) {
         let effFsize = fsize;
-        if (rawLength > 130) {
-          effFsize = Math.min(fsize, 16);
-        } else if (rawLength > 80) {
-          effFsize = Math.min(fsize, 19);
-        } else if (rawLength > 45) {
-          effFsize = Math.min(fsize, 22);
+        if (rawLength > 120) {
+          effFsize = Math.min(fsize, 15);
+        } else if (rawLength > 70) {
+          effFsize = Math.min(fsize, 18);
         }
         messageText.style.fontSize = `${effFsize}px`;
       } else {
-        if (rawLength > 130) {
-          messageText.style.fontSize = '1.05rem';
-        } else if (rawLength > 80) {
+        if (rawLength > 120) {
+          messageText.style.fontSize = '0.98rem';
+        } else if (rawLength > 70) {
+          messageText.style.fontSize = '1.08rem';
+        } else {
           messageText.style.fontSize = '1.18rem';
         }
       }
