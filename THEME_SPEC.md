@@ -38,20 +38,22 @@ Setiap tema wajib memiliki file `theme.json` valid:
   "id": "persona5",
   "name": "Persona 5 Phantom",
   "version": "1.0.0",
-  "author": "Milky Brain",
+  "author": "Milkyponi",
   "previewColor": "#D03D3D",
   "description": "Balon kata otentik 3-piece dengan ransom nameplate dan font resmi Persona 5.",
   "tags": ["JRPG", "Persona", "Comic", "All-Out Attack"],
-  "defaultConfig": {
-    "recommendedLayout": "vertical-wide",
+  "presets": {
     "fontFamily": "OptimaNova",
-    "fontSize": 18,
-    "textColor": "#FFFFFF"
+    "fontSize": 16,
+    "textColor": "#FFFFFF",
+    "recommendedLayout": "vertical-wide"
   },
-  "previewBanner": {
-    "type": "custom",
-    "html": "<div class='p5-banner-preview'>...</div>"
-  }
+  "fonts": [
+    {
+      "name": "OptimaNova",
+      "label": "Optima Nova (Official Persona 5)"
+    }
+  ]
 }
 ```
 
