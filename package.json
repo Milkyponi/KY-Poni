@@ -1,6 +1,6 @@
 {
   "name": "ky-poni",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Stylized Game-Aesthetic Livestream Chat Overlay for OBS Studio",
   "main": "src/electron_main.js",
   "scripts": {

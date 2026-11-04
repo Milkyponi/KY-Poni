@@ -33,8 +33,10 @@
   const font = urlParams.get('font');
   const color = urlParams.get('color');
 
-  if (scale && scale !== 100) {
-    document.documentElement.style.setProperty('--canvas-scale', (scale / 100).toString());
+  if (scale) {
+    const scaleRatio = (scale / 100).toString();
+    document.documentElement.style.setProperty('--overlay-scale', scaleRatio);
+    document.documentElement.style.setProperty('--canvas-scale', scaleRatio);
   }
   if (fsize && fsize > 0) {
     document.documentElement.style.setProperty('--msg-font-size', `${fsize}px`);
@@ -67,6 +69,7 @@
 
   // Setup Canvas Classes
   const canvas = document.getElementById('chat-canvas');
+  const flow = document.getElementById('chat-flow') || canvas;
   canvas.className = '';
   if (isHorizontal) {
     canvas.classList.add('layout-horizontal');
@@ -107,7 +110,7 @@
 
   // Helper: Active (non-exiting) DOM entries
   function getActiveEntries() {
-    return Array.from(canvas.querySelectorAll('.chat-entry')).filter(
+    return Array.from(flow.querySelectorAll('.chat-entry')).filter(
       (el) => !el.classList.contains('is-exiting')
     );
   }
@@ -187,9 +190,9 @@
 
     // 3. Directional insertion into canvas (prepend vs append based on anchor flow)
     if (isPrependFlow) {
-      canvas.prepend(entry);
+      flow.prepend(entry);
     } else {
-      canvas.appendChild(entry);
+      flow.appendChild(entry);
     }
 
     // 4. Flush older expired entries now that new message arrived

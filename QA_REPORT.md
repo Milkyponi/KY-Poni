@@ -35,16 +35,18 @@
 | 23 | Header OBS Widget & Zero-Overlap Ergonomics | ✅ PASS | URL OBS + tombol salin di header, nav tabs digeser ke kanan tanpa tumpang tindih |
 | 24 | Canvas Scale Range (25% - 150%) | ✅ PASS | Minimum slider skala kanvas turun ke 25% terverifikasi di DOM dan URL |
 | 25 | Catalog Gallery Purification | ✅ PASS | Deskripsi dan kredit dihapus; fokus murni pada visual kartu dan nama tema |
+| 26 | Content-Driven Intrinsic Bubble Sizing | ✅ PASS | Balon chat `fit-content` (min 380px, max 520px), terlepas dari lebar kanvas OBS |
+| 27 | Pure Proportional Scale (25% - 150%) | ✅ PASS | Skala 25% proporsional sudut layar (tanpa stretching pancake); skala 150% gagah (tanpa shrink) |
 
-**Total:** 25/25 Targeted Tests Passed (100% Green).
+**Total:** 27/27 Targeted Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.1.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.2.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.1.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.2.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---

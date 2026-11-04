@@ -64,118 +64,128 @@ body {
 }
 
 /* ========================================================
-   OBS Canvas Container (Inverse Scaled, Zero Clipping)
+   OBS Canvas Container (Viewport Window)
    ======================================================== */
 
 #chat-canvas {
-  position: absolute;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
   box-sizing: border-box;
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 14px;
   overflow: hidden;
   pointer-events: none;
-  width: calc(100% / var(--canvas-scale, 1));
-  height: calc(100% / var(--canvas-scale, 1));
-  transform: scale(var(--canvas-scale, 1));
 }
 
 /* Screen Anchor Positions */
 #chat-canvas.pos-bottom-left {
-  left: 0;
-  bottom: 0;
-  top: auto;
-  right: auto;
   justify-content: flex-end;
   align-items: flex-start;
-  transform-origin: bottom left;
 }
 #chat-canvas.pos-bottom-right {
-  right: 0;
-  bottom: 0;
-  top: auto;
-  left: auto;
   justify-content: flex-end;
   align-items: flex-end;
-  transform-origin: bottom right;
 }
 #chat-canvas.pos-top-left {
-  left: 0;
-  top: 0;
-  bottom: auto;
-  right: auto;
   justify-content: flex-start;
   align-items: flex-start;
-  transform-origin: top left;
 }
 #chat-canvas.pos-top-right {
-  right: 0;
-  top: 0;
-  bottom: auto;
-  left: auto;
   justify-content: flex-start;
   align-items: flex-end;
+}
+
+/* ========================================================
+   Chat Flow Stack (Proportionally Scaled from Anchor Corner)
+   ======================================================== */
+
+#chat-flow {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  pointer-events: none;
+  transform: scale(var(--overlay-scale, 1));
+  will-change: transform;
+}
+
+#chat-canvas.pos-bottom-left #chat-flow {
+  transform-origin: bottom left;
+  align-items: flex-start;
+}
+#chat-canvas.pos-bottom-right #chat-flow {
+  transform-origin: bottom right;
+  align-items: flex-end;
+}
+#chat-canvas.pos-top-left #chat-flow {
+  transform-origin: top left;
+  align-items: flex-start;
+}
+#chat-canvas.pos-top-right #chat-flow {
   transform-origin: top right;
+  align-items: flex-end;
 }
 
 /* Horizontal Ticker Layout */
 #chat-canvas.layout-horizontal {
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: flex-end;
   overflow-x: hidden;
-  gap: 16px;
-  scroll-behavior: smooth;
 }
-
-#chat-canvas.layout-horizontal.pos-top-left,
-#chat-canvas.layout-horizontal.pos-top-right {
+#chat-canvas.layout-horizontal #chat-flow {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 16px;
+}
+#chat-canvas.layout-horizontal.pos-top-left #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
   align-items: flex-start;
 }
-#chat-canvas.layout-horizontal.pos-bottom-left,
-#chat-canvas.layout-horizontal.pos-bottom-right {
-  align-items: flex-end;
-}
 
-#chat-canvas.layout-horizontal.pos-bottom-left,
-#chat-canvas.layout-horizontal.pos-top-left {
+#chat-canvas.layout-horizontal.pos-bottom-left #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-left #chat-flow {
   justify-content: flex-start;
 }
-#chat-canvas.layout-horizontal.pos-bottom-right,
-#chat-canvas.layout-horizontal.pos-top-right {
+#chat-canvas.layout-horizontal.pos-bottom-right #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
   justify-content: flex-end;
 }
 
 #chat-canvas.layout-horizontal .chat-entry {
   flex-shrink: 0 !important;
-  width: 520px;
-  max-width: 540px;
+  width: 480px;
+  max-width: 520px;
   min-width: 380px;
   margin-top: 0;
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 
 /* ========================================================
    Chat Message Entry (Persona 5 Dialogue Bubble)
+   Natural Content-Driven Width, Uncoupled from Canvas
    ======================================================== */
 
 .chat-entry {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: calc(100% - 24px);
+  width: fit-content;
+  min-width: 380px;
+  max-width: 520px;
   animation: p5-slam-in 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
-  transform-origin: bottom left;
-  margin-bottom: 6px;
+  flex-shrink: 0;
+  margin-bottom: 2px;
 }
 
 /* --- Dialogue Bubble Container --- */
 .p5-dialogue-bubble {
   position: relative;
   width: 100%;
+  min-width: 380px;
+  max-width: 520px;
   height: 165px; /* Base Tier 1 (1-line) */
   filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.95));
   flex-shrink: 0;
