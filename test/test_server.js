@@ -115,23 +115,39 @@ async function runTests() {
     assert.strictEqual(cfgSave.config.textColor, '#FFE600');
     console.log('[PASS] POST /api/config successfully saved custom scale, font size, and text color');
 
-    // 9. Test Phase 3: Theme Catalog & Dynamic Downloader/Installer
-    console.log('[TEST] Testing Theme Installer (Phase 3: installing undertale-box)...');
-    const installRes = await fetchPost(`http://127.0.0.1:${TEST_PORT}/api/themes/install`, {
-      themeId: 'undertale-box'
+    // 9. Test Phase 5/6: Remote Theme Catalog & Dynamic Downloader/Installer
+    console.log('[TEST] Testing Theme Installer (installing undertale & cyberpunk2077)...');
+    const installUt = await fetchPost(`http://127.0.0.1:${TEST_PORT}/api/themes/install`, {
+      themeId: 'undertale'
     });
-    assert.strictEqual(installRes.success, true);
-    console.log('[PASS] POST /api/themes/install successfully extracted and registered theme');
+    assert.strictEqual(installUt.success, true);
+    console.log('[PASS] POST /api/themes/install successfully extracted and registered undertale');
 
-    const utCss = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/undertale-box/style.css`);
+    const utCss = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/undertale/style.css`);
     assert(utCss.includes('Undertale Retro Box'), 'Dynamic theme CSS must be served over HTTP');
-    console.log('[PASS] GET /themes/undertale-box/style.css successfully served from dynamic user themes directory');
+    const utRenderer = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/undertale/renderer.js`);
+    assert(utRenderer.includes('window.KYPoniTheme'), 'Undertale renderer must implement window.KYPoniTheme');
+    console.log('[PASS] GET /themes/undertale/style.css & renderer.js successfully served from user themes directory');
 
-    const delRes = await fetchPost(`http://127.0.0.1:${TEST_PORT}/api/themes/delete`, {
-      themeId: 'undertale-box'
+    const installCp = await fetchPost(`http://127.0.0.1:${TEST_PORT}/api/themes/install`, {
+      themeId: 'cyberpunk2077'
     });
-    assert.strictEqual(delRes.success, true);
-    console.log('[PASS] POST /api/themes/delete successfully uninstalled custom theme');
+    assert.strictEqual(installCp.success, true);
+    console.log('[PASS] POST /api/themes/install successfully extracted and registered cyberpunk2077');
+
+    const cpCss = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/cyberpunk2077/style.css`);
+    assert(cpCss.includes('Cyberpunk 2077'), 'Cyberpunk CSS must be served over HTTP');
+    console.log('[PASS] GET /themes/cyberpunk2077/style.css successfully served from user themes directory');
+
+    const delUt = await fetchPost(`http://127.0.0.1:${TEST_PORT}/api/themes/delete`, {
+      themeId: 'undertale'
+    });
+    assert.strictEqual(delUt.success, true);
+    const delCp = await fetchPost(`http://127.0.0.1:${TEST_PORT}/api/themes/delete`, {
+      themeId: 'cyberpunk2077'
+    });
+    assert.strictEqual(delCp.success, true);
+    console.log('[PASS] POST /api/themes/delete successfully uninstalled custom themes');
 
     // 10. Test In-App Auto-Updater API (/api/updater/check)
     console.log('[TEST] Testing In-App GitHub Releases Auto-Updater API...');

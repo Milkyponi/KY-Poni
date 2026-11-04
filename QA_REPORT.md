@@ -40,16 +40,20 @@
 | 28 | Persona 5 True Silhouette Restoration | ✅ PASS | Rasio 3.45:1 (440x128px), bentuk pipih aerodinamis 1:1 identik dengan kartu katalog |
 | 29 | Origami Ribbon Nameplate Enclosure | ✅ PASS | Huruf nameplate 100% di atas pita putih solid, zero bleeding/spill ke ruang hitam kosong |
 | 30 | Universal Theme-Agnostic Simulator | ✅ PASS | Data simulasi netral (ViewerOne, MilkyPoni, ModTeam, MemberStar, Supporter) siap multi-tema |
+| 31 | Remote GitHub Theme Catalog Integration | ✅ PASS | In-App catalog memuat rilis resmi dari `Milkyponi/ky-poni-themes` via GitHub API |
+| 32 | In-App Theme Installer & Uninstaller | ✅ PASS | 1-klik `⚡ Instal & Pasang` dan `🗑️ Hapus` di folder OS persistent user data |
+| 33 | Theme-Bound Smart Presets Auto-Apply | ✅ PASS | Ganti tema otomatis menerapkan font, warna, dan layout rekomendasi game |
+| 34 | Dynamic Font Lifecycle Injection | ✅ PASS | Font tema (`OptimaNova`, `VT323`, `Chakra Petch`) otomatis muncul saat terpasang & dicopot saat dihapus |
 
-**Total:** 30/30 Targeted Tests Passed (100% Green).
+**Total:** 34/34 Targeted Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.3.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.6.0.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.3.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.6.0.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---

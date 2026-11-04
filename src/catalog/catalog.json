@@ -1,26 +1,93 @@
 {
-  "version": "1.2.0",
-  "updatedAt": "2026-11-02",
+  "version": "1.0.0",
+  "updatedAt": "2026-11-04",
+  "repository": "https://github.com/Milkyponi/ky-poni-themes",
   "themes": [
     {
       "id": "persona5",
       "name": "Persona 5 Phantom",
       "version": "1.0.0",
-      "author": "Milky Brain (Fonzy)",
+      "author": "Milkyponi",
       "previewColor": "#D03D3D",
       "installed": true,
-      "description": "Balon kata komik origami bersudut tajam berlatar hitam pekat, cel-shaded outline putih tebal, foto profil polaroid miring, dan animasi cut-in Super Chat All-Out Attack.",
-      "tags": ["JRPG", "Comic", "Persona", "All-Out Attack"]
+      "isBuiltIn": true,
+      "tags": ["JRPG", "Comic", "Persona", "All-Out Attack"],
+      "presets": {
+        "fontFamily": "OptimaNova",
+        "fontSize": 16,
+        "textColor": "#FFFFFF",
+        "recommendedLayout": "vertical-wide"
+      },
+      "fonts": [
+        {
+          "name": "OptimaNova",
+          "label": "Optima Nova (Official Persona 5)"
+        }
+      ]
     },
     {
       "id": "classic",
       "name": "Clean Modern Minimal",
       "version": "1.0.0",
-      "author": "Milky Brain (Fonzy)",
+      "author": "Milkyponi",
       "previewColor": "#2563EB",
       "installed": true,
-      "description": "Gelembung chat transparan minimalis (glassmorphism) dengan transisi slide memudar yang halus.",
-      "tags": ["Minimal", "Glassmorphism", "Clean"]
+      "isBuiltIn": true,
+      "tags": ["Minimal", "Glassmorphism", "Clean"],
+      "presets": {
+        "fontFamily": "Inter",
+        "fontSize": 16,
+        "textColor": "#FFFFFF",
+        "recommendedLayout": "vertical"
+      },
+      "fonts": [
+        {
+          "name": "Inter",
+          "label": "Inter (Clean Ultra Legible)"
+        }
+      ]
+    },
+    {
+      "id": "undertale",
+      "name": "Undertale Retro Box",
+      "version": "1.0.0",
+      "author": "Milkyponi",
+      "previewColor": "#FFFFFF",
+      "downloadUrl": "https://github.com/Milkyponi/ky-poni-themes/releases/download/v1.0.0/undertale.zip",
+      "tags": ["8-Bit", "Pixel Art", "Retro RPG", "Monochrome"],
+      "presets": {
+        "fontFamily": "VT323",
+        "fontSize": 20,
+        "textColor": "#FFFFFF",
+        "recommendedLayout": "vertical"
+      },
+      "fonts": [
+        {
+          "name": "VT323",
+          "label": "VT323 (Undertale 8-Bit Pixel)"
+        }
+      ]
+    },
+    {
+      "id": "cyberpunk2077",
+      "name": "Cyberpunk 2077 Night City HUD",
+      "version": "1.0.0",
+      "author": "Milkyponi",
+      "previewColor": "#FFE600",
+      "downloadUrl": "https://github.com/Milkyponi/ky-poni-themes/releases/download/v1.0.0/cyberpunk2077.zip",
+      "tags": ["Cyberpunk", "Neon HUD", "Sci-Fi", "Glitch"],
+      "presets": {
+        "fontFamily": "Chakra Petch",
+        "fontSize": 17,
+        "textColor": "#FFE600",
+        "recommendedLayout": "horizontal-wide"
+      },
+      "fonts": [
+        {
+          "name": "Chakra Petch",
+          "label": "Chakra Petch (Cyberpunk Tech)"
+        }
+      ]
     }
   ]
 }

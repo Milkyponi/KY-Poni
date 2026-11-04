@@ -4,8 +4,20 @@
   "version": "1.0.0",
   "author": "Milky Brain (Fonzy)",
   "description": "High-contrast comic speech bubble with sharp jagged polygon edges, distressed manga aesthetics, and All-Out Attack cut-in banners.",
-  "recommendedLayout": "vertical",
-  "previewColor": "#E60012",
+  "recommendedLayout": "vertical-wide",
+  "previewColor": "#D03D3D",
+  "presets": {
+    "fontFamily": "OptimaNova",
+    "fontSize": 16,
+    "textColor": "#FFFFFF",
+    "recommendedLayout": "vertical-wide"
+  },
+  "fonts": [
+    {
+      "name": "OptimaNova",
+      "label": "Optima Nova (Official Persona 5)"
+    }
+  ],
   "features": [
     "Jagged angular comic bubbles",
     "High-contrast phantom red & black palette",

@@ -1,7 +1,7 @@
 /**
- * KY-Poni - Theme Manager & Dynamic Downloader (Phase 3)
- * Manages Built-In and User Custom Themes, Dynamic Downloads from Catalog,
- * and Cross-Platform Storage Paths.
+ * KY-Poni - Theme Manager & Dynamic Downloader (Phase 5/6)
+ * Manages Built-In Themes and Persistent User Themes, Remote GitHub Catalog,
+ * Dynamic Installation/Uninstallation, and Cross-Platform Storage Paths.
  */
 
 const fs = require('fs');
@@ -11,11 +11,30 @@ const https = require('https');
 const os = require('os');
 const { exec } = require('child_process');
 
+const REMOTE_CATALOG_URL = 'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/catalog.json';
+
 class ThemeManager {
-  constructor(publicThemesDir, catalogPath) {
+  constructor(publicThemesDir, catalogPath, userThemesDir = null) {
     this.publicThemesDir = publicThemesDir;
     this.catalogPath = catalogPath;
+    this.userThemesDir = userThemesDir || this.resolveUserThemesDir();
+    this.cachedRemoteCatalog = null;
+    this.lastCatalogFetchTime = 0;
     this.ensureDirs();
+  }
+
+  resolveUserThemesDir() {
+    let baseDir = '';
+    if (process.platform === 'win32') {
+      const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+      baseDir = path.join(appData, 'KY-Poni');
+    } else if (process.platform === 'darwin') {
+      baseDir = path.join(os.homedir(), 'Library', 'Application Support', 'KY-Poni');
+    } else {
+      const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+      baseDir = path.join(configHome, 'ky-poni');
+    }
+    return path.join(baseDir, 'themes');
   }
 
   ensureDirs() {
@@ -24,17 +43,25 @@ class ThemeManager {
         fs.mkdirSync(this.publicThemesDir, { recursive: true });
       }
     } catch (e) {
-      console.warn('[KY-Poni Themes] Failed to create directories:', e.message);
+      console.warn('[KY-Poni Themes] Note on publicThemesDir:', e.message);
+    }
+
+    try {
+      if (!fs.existsSync(this.userThemesDir)) {
+        fs.mkdirSync(this.userThemesDir, { recursive: true });
+      }
+    } catch (e) {
+      console.warn('[KY-Poni Themes] Failed to create userThemesDir:', e.message);
     }
   }
 
   /**
-   * Returns list of all installed themes (curated official themes only)
+   * Returns list of all installed themes (scans user themes dir and built-in themes dir)
    */
   getInstalledThemes() {
     const themeMap = new Map();
 
-    const scanDirectory = (dir) => {
+    const scanDirectory = (dir, isBuiltIn) => {
       if (!fs.existsSync(dir)) return;
       try {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -50,16 +77,18 @@ class ThemeManager {
                 id: themeId,
                 name: themeId,
                 version: '1.0.0',
-                author: 'Milky Brain',
-                isBuiltIn: true,
+                author: 'Milkyponi',
+                isBuiltIn,
                 installed: true,
                 path: themeDir,
+                presets: {},
+                fonts: [],
               };
 
               if (fs.existsSync(metaPath)) {
                 try {
                   const parsed = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
-                  meta = { ...meta, ...parsed, isBuiltIn: true, installed: true, path: themeDir };
+                  meta = { ...meta, ...parsed, isBuiltIn, installed: true, path: themeDir };
                 } catch (e) {
                   // ignore json parse error
                 }
@@ -73,72 +102,136 @@ class ThemeManager {
       }
     };
 
-    // Only scan official built-in themes directory
-    scanDirectory(this.publicThemesDir);
+    // 1. Scan built-in themes first
+    scanDirectory(this.publicThemesDir, true);
+
+    // 2. Scan user persistent themes (can override or extend)
+    scanDirectory(this.userThemesDir, false);
 
     return Array.from(themeMap.values());
   }
 
   /**
-   * Resolves the absolute directory path of an official theme
+   * Resolves the absolute directory path of an installed theme
    */
   getThemePath(themeId) {
+    // 1. Check user persistent directory first
+    const userTheme = path.join(this.userThemesDir, themeId);
+    if (fs.existsSync(path.join(userTheme, 'style.css'))) {
+      return userTheme;
+    }
+
+    // 2. Fall back to built-in themes directory
     const builtInTheme = path.join(this.publicThemesDir, themeId);
     if (fs.existsSync(path.join(builtInTheme, 'style.css'))) {
       return builtInTheme;
     }
+
     return null;
   }
 
   /**
-   * Returns remote theme catalog with live 'installed' status
+   * Fetches the theme catalog (preferring remote GitHub, cached for 60s, with local fallback)
    */
-  getCatalog() {
-    const installed = new Set(this.getInstalledThemes().map((t) => t.id));
-    let catalog = { version: '1.0.0', themes: [] };
+  async getCatalog() {
+    const installedList = this.getInstalledThemes();
+    const installedMap = new Map(installedList.map((t) => [t.id, t]));
 
-    if (fs.existsSync(this.catalogPath)) {
+    let catalog = null;
+    const now = Date.now();
+
+    // Check memory cache (60 seconds)
+    if (this.cachedRemoteCatalog && now - this.lastCatalogFetchTime < 60000) {
+      catalog = JSON.parse(JSON.stringify(this.cachedRemoteCatalog));
+    } else {
       try {
-        catalog = JSON.parse(fs.readFileSync(this.catalogPath, 'utf-8'));
-      } catch (e) {
-        // ignore
+        catalog = await this.fetchRemoteCatalog(REMOTE_CATALOG_URL, 3500);
+        this.cachedRemoteCatalog = JSON.parse(JSON.stringify(catalog));
+        this.lastCatalogFetchTime = now;
+      } catch (err) {
+        // Fallback to local catalog file
+        if (fs.existsSync(this.catalogPath)) {
+          try {
+            catalog = JSON.parse(fs.readFileSync(this.catalogPath, 'utf-8'));
+          } catch (e) {
+            // ignore
+          }
+        }
       }
     }
 
-    if (Array.isArray(catalog.themes)) {
-      catalog.themes = catalog.themes.map((t) => ({
-        ...t,
-        installed: installed.has(t.id),
-      }));
+    if (!catalog || !Array.isArray(catalog.themes)) {
+      catalog = { version: '1.0.0', themes: [] };
     }
+
+    // Annotate catalog items with live installation state, presets, and fonts
+    catalog.themes = catalog.themes.map((t) => {
+      const installedEntry = installedMap.get(t.id);
+      return {
+        ...t,
+        installed: !!installedEntry,
+        isBuiltIn: installedEntry ? installedEntry.isBuiltIn : (t.id === 'persona5' || t.id === 'classic'),
+        presets: t.presets || (installedEntry ? installedEntry.presets : {}),
+        fonts: t.fonts || (installedEntry ? installedEntry.fonts : []),
+      };
+    });
 
     return catalog;
   }
 
+  fetchRemoteCatalog(url, timeoutMs = 3500) {
+    return new Promise((resolve, reject) => {
+      const client = url.startsWith('https://') ? https : http;
+      const req = client.get(url, { headers: { 'User-Agent': 'KY-Poni-Client' } }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          return this.fetchRemoteCatalog(res.headers.location, timeoutMs).then(resolve).catch(reject);
+        }
+        if (res.statusCode !== 200) {
+          return reject(new Error(`Remote catalog returned HTTP ${res.statusCode}`));
+        }
+        let raw = '';
+        res.on('data', (chunk) => { raw += chunk; });
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(raw));
+          } catch (e) {
+            reject(new Error(`Invalid remote catalog JSON: ${e.message}`));
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.setTimeout(timeoutMs, () => {
+        req.destroy();
+        reject(new Error('Remote catalog request timed out'));
+      });
+    });
+  }
+
   /**
-   * Installs an official theme package into the themes directory
+   * Installs an official theme package into the user themes directory (~/.config/ky-poni/themes/)
    */
   async installTheme(themeId, sourceUrlOrPath) {
     if (!themeId || typeof themeId !== 'string') {
       throw new Error('themeId wajib diisi');
     }
 
-    const targetDir = path.join(this.publicThemesDir, themeId);
+    this.ensureDirs();
+    const targetDir = path.join(this.userThemesDir, themeId);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
-    // 1. If it's a local zip file or directory
+    // 1. If local zip file or directory
     if (sourceUrlOrPath && fs.existsSync(sourceUrlOrPath)) {
       const stats = fs.statSync(sourceUrlOrPath);
       if (stats.isDirectory()) {
         copyRecursiveSync(sourceUrlOrPath, targetDir);
       } else if (sourceUrlOrPath.endsWith('.zip')) {
-        // If zip is packaged inside asar, copy to temporary real filesystem first
         let realZipPath = sourceUrlOrPath;
         let isTemp = false;
         if (sourceUrlOrPath.includes('.asar')) {
-          const tempAsarZip = path.join(os.tmpdir(), `ky_theme_extract_${Date.now()}.zip`);
+          const tempAsarZip = path.join(os.tmpdir(), `ky_theme_${themeId}_${Date.now()}.zip`);
           fs.writeFileSync(tempAsarZip, fs.readFileSync(sourceUrlOrPath));
           realZipPath = tempAsarZip;
           isTemp = true;
@@ -152,8 +245,8 @@ class ThemeManager {
         }
       }
     } else if (sourceUrlOrPath && (sourceUrlOrPath.startsWith('http://') || sourceUrlOrPath.startsWith('https://'))) {
-      // 2. Download remote archive
-      const tempZip = path.join(os.tmpdir(), `ky_poni_theme_${themeId}_${Date.now()}.zip`);
+      // 2. Download remote zip archive
+      const tempZip = path.join(os.tmpdir(), `ky_theme_${themeId}_${Date.now()}.zip`);
       await this.downloadFile(sourceUrlOrPath, tempZip);
       await this.extractZip(tempZip, targetDir);
       try { fs.unlinkSync(tempZip); } catch (e) {}
@@ -176,14 +269,15 @@ class ThemeManager {
   }
 
   /**
-   * Deletes an installed theme package (cannot delete core themes: persona5, classic)
+   * Deletes an installed theme package from the user themes directory.
+   * Core themes (persona5, classic) cannot be deleted.
    */
   deleteTheme(themeId) {
     if (themeId === 'persona5' || themeId === 'classic') {
       throw new Error(`Tema "${themeId}" adalah tema inti bawaan dan tidak dapat dihapus.`);
     }
 
-    const themePath = path.join(this.publicThemesDir, themeId);
+    const themePath = path.join(this.userThemesDir, themeId);
     if (fs.existsSync(themePath)) {
       fs.rmSync(themePath, { recursive: true, force: true });
       return { success: true, themeId, deleted: true };
@@ -192,44 +286,29 @@ class ThemeManager {
     throw new Error(`Tema "${themeId}" tidak ditemukan.`);
   }
 
-  /**
-   * Opens the official themes folder in the OS file manager
-   */
-  openThemesFolder() {
-    const dir = this.publicThemesDir;
-    let cmd = '';
-    if (process.platform === 'win32') {
-      cmd = `explorer "${dir}"`;
-    } else if (process.platform === 'darwin') {
-      cmd = `open "${dir}"`;
-    } else {
-      cmd = `xdg-open "${dir}" 2>/dev/null || open "${dir}"`;
-    }
-
-    return new Promise((resolve) => {
-      exec(cmd, () => resolve(dir));
-    });
-  }
-
   downloadFile(url, dest) {
     return new Promise((resolve, reject) => {
       const client = url.startsWith('https://') ? https : http;
       const file = fs.createWriteStream(dest);
 
-      client.get(url, (response) => {
+      const req = client.get(url, { headers: { 'User-Agent': 'KY-Poni-Client' } }, (response) => {
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-          // Handle redirect
+          file.close();
+          try { fs.unlinkSync(dest); } catch (e) {}
           return this.downloadFile(response.headers.location, dest).then(resolve).catch(reject);
         }
         if (response.statusCode !== 200) {
           file.close();
+          try { fs.unlinkSync(dest); } catch (e) {}
           return reject(new Error(`Gagal mengunduh tema: Status HTTP ${response.statusCode}`));
         }
         response.pipe(file);
         file.on('finish', () => {
           file.close(() => resolve(dest));
         });
-      }).on('error', (err) => {
+      });
+
+      req.on('error', (err) => {
         file.close();
         try { fs.unlinkSync(dest); } catch (e) {}
         reject(err);
@@ -239,9 +318,16 @@ class ThemeManager {
 
   extractZip(zipPath, destDir) {
     return new Promise((resolve, reject) => {
-      exec(`unzip -o -q "${zipPath}" -d "${destDir}"`, (err) => {
+      let cmd = '';
+      if (process.platform === 'win32') {
+        cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -Path '${zipPath}' -DestinationPath '${destDir}'"`;
+      } else {
+        cmd = `unzip -o -q "${zipPath}" -d "${destDir}" || tar -xf "${zipPath}" -C "${destDir}"`;
+      }
+
+      exec(cmd, (err) => {
         if (err) {
-          return reject(new Error(`Gagal mengekstrak berkas zip: ${err.message}`));
+          return reject(new Error(`Gagal mengekstrak berkas zip tema: ${err.message}`));
         }
         resolve(destDir);
       });
@@ -263,4 +349,4 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-module.exports = { ThemeManager };
+module.exports = { ThemeManager, REMOTE_CATALOG_URL };

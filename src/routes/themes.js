@@ -21,7 +21,7 @@ async function handleThemesRoutes(req, res, pathname, ctx) {
 
   if (pathname === '/api/catalog' && req.method === 'GET') {
     try {
-      const catalog = themeManager.getCatalog();
+      const catalog = await themeManager.getCatalog();
       sendJson(res, 200, catalog);
     } catch (err) {
       sendError(res, 500, err.message);

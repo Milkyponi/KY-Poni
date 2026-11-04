@@ -160,7 +160,10 @@ function updateOverlayParams() {
   saveConfigTimeout = setTimeout(saveUserConfig, 500);
 }
 
-selectTheme.addEventListener('change', updateOverlayParams);
+selectTheme.addEventListener('change', () => {
+  applyThemePresets(selectTheme.value);
+  updateOverlayParams();
+});
 selectLayout.addEventListener('change', updateOverlayParams);
 if (inputFade) inputFade.addEventListener('input', updateOverlayParams);
 if (selectKeep) selectKeep.addEventListener('change', updateOverlayParams);
@@ -323,6 +326,7 @@ function switchTab(tabId) {
 function selectThemeFromCatalog(themeId) {
   if (selectTheme) {
     selectTheme.value = themeId;
+    applyThemePresets(themeId);
     updateOverlayParams();
     loadCatalog();
     switchTab('tab-studio');
@@ -428,13 +432,77 @@ async function simulateCustom() {
   }
 }
 
-// Theme Management (Phase 3)
+// Theme Management & Presets (Phase 5/6)
+let installedThemesMap = new Map();
+
+function applyThemePresets(themeId) {
+  const themeMeta = installedThemesMap.get(themeId);
+  if (!themeMeta || !themeMeta.presets) return;
+  const p = themeMeta.presets;
+
+  if (p.fontFamily && selectFont) {
+    selectFont.value = p.fontFamily;
+  }
+  if (p.fontSize && inputFsize && labelFsizeVal) {
+    inputFsize.value = p.fontSize;
+    labelFsizeVal.textContent = `${p.fontSize}px`;
+  }
+  if (p.textColor && inputColor && inputColorHex) {
+    inputColor.value = p.textColor;
+    inputColorHex.value = p.textColor.toUpperCase();
+  }
+  if (p.recommendedLayout && selectLayout) {
+    selectLayout.value = p.recommendedLayout;
+  }
+}
+
+function updateFontDropdown(themes) {
+  if (!selectFont) return;
+  const currentFont = selectFont.value;
+
+  const baseFonts = [
+    { name: 'OptimaNova', label: 'Optima Nova (Official Persona 5)' },
+    { name: 'Space Grotesk', label: 'Space Grotesk (Default Anime)' },
+    { name: 'Inter', label: 'Inter (Clean Ultra Legible)' },
+    { name: 'Bebas Neue', label: 'Bebas Neue (Punchy Comic All-Caps)' },
+    { name: 'Bangers', label: 'Bangers (Western Comic)' },
+    { name: 'Montserrat', label: 'Montserrat (Modern Bold)' },
+    { name: 'VT323', label: 'VT323 (Retro 8-Bit Pixel)' },
+  ];
+
+  const themeFonts = [];
+  const seen = new Set(baseFonts.map(f => f.name));
+
+  (themes || []).forEach(t => {
+    if (Array.isArray(t.fonts)) {
+      t.fonts.forEach(f => {
+        if (!seen.has(f.name)) {
+          seen.add(f.name);
+          themeFonts.push(f);
+        }
+      });
+    }
+  });
+
+  selectFont.innerHTML = [
+    ...themeFonts.map(f => `<option value="${f.name}">${f.label || f.name}</option>`),
+    ...baseFonts.map(f => `<option value="${f.name}">${f.label || f.name}</option>`),
+  ].join('');
+
+  if (Array.from(selectFont.options).some(o => o.value === currentFont)) {
+    selectFont.value = currentFont;
+  }
+}
+
 async function loadThemes() {
   if (!selectTheme) return;
   try {
     const res = await fetch('/api/themes');
     const data = await res.json();
     if (!data.themes) return;
+
+    installedThemesMap = new Map(data.themes.map(t => [t.id, t]));
+    updateFontDropdown(data.themes);
 
     const currentVal = selectTheme.value;
     selectTheme.innerHTML = data.themes.map(t => `
@@ -454,7 +522,7 @@ async function loadThemes() {
 async function installTheme(themeId, downloadUrl, btn) {
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '⏳ Memasang...';
+    btn.innerHTML = '⏳ Mengunduh & Memasang...';
   }
 
   try {
@@ -467,21 +535,23 @@ async function installTheme(themeId, downloadUrl, btn) {
     if (!res.ok) throw new Error(data.error || 'Gagal memasang tema');
 
     await loadThemes();
-    await loadCatalog();
     selectTheme.value = themeId;
+    applyThemePresets(themeId);
     updateOverlayParams();
-    alert(`Tema "${themeId}" berhasil dipasang dan langsung diaktifkan!`);
+    await loadCatalog();
+    switchTab('tab-studio');
+    alert(`🎉 Tema "${themeId}" berhasil dipasang dan langsung diaktifkan dengan preset resminya!`);
   } catch (err) {
     alert(`Error pemasangan tema: ${err.message}`);
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '📥 Pasang';
+      btn.innerHTML = '⚡ Instal & Pasang';
     }
   }
 }
 
 async function deleteTheme(themeId, btn) {
-  if (!confirm(`Hapus tema kustom "${themeId}"?`)) return;
+  if (!confirm(`Hapus tema "${themeId}" beserta seluruh preset dan font bawaannya?`)) return;
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = '⏳ Menghapus...';
@@ -497,19 +567,24 @@ async function deleteTheme(themeId, btn) {
     if (!res.ok) throw new Error(data.error || 'Gagal menghapus tema');
 
     await loadThemes();
-    await loadCatalog();
     if (selectTheme.value === themeId) {
       selectTheme.value = 'persona5';
+      applyThemePresets('persona5');
       updateOverlayParams();
     }
+    await loadCatalog();
+    alert(`Tema "${themeId}" berhasil dihapus.`);
   } catch (e) {
     alert(`Error: ${e.message}`);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '🗑️ Hapus';
+    }
   }
 }
 
 async function openThemesFolder() {
-  // Custom user themes disabled by design: themes are strictly official from Milky Brain.
-  console.log('Custom theme directory is disabled. Themes are strictly official.');
+  console.log('Themes are managed dynamically via In-App Catalog.');
 }
 
 // Fetch Catalog and render showcase grid in Tab 2
@@ -526,10 +601,11 @@ async function loadCatalog() {
 
     const themeCardsHtml = data.themes.map(t => {
       const isCurrentlyActive = t.id === currentActiveTheme;
-      const isP5 = t.id === 'persona5';
+      const isInstalled = !!t.installed;
+      const isBuiltIn = !!t.isBuiltIn;
 
       let bannerVisual = '';
-      if (isP5) {
+      if (t.id === 'persona5') {
         bannerVisual = `
           <div class="theme-banner-preview theme-banner-p5" style="background: radial-gradient(circle at center, #2A1015 0%, #100608 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
             <div style="position: relative; width: 330px; height: 105px; filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.95)); flex-shrink: 0;">
@@ -556,6 +632,34 @@ async function loadCatalog() {
             </div>
           </div>
         `;
+      } else if (t.id === 'undertale') {
+        bannerVisual = `
+          <div class="theme-banner-preview" style="background: #000000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
+            <div style="background: #000; border: 3px solid #FFF; box-shadow: inset 0 0 0 1px #000; padding: 8px 14px; width: 300px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;">
+                <span style="width: 10px; height: 10px; background: #FF0000; clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 50% 75%, 18% 100%, 0% 35%);"></span>
+                <span style="color: #FFFF00; font-family: 'VT323', monospace; font-size: 1.1rem; font-weight: 700; text-transform: uppercase;">FRISK</span>
+              </div>
+              <div style="color: #FFFFFF; font-family: 'VT323', monospace; font-size: 1.25rem; letter-spacing: 0.5px;">
+                * You feel your DETERMINATION.
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (t.id === 'cyberpunk2077') {
+        bannerVisual = `
+          <div class="theme-banner-preview" style="background: radial-gradient(circle at center, #1B212D 0%, #0B0E14 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
+            <div style="background: rgba(18, 24, 36, 0.95); border: 1.5px solid #FFE600; box-shadow: 0 0 14px rgba(255, 230, 0, 0.3); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); padding: 8px 14px; width: 310px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,230,0,0.3); padding-bottom: 2px;">
+                <span style="color: #00F0FF; font-family: monospace; font-size: 0.65rem;">// COMMS //</span>
+                <span style="color: #FFF; font-family: 'Chakra Petch', sans-serif; font-size: 0.82rem; font-weight: 800;">NETRUNNER</span>
+              </div>
+              <div style="color: #FFE600; font-family: 'Chakra Petch', sans-serif; font-size: 0.92rem; font-weight: 700;">
+                Wake up Samurai, we have a city to burn.
+              </div>
+            </div>
+          </div>
+        `;
       } else {
         bannerVisual = `
           <div class="theme-banner-preview theme-banner-classic">
@@ -572,15 +676,36 @@ async function loadCatalog() {
         `;
       }
 
+      let statusBadge = '';
+      if (isCurrentlyActive) {
+        statusBadge = `<span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: var(--primary); color: #FFF; border: 1px solid var(--primary);">★ AKTIF DIGUNAKAN</span>`;
+      } else if (isInstalled) {
+        statusBadge = `<span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: var(--bg-input); color: #FFF; border: 1px solid var(--border-subtle);">TERPASANG</span>`;
+      } else {
+        statusBadge = `<span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: rgba(0, 240, 255, 0.1); color: var(--accent-cyan); border: 1px solid rgba(0, 240, 255, 0.3);">TERSEDIA DI CLOUD</span>`;
+      }
+
+      let actionButtons = '';
+      if (isInstalled) {
+        if (isCurrentlyActive) {
+          actionButtons = `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; opacity: 0.7; cursor: default;" disabled>✓ Sedang Digunakan</button>`;
+        } else {
+          actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px;" onclick="selectThemeFromCatalog('${t.id}')">⚡ Gunakan Tema Ini</button>`;
+          if (!isBuiltIn) {
+            actionButtons += `<button class="btn btn-danger" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px; background: rgba(220, 38, 38, 0.2); border: 1px solid #DC2626; color: #FCA5A5; border-radius: 4px; cursor: pointer;" onclick="deleteTheme('${t.id}', this)" title="Hapus tema beserta font bawaannya">🗑️ Hapus</button>`;
+          }
+        }
+      } else {
+        actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px; background: var(--accent-cyan); color: #000; font-weight: 800; border: none; border-radius: 4px; cursor: pointer;" onclick="installTheme('${t.id}', '${t.downloadUrl}', this)">⚡ Instal & Pasang</button>`;
+      }
+
       return `
         <div class="theme-card-large ${isCurrentlyActive ? 'active-theme' : ''}">
           ${bannerVisual}
           <div class="theme-body">
             <div class="theme-name-row">
               <div class="theme-name">${t.name}</div>
-              <span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: ${isCurrentlyActive ? 'var(--primary)' : 'var(--bg-input)'}; color: #FFF; border: 1px solid ${isCurrentlyActive ? 'var(--primary)' : 'var(--border-subtle)'};">
-                ${isCurrentlyActive ? '★ AKTIF DIGUNAKAN' : 'TERPASANG'}
-              </span>
+              ${statusBadge}
             </div>
 
             <div class="theme-tag-row">
@@ -589,14 +714,7 @@ async function loadCatalog() {
           </div>
 
           <div class="theme-card-footer" style="justify-content: flex-end;">
-            ${isCurrentlyActive 
-              ? `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; opacity: 0.7; cursor: default;" disabled>
-                   ✓ Sedang Digunakan
-                 </button>`
-              : `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px;" onclick="selectThemeFromCatalog('${t.id}')">
-                   ⚡ Gunakan Tema Ini
-                 </button>`
-            }
+            ${actionButtons}
           </div>
         </div>
       `;
@@ -610,11 +728,11 @@ async function loadCatalog() {
           <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.5px;">KOLEKSI GAME BERIKUTNYA</div>
         </div>
         <div class="theme-body">
-          <div class="theme-name" style="color: var(--text-muted);">Undertale, Cyberpunk, & Retro JRPG</div>
+          <div class="theme-name" style="color: var(--text-muted);">Persona 3 Reload & Retro 16-Bit JRPG</div>
           <div class="theme-tag-row">
             <span class="theme-tag">Segera Hadir</span>
-            <span class="theme-tag">Pixel Art</span>
-            <span class="theme-tag">Cyberpunk</span>
+            <span class="theme-tag">Ocean Blue</span>
+            <span class="theme-tag">Chrono</span>
           </div>
         </div>
         <div class="theme-card-footer" style="justify-content: flex-end;">

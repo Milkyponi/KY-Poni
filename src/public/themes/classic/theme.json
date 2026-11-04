@@ -6,6 +6,18 @@
   "description": "Minimalist clean translucent glass bubbles with smooth fade transitions for multi-purpose streams.",
   "recommendedLayout": "vertical",
   "previewColor": "#2563EB",
+  "presets": {
+    "fontFamily": "Inter",
+    "fontSize": 16,
+    "textColor": "#FFFFFF",
+    "recommendedLayout": "vertical"
+  },
+  "fonts": [
+    {
+      "name": "Inter",
+      "label": "Inter (Clean Ultra Legible)"
+    }
+  ],
   "features": [
     "Frosted glass backdrop",
     "Subtle modern border",
