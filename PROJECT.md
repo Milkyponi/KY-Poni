@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.5.0-alpha` (Phase 5 Milestone: Clean Architecture & Modular Theme Plugins Verified)  
+**Current Version:** `v0.5.1-alpha` (Phase 5 Milestone: UI/UX Refinement & Layout Ergonomics Verified)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  

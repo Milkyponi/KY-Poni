@@ -16,11 +16,21 @@
       <img src="/assets/logo.svg" alt="KY Logo" style="width: 38px; height: 38px; object-fit: contain; filter: drop-shadow(2px 2px 0 #000);">
       <div>
         <div class="brand-title">KY-Poni Chat Studio</div>
-        <div class="brand-subtitle">Game-Aesthetic Overlays for OBS</div>
       </div>
     </div>
 
-    <!-- Centered Segmented Navigation Tabs -->
+    <!-- Header OBS Browser Source URL Widget -->
+    <div class="header-obs-wrapper">
+      <div class="header-obs-pill">
+        <span class="header-obs-icon">🔗</span>
+        <input type="text" id="obs-url" class="header-obs-input" readonly value="http://localhost:19840/overlay?theme=persona5&layout=vertical" title="OBS Browser Source URL">
+        <button id="btn-copy-url" class="btn-header-copy" title="Salin URL OBS">
+          📋 Salin
+        </button>
+      </div>
+    </div>
+
+    <!-- Segmented Navigation Tabs (Shifted Right) -->
     <nav class="top-nav">
       <button type="button" class="nav-tab active" data-tab="tab-studio" onclick="switchTab('tab-studio')">
         <span>🎛️</span> Studio
@@ -35,6 +45,7 @@
 
     <!-- Header Actions -->
     <div class="header-actions">
+      <span id="header-version-badge" class="header-version-badge">v0.5.0</span>
       <button id="btn-check-update" class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 12px;" onclick="checkUpdateManual()">
         🔄 Cek Update
       </button>
@@ -57,7 +68,7 @@
         <!-- 1. YouTube Live Connection Card -->
         <div class="card-section">
           <div class="card-title">
-            <span>📺</span> YouTube Live (Zero-Quota)
+            <span>📺</span> YouTube Live
           </div>
           <div class="form-group">
             <label for="yt-target">Channel Handle / Live URL</label>
@@ -65,7 +76,7 @@
           </div>
           <div style="display: flex; gap: 8px;">
             <button id="btn-connect" class="btn btn-primary" style="flex: 1;">
-              <span>⚡</span> Hubungkan Stream
+              <span>⚡</span> Connect
             </button>
             <button id="btn-disconnect" class="btn btn-danger" style="display: none;">
               Putus
@@ -76,23 +87,7 @@
           </div>
         </div>
 
-        <!-- 2. OBS Browser Source URL (Prominent Card) -->
-        <div class="card-section obs-highlight-card">
-          <div class="card-title" style="color: #FFF;">
-            <span>🔗</span> URL OBS Browser Source
-          </div>
-          <div class="obs-url-container">
-            <input type="text" id="obs-url" class="obs-url-input" readonly value="http://localhost:19840/overlay?theme=persona5&layout=vertical">
-            <button id="btn-copy-url" class="btn btn-primary" title="Salin ke Clipboard" style="white-space: nowrap;">
-              📋 Salin
-            </button>
-          </div>
-          <small id="obs-dim-tip" style="font-size: 0.72rem; color: var(--accent-cyan); font-weight: 700; margin-top: 3px; display: block;">
-            💡 Setting OBS: Width 450 x Height 800 px
-          </small>
-        </div>
-
-        <!-- 3. Overlay Setup & Customization -->
+        <!-- 2. Overlay Setup & Customization -->
         <div class="card-section">
           <div class="card-title">
             <span>🎨</span> Tampilan & Posisi Overlay
@@ -116,6 +111,9 @@
                 <option value="horizontal-wide">Horizontal Ultrawide (1200 x 320)</option>
                 <option value="fullscreen">Full-HD 1080p (1920 x 1080)</option>
               </select>
+              <small id="obs-dim-tip" style="font-size: 0.72rem; color: var(--accent-cyan); font-weight: 700; margin-top: 4px; display: block;">
+                💡 Rekomendasi OBS: Width 450 x Height 800 px
+              </small>
             </div>
           </div>
 
@@ -154,7 +152,7 @@
                 <label for="input-scale">Skala</label>
                 <span id="label-scale-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">100%</span>
               </div>
-              <input type="range" id="input-scale" min="70" max="150" step="5" value="100">
+              <input type="range" id="input-scale" min="25" max="150" step="5" value="100">
             </div>
 
             <div class="form-group">
@@ -222,19 +220,19 @@
 
           <div class="sim-btn-row">
             <button type="button" class="btn-sim" onclick="simulateEvent('chat_ryuji')">
-              🗣️ Ryuji (Normal)
+              🗣️ General
             </button>
             <button type="button" class="btn-sim" onclick="simulateEvent('chat_morgana')">
-              👑 Morgana (Owner)
+              👑 Owner
             </button>
             <button type="button" class="btn-sim" onclick="simulateEvent('chat_makoto')">
-              🛡️ Makoto (Mod)
+              🛡️ Moderator
             </button>
             <button type="button" class="btn-sim" onclick="simulateEvent('member_ann')">
-              ✦ Ann (Membership)
+              ✦ Member
             </button>
             <button type="button" class="btn-sim btn-sim-superchat" onclick="simulateEvent('superchat_50k')">
-              💥 Super Chat All-Out Attack
+              💥 Super Chat
             </button>
           </div>
 
@@ -259,7 +257,7 @@
       <div class="catalog-header-bar">
         <div>
           <div class="catalog-title">🎨 Katalog Tema Game KY-Poni</div>
-          <div class="catalog-subtitle">Koleksi tema visual video game resmi dari Milky Brain untuk mempercantik siaran livestreaming Anda.</div>
+          <div class="catalog-subtitle">Koleksi tema visual video game resmi dari Milkyponi untuk mempercantik siaran livestreaming Anda.</div>
         </div>
       </div>
 
@@ -297,7 +295,7 @@
             </div>
             <div class="settings-list-item">
               <span>InnerTube Ingest</span>
-              <span style="color: var(--accent-green); font-weight: 700;">Aktif (Zero-Quota)</span>
+              <span style="color: var(--accent-green); font-weight: 700;">Aktif</span>
             </div>
             <div class="settings-list-item">
               <span>Status Koneksi</span>

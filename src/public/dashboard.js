@@ -573,14 +573,9 @@ async function loadCatalog() {
             <div class="theme-tag-row">
               ${(t.tags || []).map(tag => `<span class="theme-tag">${tag}</span>`).join('')}
             </div>
-
-            <div class="theme-desc">
-              ${t.description}
-            </div>
           </div>
 
-          <div class="theme-card-footer">
-            <span style="font-size: 0.75rem; color: var(--text-dim);">By ${t.author || 'Milky Brain'}</span>
+          <div class="theme-card-footer" style="justify-content: flex-end;">
             ${isCurrentlyActive 
               ? `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; opacity: 0.7; cursor: default;" disabled>
                    ✓ Sedang Digunakan
@@ -608,12 +603,8 @@ async function loadCatalog() {
             <span class="theme-tag">Pixel Art</span>
             <span class="theme-tag">Cyberpunk</span>
           </div>
-          <div class="theme-desc">
-            Tema-tema game legendaris lainnya sedang dalam kurasi untuk pembaruan berikutnya. Seluruh koleksi tema dioptimalkan khusus untuk OBS Studio.
-          </div>
         </div>
-        <div class="theme-card-footer">
-          <span style="font-size: 0.75rem; color: var(--text-dim);">Milky Brain Themes</span>
+        <div class="theme-card-footer" style="justify-content: flex-end;">
           <span style="font-size: 0.76rem; color: var(--accent-cyan); font-weight: 700; border: 1px solid rgba(0, 240, 255, 0.3); padding: 4px 10px; border-radius: 4px;">
             🚀 Segera Hadir
           </span>
@@ -632,6 +623,12 @@ async function pollStatus() {
   try {
     const res = await fetch('/api/status');
     const data = await res.json();
+    if (data.version) {
+      const headerVerEl = document.getElementById('header-version-badge');
+      if (headerVerEl) headerVerEl.textContent = `v${data.version}`;
+      const currentVerEl = document.getElementById('settings-current-ver');
+      if (currentVerEl) currentVerEl.textContent = `v${data.version}`;
+    }
     if (data.status === 'connected') {
       setUIStatus('connected', `Live: ${data.target}`);
       btnConnect.style.display = 'none';
@@ -668,6 +665,10 @@ async function checkUpdateAuto() {
     if (currentVerEl && data.currentVersion) {
       currentVerEl.textContent = `v${data.currentVersion}`;
     }
+    const headerVerEl = document.getElementById('header-version-badge');
+    if (headerVerEl && data.currentVersion) {
+      headerVerEl.textContent = `v${data.currentVersion}`;
+    }
 
     // Only show modal if an update is genuinely newer AND not previously dismissed by user
     if (data.updateAvailable) {
@@ -700,6 +701,10 @@ async function checkUpdateManual() {
     const currentVerEl = document.getElementById('settings-current-ver');
     if (currentVerEl && data.currentVersion) {
       currentVerEl.textContent = `v${data.currentVersion}`;
+    }
+    const headerVerEl = document.getElementById('header-version-badge');
+    if (headerVerEl && data.currentVersion) {
+      headerVerEl.textContent = `v${data.currentVersion}`;
     }
 
     if (data.updateAvailable) {

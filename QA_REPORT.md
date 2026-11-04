@@ -32,16 +32,19 @@
 | 20 | Multi-Tier Height & Anti-Overflow | ✅ PASS | Pesan 165 karakter font 25px 100% tertampung utuh di dalam balon tanpa bocor garis bawah |
 | 21 | Modular Native Backend Router | ✅ PASS | `src/routes/` modular dispatch (`status`, `config`, `ingest`, `themes`, `updater`, `static`) |
 | 22 | Dynamic Theme Plugin Architecture | ✅ PASS | `overlay.js` agnostic; `persona5/renderer.js` & `classic/renderer.js` modular verified |
+| 23 | Header OBS Widget & Zero-Overlap Ergonomics | ✅ PASS | URL OBS + tombol salin di header, nav tabs digeser ke kanan tanpa tumpang tindih |
+| 24 | Canvas Scale Range (25% - 150%) | ✅ PASS | Minimum slider skala kanvas turun ke 25% terverifikasi di DOM dan URL |
+| 25 | Catalog Gallery Purification | ✅ PASS | Deskripsi dan kredit dihapus; fokus murni pada visual kartu dan nama tema |
 
-**Total:** 22/22 Targeted Tests Passed (100% Green).
+**Total:** 25/25 Targeted Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.0.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.1.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.0.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.1.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---

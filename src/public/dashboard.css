@@ -72,38 +72,118 @@ header {
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
+  justify-content: flex-start;
+  padding: 0 20px;
   flex-shrink: 0;
   z-index: 100;
+  gap: 16px;
 }
 
 .brand-wrapper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .brand-title {
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   letter-spacing: -0.5px;
+  white-space: nowrap;
 }
 
-.brand-subtitle {
-  font-size: 0.76rem;
+/* Header OBS URL Bar */
+.header-obs-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 0 1 360px;
+  min-width: 200px;
+}
+
+.header-obs-pill {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px 4px 3px 8px;
+  width: 100%;
+  gap: 6px;
+  min-width: 0;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.header-obs-pill:focus-within {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.25);
+}
+
+.header-obs-icon {
+  font-size: 0.82rem;
+  user-select: none;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.header-obs-input {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
   color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  flex: 1 1 auto;
+  min-width: 0 !important;
+  padding: 3px 0 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: text;
+}
+
+.header-obs-input:focus {
+  color: #FFF;
+}
+
+.btn-header-copy {
+  background: var(--primary);
+  color: #FFF;
+  border: none;
+  font-family: var(--font-main);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-header-copy:hover {
+  background: var(--primary-hover);
+}
+
+.btn-header-copy:active {
+  transform: scale(0.96);
 }
 
 /* Top Navigation Tabs */
 .top-nav {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: var(--bg-input);
-  padding: 4px;
+  padding: 3px;
   border-radius: 9999px;
   border: 1px solid var(--border-subtle);
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .nav-tab {
@@ -112,14 +192,14 @@ header {
   outline: none;
   color: var(--text-muted);
   font-family: var(--font-main);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 7px 18px;
+  padding: 6px 14px;
   border-radius: 9999px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.2s ease;
   user-select: none;
 }
@@ -143,7 +223,21 @@ header {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.header-version-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  user-select: none;
 }
 
 .status-pill {
