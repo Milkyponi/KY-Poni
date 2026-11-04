@@ -1,7 +1,11 @@
 /**
- * KY-Poni - OBS Overlay Client Script
- * Authentic Persona 5 UI V4 (Game-Asset Sliced 3-Piece Bubble, Ransom Nameplate)
- * Handles 4 Screen Corners, Horizontal/Vertical Layouts, Smooth Slides, and Auto-Hide with "Keep Last N".
+ * KY-Poni - Core OBS Overlay Client Engine
+ * 
+ * Open-Closed Architecture:
+ * - Core Engine manages canvas positioning, directional horizontal/vertical insertion,
+ *   auto-hide expiration timers, retention guards, and WebSocket event ingestion.
+ * - Theme-specific DOM construction is delegated to dynamic theme plugins (/themes/:theme/renderer.js)
+ *   implementing the standard Theme Plugin Contract (THEME_SPEC.md).
  */
 
 (function () {
@@ -13,9 +17,10 @@
   const isRightPos = pos.endsWith('-right');
   const isTopPos = pos.startsWith('top-');
 
-  // In horizontal mode: Left anchors (bottom-left, top-left) MUST prepend so new chat is at the left anchor and pushes older chats rightward.
-  // Right anchors (bottom-right, top-right) MUST append so new chat is at the right anchor and pushes older chats leftward.
-  // In vertical mode: Top anchors prepend (pushes down), Bottom anchors append (pushes up).
+  // Directional Flow:
+  // - Horizontal left anchors (bottom-left, top-left) prepend so newest chat appears at anchor and pushes older rightward.
+  // - Horizontal right anchors (bottom-right, top-right) append so newest chat appears at anchor and pushes older leftward.
+  // - Vertical: top anchors prepend (pushes down), bottom anchors append (pushes up).
   const isPrependFlow = isHorizontal ? !isRightPos : isTopPos;
 
   const maxMessages = parseInt(urlParams.get('max') || '8', 10);
@@ -42,10 +47,28 @@
     document.documentElement.style.setProperty('--msg-font-color', cleanColor);
   }
 
-  // Apply layout and position classes
+  // Active Context passed to Theme Plugins
+  const context = {
+    theme,
+    layout,
+    pos,
+    scale,
+    fsize,
+    font,
+    color,
+    fade: fadeSeconds,
+    keep: keepLastN,
+    max: maxMessages,
+    isHorizontal,
+    isRightPos,
+    isTopPos,
+    isPrependFlow,
+  };
+
+  // Setup Canvas Classes
   const canvas = document.getElementById('chat-canvas');
   canvas.className = '';
-  if (layout.startsWith('horizontal')) {
+  if (isHorizontal) {
     canvas.classList.add('layout-horizontal');
   } else {
     canvas.classList.add('layout-vertical');
@@ -55,20 +78,41 @@
   }
   canvas.classList.add(`pos-${pos}`);
 
-  // Load selected theme stylesheet
+  // Dynamic Theme Asset Loading (CSS + Renderer Plugin)
   const themeLink = document.getElementById('theme-stylesheet');
   if (themeLink) {
     themeLink.href = `/themes/${theme}/style.css`;
   }
 
-  // Get active (non-exiting) chat entries
+  function loadThemePlugin(themeName) {
+    const scriptId = 'theme-renderer-plugin';
+    let existing = document.getElementById(scriptId);
+    if (existing) existing.remove();
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = `/themes/${themeName}/renderer.js`;
+    script.onload = () => {
+      if (window.KYPoniTheme && typeof window.KYPoniTheme.onLoad === 'function') {
+        window.KYPoniTheme.onLoad(context);
+      }
+    };
+    script.onerror = () => {
+      console.warn(`[KY-Poni Core] Could not load renderer.js for theme "${themeName}". Generic fallback will be used.`);
+    };
+    document.head.appendChild(script);
+  }
+
+  loadThemePlugin(theme);
+
+  // Helper: Active (non-exiting) DOM entries
   function getActiveEntries() {
     return Array.from(canvas.querySelectorAll('.chat-entry')).filter(
       (el) => !el.classList.contains('is-exiting')
     );
   }
 
-  // Animate and remove an entry
+  // Helper: Animate and remove an entry
   function animateAndRemove(entry) {
     if (!entry || entry.classList.contains('is-exiting')) return;
     entry.classList.add('is-exiting');
@@ -79,7 +123,7 @@
     }, 450);
   }
 
-  // Clean up any previously expired entries if active count exceeds keepLastN
+  // Retention Guard: Clean up expired entries if active count exceeds keepLastN
   function flushExpiredEntries() {
     if (fadeSeconds <= 0) return;
     const active = getActiveEntries();
@@ -104,6 +148,24 @@
     }
   }
 
+  // Generic Fallback Renderer (if theme plugin is loading or unavailable)
+  function renderFallbackMessage(item) {
+    const entry = document.createElement('div');
+    entry.className = `chat-entry ${item.type === 'superchat' ? 'is-superchat' : ''}`;
+    entry.id = `msg-${item.id}`;
+
+    const authorSpan = document.createElement('div');
+    authorSpan.style.fontWeight = 'bold';
+    authorSpan.textContent = (item.author && item.author.name) || 'User';
+
+    const textSpan = document.createElement('div');
+    textSpan.innerHTML = item.message || '';
+
+    entry.appendChild(authorSpan);
+    entry.appendChild(textSpan);
+    return entry;
+  }
+
   function appendChatMessage(item) {
     // 1. Enforce maxMessages limit
     const existing = getActiveEntries();
@@ -115,186 +177,30 @@
       }
     }
 
-    // 2. Build DOM element based on active theme
-    const entry = document.createElement('div');
-    entry.className = `chat-entry ${item.type === 'superchat' ? 'is-superchat' : ''} ${item.type === 'membership' ? 'is-membership' : ''}`;
-    entry.id = `msg-${item.id}`;
-
-    if (theme === 'persona5') {
-      // ========================================================
-      // Authentic Persona 5 Dialogue Bubble (Asset-Based Sliced)
-      // ========================================================
-      const rawText = (item.message || '').replace(/<[^>]*>/g, '').trim();
-      const rawLength = rawText.length;
-
-      // Dynamic 3-Tier Height Classification based on content volume
-      let tierClass = 'tier-1';
-      if (rawLength > 95 || (rawText.match(/\n/g) || []).length >= 2) {
-        tierClass = 'tier-3';
-      } else if (rawLength > 42 || rawText.includes('\n') || (item.type === 'superchat') || (item.type === 'membership')) {
-        tierClass = 'tier-2';
-      }
-
-      const bubble = document.createElement('div');
-      bubble.className = `p5-dialogue-bubble ${tierClass} ${tierClass !== 'tier-1' ? 'multiline' : ''}`;
-
-      // A. 3-Piece Background Skin
-      const skin = document.createElement('div');
-      skin.className = 'p5-skin';
-      skin.innerHTML = `
-        <div class="p5-skin-left"></div>
-        <div class="p5-skin-mid"></div>
-        <div class="p5-skin-right"></div>
-      `;
-      bubble.appendChild(skin);
-
-      // B. Nameplate with Ransom-Note Letter Styling
-      const nameplate = document.createElement('div');
-      nameplate.className = 'p5-nameplate';
-
-      const rawName = (item.author.name || 'ANON').toUpperCase();
-      // Pick one letter for the red ransom box (deterministic hash or index 1)
-      let redIdx = 1;
-      if (rawName.length > 3) {
-        const hash = rawName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        redIdx = 1 + (hash % Math.max(1, rawName.length - 2));
-      } else if (rawName.length <= 1) {
-        redIdx = 0;
-      }
-
-      let nameHtml = '';
-      for (let i = 0; i < rawName.length; i++) {
-        const char = rawName[i];
-        if (char === ' ') {
-          nameHtml += '<span class="p5-char-space">&nbsp;</span>';
-          continue;
-        }
-        const rot = ((i * 3 + char.charCodeAt(0)) % 5) - 2;
-        if (i === redIdx) {
-          nameHtml += `<span class="p5-char ransom-red">${escapeText(char)}</span>`;
-        } else {
-          nameHtml += `<span class="p5-char" style="--r: ${rot};">${escapeText(char)}</span>`;
-        }
-      }
-      nameplate.innerHTML = nameHtml;
-      bubble.appendChild(nameplate);
-
-      // C. Message Content Overlay (Inside Safe Black Panel)
-      const messageBox = document.createElement('div');
-      messageBox.className = 'p5-message-box';
-
-      let prefixHtml = '';
-      if (item.type === 'superchat' && item.superchat) {
-        prefixHtml = `<span class="p5-badge-amount">${escapeText(item.superchat.amount)}</span>`;
-      } else if (item.type === 'membership') {
-        prefixHtml = `<span class="p5-badge-member">NEW MEMBER</span>`;
-      }
-
-      const messageText = document.createElement('div');
-      messageText.className = 'p5-message-text';
-
-      // Auto-fit font scaling so text remains 100% enclosed without border breaches
-      if (fsize && fsize > 0) {
-        let effFsize = fsize;
-        if (rawLength > 130) {
-          effFsize = Math.min(fsize, 16);
-        } else if (rawLength > 80) {
-          effFsize = Math.min(fsize, 19);
-        } else if (rawLength > 45) {
-          effFsize = Math.min(fsize, 22);
-        }
-        messageText.style.fontSize = `${effFsize}px`;
-      } else {
-        if (rawLength > 130) {
-          messageText.style.fontSize = '1.05rem';
-        } else if (rawLength > 80) {
-          messageText.style.fontSize = '1.18rem';
-        }
-      }
-
-      messageText.innerHTML = prefixHtml + item.message;
-      messageBox.appendChild(messageText);
-
-      bubble.appendChild(messageBox);
-      entry.appendChild(bubble);
-
+    // 2. Delegate DOM construction to Active Theme Plugin
+    let entry = null;
+    if (window.KYPoniTheme && typeof window.KYPoniTheme.renderMessage === 'function') {
+      entry = window.KYPoniTheme.renderMessage(item, context);
     } else {
-      // ========================================================
-      // Classic Clean Translucent Theme
-      // ========================================================
-      const authorTab = document.createElement('div');
-      authorTab.className = 'author-tab';
-
-      if (item.author.avatar) {
-        const avatar = document.createElement('img');
-        avatar.className = 'author-avatar';
-        avatar.referrerPolicy = 'no-referrer';
-        avatar.src = item.author.avatar;
-        avatar.alt = item.author.name;
-        avatar.onerror = () => { avatar.style.display = 'none'; };
-        authorTab.appendChild(avatar);
-      }
-
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'author-name';
-      nameSpan.textContent = item.author.name;
-      authorTab.appendChild(nameSpan);
-
-      if (Array.isArray(item.author.badges)) {
-        item.author.badges.forEach((b) => {
-          const badgeSpan = document.createElement('span');
-          badgeSpan.className = `author-badge badge-${b.type}`;
-          badgeSpan.textContent = b.label || b.type.toUpperCase();
-          authorTab.appendChild(badgeSpan);
-        });
-      }
-      entry.appendChild(authorTab);
-
-      const bubbleBody = document.createElement('div');
-      bubbleBody.className = 'bubble-body';
-
-      if (item.type === 'superchat' && item.superchat) {
-        const scAmount = document.createElement('div');
-        scAmount.className = 'superchat-amount-banner';
-        scAmount.textContent = item.superchat.amount;
-        bubbleBody.appendChild(scAmount);
-      } else if (item.type === 'membership') {
-        const memBanner = document.createElement('div');
-        memBanner.className = 'superchat-amount-banner';
-        memBanner.textContent = '★ NEW MEMBER';
-        bubbleBody.appendChild(memBanner);
-      }
-
-      const msgSpan = document.createElement('div');
-      msgSpan.className = 'message-text';
-      msgSpan.innerHTML = item.message;
-      bubbleBody.appendChild(msgSpan);
-
-      entry.appendChild(bubbleBody);
+      entry = renderFallbackMessage(item);
     }
 
-    // 3. Insert into canvas (prepend vs append based on anchor flow)
+    // 3. Directional insertion into canvas (prepend vs append based on anchor flow)
     if (isPrependFlow) {
       canvas.prepend(entry);
     } else {
       canvas.appendChild(entry);
     }
 
-    // 4. Flush any older expired entries now that a new message has arrived
+    // 4. Flush older expired entries now that new message arrived
     flushExpiredEntries();
 
-    // 5. Smooth scroll / slide
+    // 5. Directional scroll alignment
     if (isHorizontal) {
       if (isRightPos) {
-        canvas.scrollTo({
-          left: canvas.scrollWidth,
-          behavior: 'smooth',
-        });
+        canvas.scrollTo({ left: canvas.scrollWidth, behavior: 'smooth' });
       } else {
-        canvas.scrollTo({
-          left: 0,
-          behavior: 'smooth',
-        });
+        canvas.scrollTo({ left: 0, behavior: 'smooth' });
       }
     } else {
       if (isTopPos) {
@@ -304,7 +210,7 @@
       }
     }
 
-    // 6. Schedule Auto-Hide Timer
+    // 6. Schedule Auto-Hide Timer with Retention Guard
     if (fadeSeconds > 0) {
       setTimeout(() => {
         const active = getActiveEntries();
@@ -317,12 +223,6 @@
     }
   }
 
-  function escapeText(text) {
-    const div = document.createElement('div');
-    div.innerText = text || '';
-    return div.innerHTML;
-  }
-
   // WebSocket Connection
   let ws = null;
   function connectWebSocket() {
@@ -332,7 +232,7 @@
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log('[KY-Poni Overlay] Connected to WebSocket broadcaster.');
+      console.log('[KY-Poni Core Overlay] Connected to WebSocket broadcaster.');
       ws.send(JSON.stringify({ type: 'REGISTER_OVERLAY', theme, layout, pos }));
     };
 
@@ -343,27 +243,29 @@
           appendChatMessage(payload.data);
         }
       } catch (e) {
-        console.error('[KY-Poni Overlay] Error parsing WS event:', e);
+        console.error('[KY-Poni Core Overlay] Error parsing WS event:', e);
       }
     };
 
     ws.onclose = () => {
-      console.warn('[KY-Poni Overlay] Connection closed. Reconnecting in 3s...');
+      console.warn('[KY-Poni Core Overlay] Connection closed. Reconnecting in 3s...');
       setTimeout(connectWebSocket, 3000);
     };
 
     ws.onerror = (err) => {
-      console.error('[KY-Poni Overlay] WS error:', err);
+      console.error('[KY-Poni Core Overlay] WS error:', err);
       ws.close();
     };
   }
 
   connectWebSocket();
 
-  // Optional Test Seed via ?test=p5 or ?demo=1
+  // Test demo seed via ?test=p5 or ?demo=1
   if (urlParams.get('test') === 'p5' || urlParams.get('demo') === '1') {
-    appendChatMessage({ id: 'test-1', author: { name: 'Sae' }, message: 'The P5 Generator rocks, baby!' });
-    appendChatMessage({ id: 'test-2', author: { name: 'Ren' }, message: "I should write something. I'll just add this." });
-    appendChatMessage({ id: 'test-3', author: { name: 'Joker' }, message: 'Take your time.' });
+    setTimeout(() => {
+      appendChatMessage({ id: 'test-1', author: { name: 'Sae' }, message: 'The P5 Generator rocks, baby!' });
+      appendChatMessage({ id: 'test-2', author: { name: 'Ren' }, message: "I should write something. I'll just add this." });
+      appendChatMessage({ id: 'test-3', author: { name: 'Joker' }, message: 'Take your time.' });
+    }, 500);
   }
 })();

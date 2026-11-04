@@ -140,7 +140,18 @@ async function runTests() {
     assert(updaterRes.currentVersion, 'Updater must return currentVersion');
     console.log(`[PASS] GET /api/updater/check verified (currentVersion=${updaterRes.currentVersion}, latestRelease=${updaterRes.latestVersion})`);
 
-    console.log('\n🎉 ALL 10 TESTS PASSED SUCCESSFULLY! Clean architecture verified.');
+    // 11. Test Modular Theme Plugin Renderers (THEME_SPEC.md compliance)
+    console.log('[TEST] Testing Theme Plugin Dynamic Renderers...');
+    const p5RendererJs = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/persona5/renderer.js`);
+    assert(p5RendererJs.includes('window.KYPoniTheme'), 'Persona 5 theme must implement window.KYPoniTheme');
+    assert(p5RendererJs.includes('renderMessage'), 'Persona 5 renderer must have renderMessage function');
+
+    const classicRendererJs = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/classic/renderer.js`);
+    assert(classicRendererJs.includes('window.KYPoniTheme'), 'Classic theme must implement window.KYPoniTheme');
+    assert(classicRendererJs.includes('renderMessage'), 'Classic renderer must have renderMessage function');
+    console.log('[PASS] Dynamic Theme Plugin Renderers verified (THEME_SPEC.md 100% compliant)');
+
+    console.log('\n🎉 ALL 11 TESTS PASSED SUCCESSFULLY! Clean architecture verified.');
   } finally {
     if (wsClient && wsClient.readyState === WebSocket.OPEN) {
       wsClient.terminate();

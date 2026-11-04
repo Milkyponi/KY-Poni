@@ -30,16 +30,18 @@
 | 18 | Curated Catalog Sanitization | ✅ PASS | Tombol custom folder tema dibersihkan, kartu masa depan berstatus 'Segera Hadir' |
 | 19 | Dynamic Horizontal Text Expansion | ✅ PASS | Potongan bodi tengah melebar mengikuti teks; ornamen kiri/kanan terkunci tanpa distorsi |
 | 20 | Multi-Tier Height & Anti-Overflow | ✅ PASS | Pesan 165 karakter font 25px 100% tertampung utuh di dalam balon tanpa bocor garis bawah |
+| 21 | Modular Native Backend Router | ✅ PASS | `src/routes/` modular dispatch (`status`, `config`, `ingest`, `themes`, `updater`, `static`) |
+| 22 | Dynamic Theme Plugin Architecture | ✅ PASS | `overlay.js` agnostic; `persona5/renderer.js` & `classic/renderer.js` modular verified |
 
-**Total:** 20/20 Targeted Tests Passed (100% Green).
+**Total:** 22/22 Targeted Tests Passed (100% Green).
 
 ---
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.4.10.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.5.0.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.4.10.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.5.0.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---

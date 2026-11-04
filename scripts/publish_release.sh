@@ -13,7 +13,10 @@ cd "${PROJECT_ROOT}"
 
 VERSION=$(node -e "console.log(require('./package.json').version)")
 TAG="v${VERSION}"
-CHANGELOG_FILE="${PROJECT_ROOT}/CHANGELOG_v${VERSION}.md"
+CHANGELOG_FILE="${PROJECT_ROOT}/changelogs/CHANGELOG_v${VERSION}.md"
+if [[ ! -f "${CHANGELOG_FILE}" ]]; then
+  CHANGELOG_FILE="${PROJECT_ROOT}/CHANGELOG_v${VERSION}.md"
+fi
 
 echo "============================================================"
 echo "  Publishing KY-Poni ${TAG} to GitHub Releases"
