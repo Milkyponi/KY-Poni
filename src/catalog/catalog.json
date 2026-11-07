@@ -26,6 +26,28 @@
       ]
     },
     {
+      "id": "persona3reload",
+      "name": "Persona 3 Reload",
+      "version": "1.0.0",
+      "author": "Milkyponi",
+      "previewColor": "#00D2FF",
+      "installed": true,
+      "isBuiltIn": true,
+      "tags": ["JRPG", "Persona", "Tartarus", "Agane", "Anime"],
+      "presets": {
+        "fontFamily": "Agane",
+        "fontSize": 16,
+        "textColor": "#FFFFFF",
+        "recommendedLayout": "vertical"
+      },
+      "fonts": [
+        {
+          "name": "Agane",
+          "label": "Aganè (Official P3R Dialogue)"
+        }
+      ]
+    },
+    {
       "id": "classic",
       "name": "Clean Modern Minimal",
       "version": "1.0.0",

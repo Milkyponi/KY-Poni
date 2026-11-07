@@ -1,0 +1,28 @@
+{
+  "id": "persona3reload",
+  "name": "Persona 3 Reload",
+  "version": "1.0.0",
+  "author": "Milky Brain (Fonzy)",
+  "description": "Authentic Persona 3 Reload Tartarus dialogue bubble with electric cyan highlight, 3-piece sliced asset skin, and official Agane typography.",
+  "recommendedLayout": "vertical",
+  "previewColor": "#00D2FF",
+  "presets": {
+    "fontFamily": "Agane",
+    "fontSize": 16,
+    "textColor": "#FFFFFF",
+    "recommendedLayout": "vertical"
+  },
+  "fonts": [
+    {
+      "name": "Agane",
+      "label": "Aganè (Official P3R Dialogue)"
+    }
+  ],
+  "features": [
+    "Authentic P3R Tartarus speech bubble geometry",
+    "Electric cyan border highlights and deep navy body",
+    "Sharp geometric origami tail pointer",
+    "Dynamic status badge (TALK / SUPER CHAT / MEMBER)",
+    "Layered depth with authentic Persona 3 Reload typography"
+  ]
+}

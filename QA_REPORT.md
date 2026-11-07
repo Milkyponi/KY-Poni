@@ -1,8 +1,8 @@
-# QA & Automated Test Report: KY-Poni (v0.7.0-alpha)
+# QA & Automated Test Report: KY-Poni (v0.8.0-alpha)
 
 - **Tanggal Eksekusi**: 2026-11-07
 - **Lead Tester**: Fonzy (Divisi Software Development)
-- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Curated Themes System, In-App Auto-Updater Seamless Restart, YouTube Ingest Anti-RTO & Self-Healing Watchdog, Remote Theme Catalog, Fixed 1000x1000 Canvas Standard & Streamlabs Layout Flow Architecture.
+- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Persona 3 Reload Tartarus Theme Engine, 3-Piece Hybrid Asset Slicing, Aganè Font Family Bundling, Dynamic Status Badge (TALK/Donasi/Member), Fixed 1000x1000 Canvas Standard, Anti-RTO Watchdog.
 
 ---
 
@@ -11,15 +11,15 @@
 | No | Modul / Skenario Uji | Status | Catatan Teknis |
 |---|---|---|---|
 | 1 | Server Boot & Port Binding (`19840`) | ✅ PASS | Binding bersih di localhost, latensi 0 ms |
-| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.4.8) |
-| 3 | REST Endpoint `GET /api/themes` | ✅ PASS | Terdeteksi 2 tema resmi: Persona 5 & Classic |
-| 4 | REST Endpoint `GET /api/catalog` | ✅ PASS | Manifest katalog resmi termuat tanpa kustom eksternal |
+| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.8.0) |
+| 3 | REST Endpoint `GET /api/themes` | ✅ PASS | Terdeteksi 3 tema resmi: Persona 5, Persona 3 Reload, & Classic |
+| 4 | REST Endpoint `GET /api/catalog` | ✅ PASS | P3R otomatis terdaftar berdampingan dengan Persona 5 |
 | 5 | OBS Overlay Serving (`GET /overlay`) | ✅ PASS | HTML kanvas transparan 60 FPS |
-| 6 | 3-Piece Hybrid Asset Skin Assembly | ✅ PASS | Gabungan `bubble_left`, `bubble_mid`, `bubble_right` 100% solid, seamline hilang total |
-| 7 | Persona 5 Official Font Bundling | ✅ PASS | Font `OptimaNovaLT-Black.ttf`, `KoreanKRSM.ttf`, `p5hatty.ttf` ter-bundle di tema |
-| 8 | Dynamic Ransom-Note Nameplate | ✅ PASS | Algoritma penataan huruf + satu aksen kotak merah miring di pita putih aman tanpa clipping |
-| 9 | Dynamic Multiline Word-Wrapping | ✅ PASS | Pesan 2 baris otomatis wrap dan tinggi bertambah (220px) dengan margin bawah lapang |
-| 10 | One-Click Auto-Update & Restart | ✅ PASS | Penggantian biner in-place Linux AppImage & Windows runner script |
+| 6 | 3-Piece Hybrid Asset Skin Assembly (P3R) | ✅ PASS | Gabungan `bubble_left`, `bubble_mid`, `bubble_right` 100% solid, seamline hilang total |
+| 7 | Persona 3 Reload Official Font Bundling | ✅ PASS | Font `Agane-Roman.ttf`, `Agane-Bold.ttf`, `Agane-ExtraBold.ttf` ter-bundle di tema |
+| 8 | Dynamic Status Badge (TALK/Superchat/Member) | ✅ PASS | Badge mikro TALK (cyan), Superchat (Rp 100.000 emas), & Member (hijau) adaptif |
+| 9 | Tartarus Palette & Hard-Edge Shadow | ✅ PASS | Warna body Deep Navy & Electric Cyan dengan stylized hard shadow tajam |
+| 10 | Multiline Word-Wrapping & Breathing Room | ✅ PASS | Pesan 2 baris tertampung lapang dengan padding proporsional |
 | 11 | Real YouTube Live Ingestion Test | ✅ PASS | Teruji menyerap 70 pesan asli live chat YouTube dalam 10 detik tanpa API key |
 | 12 | YouTube Ingest Anti-RTO Resilience | ✅ PASS | Penanganan ETIMEDOUT tanpa crash, soft 'reconnecting' state teruji |
 | 13 | Auto-Recovery on Message Ingest | ✅ PASS | Pemulihan otomatis status 'connected' saat pesan baru masuk pasca sinyal pulih |

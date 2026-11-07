@@ -651,6 +651,30 @@ async function loadCatalog() {
             </div>
           </div>
         `;
+      } else if (t.id === 'persona3reload') {
+        bannerVisual = `
+          <div class="theme-banner-preview" style="background: radial-gradient(circle at center, #0F2042 0%, #060E21 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
+            <div style="position: relative; width: 330px; height: 105px; filter: drop-shadow(0px 6px 12px rgba(0, 10, 30, 0.7)); flex-shrink: 0;">
+              <!-- 3-Piece Sliced Skin -->
+              <div style="position: absolute; inset: 0; display: flex; flex-direction: row; pointer-events: none;">
+                <div style="width: 32.6%; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_left.png') no-repeat left top; background-size: 100% 100%; flex-shrink: 0;"></div>
+                <div style="flex: 1; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_mid.png') no-repeat center top; background-size: 100% 100%; margin-left: -1px; margin-right: -1px;"></div>
+                <div style="width: 31.9%; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_right.png') no-repeat right top; background-size: 100% 100%; flex-shrink: 0;"></div>
+              </div>
+              <!-- Meta (Username & Badge TALK) -->
+              <div style="position: absolute; top: 22px; left: 52px; display: flex; align-items: baseline; gap: 6px; z-index: 5;">
+                <span style="color: #FFFFFF; font-family: 'Agane', sans-serif; font-size: 12px; font-weight: 700;">Makoto Yuki</span>
+                <span style="color: #00D2FF; font-family: 'Agane', sans-serif; font-size: 8px; font-weight: 800; letter-spacing: 1.2px;">TALK</span>
+              </div>
+              <!-- Message Content -->
+              <div style="position: absolute; top: 40px; bottom: 12px; left: 52px; right: 35px; z-index: 5; display: flex; align-items: center; justify-content: flex-start;">
+                <div style="color: #FFFFFF; font-family: 'Agane', sans-serif; font-size: 0.88rem; font-weight: 400; line-height: 1.25; word-break: break-word;">
+                  I will burn my dread and face tomorrow.
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
       } else if (t.id === 'undertale') {
         bannerVisual = `
           <div class="theme-banner-preview" style="background: #000000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">

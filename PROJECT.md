@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.7.0-alpha` (Phase 7: Fixed 1000x1000 Canvas Standard & Streamlabs-Model Layout Flow)  
+**Current Version:** `v0.8.0-alpha` (Phase 8: Persona 3 Reload Theme Engine & Aganè Typography Integration)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  

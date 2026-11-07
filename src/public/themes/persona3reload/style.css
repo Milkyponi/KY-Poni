@@ -1,0 +1,349 @@
+/* ========================================================
+   KY-Poni - Persona 3 Reload Theme (Polished V2)
+   Authentic Dialogue Bubble Reconstructed from Game Assets:
+   - 3-Piece Hybrid Asset Skin (bubble_left.png, bubble_mid.png, bubble_right.png)
+   - Official Persona 3 Reload Typography: Aganè Font Family
+   - Dynamic Status Badge: TALK / SUPER CHAT / MEMBER
+   - Authentic Tartarus Deep Navy & Electric Cyan Palette
+   - Persona Stylized Graphic Hard-Edge Drop Shadow
+   - Zero-Distortion Content-Driven Intrinsic Sizing
+   ======================================================== */
+
+@font-face {
+  font-family: 'Agane';
+  src: url('/themes/persona3reload/assets/fonts/Agane-Roman.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Agane';
+  src: url('/themes/persona3reload/assets/fonts/Agane-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Agane';
+  src: url('/themes/persona3reload/assets/fonts/Agane-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --canvas-scale: 1;
+  --msg-font-size: 1.1rem;
+  --msg-font-family: 'Agane', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --msg-font-color: #FFFFFF;
+  --p3r-cyan: #00D2FF;
+  --p3r-cyan-glow: rgba(0, 210, 255, 0.4);
+  --p3r-navy: #08142E;
+  --p3r-navy-deep: #040917;
+  --p3r-gold: #FFD700;
+  --p3r-green: #00E676;
+  --p3r-white: #FFFFFF;
+  --p3r-font: var(--msg-font-family);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: transparent !important;
+  color: var(--p3r-white);
+  font-family: var(--p3r-font);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ========================================================
+   OBS Canvas Container (Viewport Window)
+   ======================================================== */
+
+#chat-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Screen Anchor Positions */
+#chat-canvas.pos-bottom-left {
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+#chat-canvas.pos-bottom-right {
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+#chat-canvas.pos-top-left {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+#chat-canvas.pos-top-right {
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+/* ========================================================
+   Chat Flow Stack (Proportionally Scaled from Anchor Corner)
+   ======================================================== */
+
+#chat-flow {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  pointer-events: none;
+  transform: scale(var(--overlay-scale, 1));
+  will-change: transform;
+}
+
+#chat-canvas.pos-bottom-left #chat-flow {
+  transform-origin: bottom left;
+  align-items: flex-start;
+}
+#chat-canvas.pos-bottom-right #chat-flow {
+  transform-origin: bottom right;
+  align-items: flex-end;
+}
+#chat-canvas.pos-top-left #chat-flow {
+  transform-origin: top left;
+  align-items: flex-start;
+}
+#chat-canvas.pos-top-right #chat-flow {
+  transform-origin: top right;
+  align-items: flex-end;
+}
+
+/* Horizontal Ticker Layout */
+#chat-canvas.layout-horizontal {
+  overflow-x: hidden;
+}
+#chat-canvas.layout-horizontal #chat-flow {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 16px;
+}
+#chat-canvas.layout-horizontal.pos-top-left #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
+  align-items: flex-start;
+}
+
+#chat-canvas.layout-horizontal.pos-bottom-left #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-left #chat-flow {
+  justify-content: flex-start;
+}
+#chat-canvas.layout-horizontal.pos-bottom-right #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
+  justify-content: flex-end;
+}
+
+#chat-canvas.layout-horizontal .chat-entry {
+  flex-shrink: 0 !important;
+  width: 480px;
+  max-width: 520px;
+  min-width: 380px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ========================================================
+   Chat Message Entry (Persona 3 Reload Dialogue Bubble)
+   Natural Content-Driven Width, Uncoupled from Canvas
+   ======================================================== */
+
+.chat-entry {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  min-width: 440px;
+  max-width: 560px;
+  animation: p3r-slide-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+/* Entry Animation: Slick Persona 3 Glide & Settle */
+@keyframes p3r-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-24px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* --- Dialogue Bubble Container --- */
+.p3r-dialogue-bubble {
+  position: relative;
+  width: 100%;
+  min-width: 440px;
+  max-width: 560px;
+  height: 128px; /* Base Tier 1: Sleek Authentic Persona 3 Reload Ratio (~3.4 : 1) */
+  /* Stylized graphic drop-shadow: hard-edge depth without muddy blur */
+  filter: drop-shadow(4px 6px 0px rgba(0, 12, 32, 0.9)) drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.8));
+  flex-shrink: 0;
+  transition: height 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.p3r-dialogue-bubble.tier-1 { height: 128px; }
+.p3r-dialogue-bubble.tier-2 { height: 152px; }
+.p3r-dialogue-bubble.tier-3 { height: 176px; }
+.p3r-dialogue-bubble.multiline { height: 152px; }
+
+/* Subtle Highlight for Special Events */
+.chat-entry.is-superchat .p3r-dialogue-bubble {
+  filter: drop-shadow(0px 0px 8px rgba(0, 210, 255, 0.6)) drop-shadow(4px 6px 0px rgba(0, 12, 32, 0.9));
+}
+
+.chat-entry.is-membership .p3r-dialogue-bubble {
+  filter: drop-shadow(0px 0px 8px rgba(0, 210, 255, 0.5)) drop-shadow(4px 6px 0px rgba(0, 12, 32, 0.9));
+}
+
+/* --- 3-Piece Hybrid Asset Skin --- */
+.p3r-skin {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.p3r-skin-left {
+  width: 32.6%;
+  height: 100%;
+  background: url('/themes/persona3reload/assets/slices/bubble_left.png') no-repeat left top;
+  background-size: 100% 100%;
+  flex-shrink: 0;
+}
+
+.p3r-skin-mid {
+  flex: 1;
+  height: 100%;
+  background: url('/themes/persona3reload/assets/slices/bubble_mid.png') no-repeat center top;
+  background-size: 100% 100%;
+  margin-left: -1px;
+  margin-right: -1px;
+}
+
+.p3r-skin-right {
+  width: 31.9%;
+  height: 100%;
+  background: url('/themes/persona3reload/assets/slices/bubble_right.png') no-repeat right top;
+  background-size: 100% 100%;
+  flex-shrink: 0;
+}
+
+/* --- Header / Meta Information (Username + Badge) --- */
+/* Sempurna sejajar vertikal dengan teks pesan di left: 72px */
+.p3r-meta {
+  position: absolute;
+  top: 25px;
+  left: 72px;
+  right: 48px;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 10px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.p3r-username {
+  font-family: var(--p3r-font);
+  font-weight: 700;
+  font-size: 15px;
+  color: #FFFFFF;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  max-width: 270px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Badge Status: TALK (Default), SUPER CHAT, MEMBER */
+.p3r-badge {
+  font-family: var(--p3r-font);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: var(--p3r-cyan);
+  text-transform: uppercase;
+  text-shadow: 0 0 8px var(--p3r-cyan-glow);
+  white-space: nowrap;
+}
+
+.p3r-badge.is-superchat-badge {
+  color: #FFE066;
+  text-shadow: 0 0 8px rgba(255, 224, 102, 0.6);
+  font-size: 10.5px;
+  text-transform: none; /* Biarkan casing nominal tetap natural: Rp 100.000 */
+}
+
+.p3r-badge.is-member-badge {
+  color: #00E676;
+  text-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
+}
+
+/* --- Message Content Container --- */
+/* Sejajar sempurna dengan .p3r-meta di left: 72px */
+.p3r-message-box {
+  position: absolute;
+  top: 48px;
+  left: 72px;
+  right: 50px;
+  bottom: 22px;
+  display: flex;
+  align-items: flex-start;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.p3r-message-text {
+  font-family: var(--p3r-font);
+  font-weight: 400;
+  font-size: 1.08rem;
+  color: #F8FAFC;
+  line-height: 1.32;
+  word-break: break-word;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+/* Tier Adjustments for Multiline Message Volumes */
+.p3r-dialogue-bubble.tier-2 .p3r-message-box {
+  bottom: 26px;
+}
+.p3r-dialogue-bubble.tier-2 .p3r-message-text {
+  font-size: 1.04rem;
+  line-height: 1.3;
+}
+
+.p3r-dialogue-bubble.tier-3 .p3r-message-box {
+  bottom: 30px;
+}
+.p3r-dialogue-bubble.tier-3 .p3r-message-text {
+  font-size: 0.98rem;
+  line-height: 1.25;
+}

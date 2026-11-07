@@ -39,7 +39,9 @@ async function runTests() {
     assert(Array.isArray(themesRes.themes), 'Themes should be an array');
     const p5 = themesRes.themes.find(t => t.id === 'persona5');
     assert(p5, 'Persona 5 theme must be present in themes list');
-    console.log(`[PASS] GET /api/themes verified (${themesRes.themes.length} themes installed, including Persona 5)`);
+    const p3r = themesRes.themes.find(t => t.id === 'persona3reload');
+    assert(p3r, 'Persona 3 Reload theme must be present in themes list');
+    console.log(`[PASS] GET /api/themes verified (${themesRes.themes.length} themes installed, including Persona 5 & P3R)`);
 
     // 4. Test GET /api/catalog
     const catalogRes = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/catalog`);
@@ -170,6 +172,10 @@ async function runTests() {
     const p5RendererJs = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/persona5/renderer.js`);
     assert(p5RendererJs.includes('window.KYPoniTheme'), 'Persona 5 theme must implement window.KYPoniTheme');
     assert(p5RendererJs.includes('renderMessage'), 'Persona 5 renderer must have renderMessage function');
+
+    const p3rRendererJs = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/persona3reload/renderer.js`);
+    assert(p3rRendererJs.includes('window.KYPoniTheme'), 'Persona 3 Reload theme must implement window.KYPoniTheme');
+    assert(p3rRendererJs.includes('renderMessage'), 'Persona 3 Reload renderer must have renderMessage function');
 
     const classicRendererJs = await fetchText(`http://127.0.0.1:${TEST_PORT}/themes/classic/renderer.js`);
     assert(classicRendererJs.includes('window.KYPoniTheme'), 'Classic theme must implement window.KYPoniTheme');

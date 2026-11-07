@@ -164,13 +164,33 @@ class ThemeManager {
       catalog = { version: '1.0.0', themes: [] };
     }
 
+    // Merge any installed built-in themes not yet in remote catalog
+    installedList.forEach((it) => {
+      if (!catalog.themes.some((t) => t.id === it.id)) {
+        const p5Idx = catalog.themes.findIndex((t) => t.id === 'persona5');
+        const insertIdx = p5Idx !== -1 ? p5Idx + 1 : 0;
+        catalog.themes.splice(insertIdx, 0, {
+          id: it.id,
+          name: it.name,
+          version: it.version,
+          author: it.author,
+          previewColor: it.previewColor || '#00D2FF',
+          installed: true,
+          isBuiltIn: it.isBuiltIn,
+          tags: it.tags || ['JRPG', 'Persona', 'Tartarus', 'Agane'],
+          presets: it.presets || {},
+          fonts: it.fonts || [],
+        });
+      }
+    });
+
     // Annotate catalog items with live installation state, presets, and fonts
     catalog.themes = catalog.themes.map((t) => {
       const installedEntry = installedMap.get(t.id);
       return {
         ...t,
         installed: !!installedEntry,
-        isBuiltIn: installedEntry ? installedEntry.isBuiltIn : (t.id === 'persona5' || t.id === 'classic'),
+        isBuiltIn: installedEntry ? installedEntry.isBuiltIn : (t.id === 'persona5' || t.id === 'classic' || t.id === 'persona3reload'),
         presets: t.presets || (installedEntry ? installedEntry.presets : {}),
         fonts: t.fonts || (installedEntry ? installedEntry.fonts : []),
       };
@@ -273,7 +293,7 @@ class ThemeManager {
    * Core themes (persona5, classic) cannot be deleted.
    */
   deleteTheme(themeId) {
-    if (themeId === 'persona5' || themeId === 'classic') {
+    if (themeId === 'persona5' || themeId === 'classic' || themeId === 'persona3reload') {
       throw new Error(`Tema "${themeId}" adalah tema inti bawaan dan tidak dapat dihapus.`);
     }
 
