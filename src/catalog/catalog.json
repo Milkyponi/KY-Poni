@@ -16,7 +16,7 @@
         "fontFamily": "OptimaNova",
         "fontSize": 16,
         "textColor": "#FFFFFF",
-        "recommendedLayout": "vertical-wide"
+        "recommendedLayout": "vertical"
       },
       "fonts": [
         {
@@ -80,7 +80,7 @@
         "fontFamily": "Chakra Petch",
         "fontSize": 17,
         "textColor": "#FFE600",
-        "recommendedLayout": "horizontal-wide"
+        "recommendedLayout": "horizontal"
       },
       "fonts": [
         {

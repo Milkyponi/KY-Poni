@@ -15,7 +15,7 @@ const os = require('os');
 const DEFAULT_CONFIG = {
   target: '@MilkyPoni',
   theme: 'persona5',
-  layout: 'vertical-wide',
+  layout: 'vertical',
   pos: 'bottom-left',
   scale: 100,
   fontSize: 16,
@@ -71,7 +71,11 @@ class ConfigManager {
     try {
       if (fs.existsSync(this.configPath)) {
         const raw = fs.readFileSync(this.configPath, 'utf-8');
-        return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+        const parsed = JSON.parse(raw);
+        if (parsed.layout) {
+          parsed.layout = parsed.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+        }
+        return { ...DEFAULT_CONFIG, ...parsed };
       }
     } catch (e) {
       console.warn('[KY-Poni ConfigManager] Error reading config file, using default:', e.message);
@@ -81,6 +85,9 @@ class ConfigManager {
 
   updateConfig(updates) {
     const current = this.getConfig();
+    if (updates && updates.layout) {
+      updates.layout = updates.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+    }
     const updated = { ...current, ...(updates || {}) };
     try {
       fs.writeFileSync(this.configPath, JSON.stringify(updated, null, 2), 'utf-8');

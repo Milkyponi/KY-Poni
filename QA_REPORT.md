@@ -1,8 +1,8 @@
-# QA & Automated Test Report: KY-Poni (v0.4.8-alpha)
+# QA & Automated Test Report: KY-Poni (v0.7.0-alpha)
 
-- **Tanggal Eksekusi**: 2026-11-03
+- **Tanggal Eksekusi**: 2026-11-07
 - **Lead Tester**: Fonzy (Divisi Software Development)
-- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Curated Themes System, In-App Auto-Updater Seamless Restart, YouTube Ingest Anti-RTO & Self-Healing Watchdog.
+- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Curated Themes System, In-App Auto-Updater Seamless Restart, YouTube Ingest Anti-RTO & Self-Healing Watchdog, Remote Theme Catalog, Fixed 1000x1000 Canvas Standard & Streamlabs Layout Flow Architecture.
 
 ---
 
@@ -44,8 +44,12 @@
 | 32 | In-App Theme Installer & Uninstaller | ✅ PASS | 1-klik `⚡ Instal & Pasang` dan `🗑️ Hapus` di folder OS persistent user data |
 | 33 | Theme-Bound Smart Presets Auto-Apply | ✅ PASS | Ganti tema otomatis menerapkan font, warna, dan layout rekomendasi game |
 | 34 | Dynamic Font Lifecycle Injection | ✅ PASS | Font tema (`OptimaNova`, `VT323`, `Chakra Petch`) otomatis muncul saat terpasang & dicopot saat dihapus |
+| 35 | Fixed 1000x1000 Canvas Standard | ✅ PASS | Resolusi OBS Browser Source dibakukan ke 1000x1000 px, zero-clipping pada skala 150% |
+| 36 | Streamlabs Layout Flow Architecture | ✅ PASS | Pilihan resolusi kanvas dihilangkan; diganti murni orientasi aliran chat (Vertical / Horizontal) |
+| 37 | 1:1 Scaled Canvas Preview (WYSIWYG) | ✅ PASS | Iframe 1000x1000 diproyeksikan proporsional via ResizeObserver & CSS transform zoom |
+| 38 | Config Backward-Compatibility Normalization | ✅ PASS | Nilai legacy (`vertical-wide`, `horizontal-wide`, dll) dinormalisasi otomatis ke `vertical`/`horizontal` |
 
-**Total:** 34/34 Targeted Tests Passed (100% Green).
+**Total:** 38/38 Targeted Tests Passed (100% Green).
 
 ---
 

@@ -55,10 +55,13 @@ Sebagian besar chat overlay yang beredar di pasar (Streamlabs, StreamElements, S
 * Alur Chat Horizontal Cerdas (*Anchor-Sensitive Directional Flow*):
   * Posisi kiri (`bottom-left` & `top-left`): Chat baru muncul langsung di anchor kiri (`prepend`) dan mendorong pesan lama ke kanan.
   * Posisi kanan (`bottom-right` & `top-right`): Chat baru muncul di anchor kanan (`append`) dan mendorong pesan lama ke kiri.
-* Skala Matematis Terbalik (*Inverse Mathematical Scaling*):
-  `width: calc(100% / var(--canvas-scale)); height: calc(100% / var(--canvas-scale)); transform: scale(...)`
-  Menjamin seluruh elemen dan balon chat tetap 100% utuh tanpa pernah terpotong (*zero clipping*) saat skala dibesarkan hingga 150%.
-* Suite Preset Resolusi: Vertical Lebar (600x900 ★), Vertical Standar (450x800), Vertical Ringkas (380x650), Horizontal Ticker (800x300), Horizontal Ultrawide (1200x320), Full-HD 1080p (1920x1080).
+* Paradigma Streamlabs & Standar Kanvas Tetap 1000 x 1000 px:
+  * Pengguna tidak perlu memilih resolusi piksel. Rekomendasi Browser Source OBS dibakukan ke Width 1000 x Height 1000 px.
+  * Menjamin seluruh elemen dan balon chat tetap 100% utuh tanpa pernah terpotong (*zero clipping*) saat skala dibesarkan hingga 150%, serta muat banyak komentar pada skala kecil (25%-70%).
+  * Penyesuaian ukuran bounding box, cropping (`Alt`+drag), dan penataan posisi scene dilakukan streamer langsung di OBS.
+* Arah Aliran Chat (Layout Flow):
+  * Vertikal (`layout=vertical`): Komentar mengalir naik/turun sesuai tumpuan anchor sudut layar.
+  * Horizontal (`layout=horizontal`): Komentar mengalir menyamping (*ticker*) dari anchor sudut layar.
 
 ### C. Studio Dashboard & User Interface
 * Navigasi 3-Tab di Header:

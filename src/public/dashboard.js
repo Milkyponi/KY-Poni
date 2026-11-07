@@ -93,10 +93,42 @@ document.querySelectorAll('.btn-swatch').forEach(swatch => {
   });
 });
 
+// Dynamic 1:1 Scaled Canvas Preview (1000 x 1000 px Virtual Viewport)
+function updatePreviewZoom() {
+  const viewport = document.querySelector('.canvas-viewport');
+  if (!viewport) return;
+  const rect = viewport.getBoundingClientRect();
+  const pad = 32;
+  const availW = Math.max(100, rect.width - pad);
+  const availH = Math.max(100, rect.height - pad);
+  const size = Math.min(availW, availH);
+  const zoom = Math.max(0.15, Math.min(1.0, size / 1000));
+
+  viewport.style.setProperty('--preview-zoom', zoom.toFixed(4));
+  if (previewWrapper) {
+    const pxSize = Math.round(1000 * zoom);
+    previewWrapper.style.width = `${pxSize}px`;
+    previewWrapper.style.height = `${pxSize}px`;
+  }
+}
+
+// Observe canvas viewport resize for auto-fit zoom
+const viewportEl = document.querySelector('.canvas-viewport');
+if (viewportEl && window.ResizeObserver) {
+  const ro = new ResizeObserver(() => updatePreviewZoom());
+  ro.observe(viewportEl);
+}
+window.addEventListener('resize', updatePreviewZoom);
+
 // Update OBS URL & Live Preview Frame
 function updateOverlayParams() {
   const theme = selectTheme.value;
-  const layout = selectLayout.value;
+  let layout = selectLayout.value;
+  if (layout.startsWith('horizontal')) {
+    layout = 'horizontal';
+  } else {
+    layout = 'vertical';
+  }
   const fade = inputFade ? inputFade.value : '8';
   const keep = selectKeep ? selectKeep.value : '1';
   const scale = inputScale ? inputScale.value : '100';
@@ -121,39 +153,15 @@ function updateOverlayParams() {
   previewFrame.src = url;
 
   const obsDimTip = document.getElementById('obs-dim-tip');
-
-  const PRESET_DIMS = {
-    'vertical': { w: 450, h: 800, previewW: 440, previewH: 680, label: '450 x 800 px (Vertical Standar)' },
-    'vertical-wide': { w: 600, h: 900, previewW: 520, previewH: 680, label: '600 x 900 px (Vertical Lebar ★)' },
-    'vertical-compact': { w: 380, h: 650, previewW: 380, previewH: 640, label: '380 x 650 px (Vertical Ringkas)' },
-    'horizontal': { w: 800, h: 300, previewW: 780, previewH: 300, label: '800 x 300 px (Horizontal Ticker)' },
-    'horizontal-wide': { w: 1200, h: 320, previewW: 860, previewH: 260, label: '1200 x 320 px (Horizontal Ultrawide)' },
-    'fullscreen': { w: 1920, h: 1080, previewW: 860, previewH: 484, label: '1920 x 1080 px (Full-HD 1080p Freeform)' },
-  };
-
-  const preset = PRESET_DIMS[layout] || PRESET_DIMS['vertical'];
-  if (previewWrapper) {
-    previewWrapper.style.width = `${preset.previewW}px`;
-    previewWrapper.style.height = `${preset.previewH}px`;
-  }
   if (previewResolution) {
-    previewResolution.textContent = `${preset.label} [${currentPos.toUpperCase()}]`;
+    const layoutLabel = layout === 'horizontal' ? 'Horizontal Ticker' : 'Vertical Stack';
+    previewResolution.textContent = `1000 x 1000 px (${layoutLabel}) [${currentPos.toUpperCase()}]`;
   }
   if (obsDimTip) {
-    obsDimTip.textContent = `💡 Rekomendasi OBS: Width ${preset.w} x Height ${preset.h} px`;
+    obsDimTip.textContent = `💡 Browser Source OBS: Width 1000 x Height 1000 px`;
   }
 
-  // Auto-scroll preview viewport based on anchor position
-  const viewport = document.querySelector('.canvas-viewport');
-  if (viewport) {
-    setTimeout(() => {
-      if (currentPos.startsWith('bottom')) {
-        viewport.scrollTop = viewport.scrollHeight;
-      } else {
-        viewport.scrollTop = 0;
-      }
-    }, 150);
-  }
+  updatePreviewZoom();
 
   // Auto-Save User Preferences (debounced 500ms)
   if (saveConfigTimeout) clearTimeout(saveConfigTimeout);
@@ -170,10 +178,17 @@ if (selectKeep) selectKeep.addEventListener('change', updateOverlayParams);
 
 // Save User Configuration
 async function saveUserConfig() {
+  let layoutVal = selectLayout ? selectLayout.value : 'vertical';
+  if (layoutVal.startsWith('horizontal')) {
+    layoutVal = 'horizontal';
+  } else {
+    layoutVal = 'vertical';
+  }
+
   const config = {
     target: ytTargetInput ? ytTargetInput.value.trim() : '@MilkyPoni',
     theme: selectTheme ? selectTheme.value : 'persona5',
-    layout: selectLayout ? selectLayout.value : 'vertical',
+    layout: layoutVal,
     pos: currentPos,
     scale: inputScale ? parseInt(inputScale.value, 10) : 100,
     fontSize: inputFsize ? parseInt(inputFsize.value, 10) : 16,
@@ -203,7 +218,10 @@ async function loadSavedConfig() {
 
     if (cfg.target && ytTargetInput) ytTargetInput.value = cfg.target;
     if (cfg.theme && selectTheme) selectTheme.value = cfg.theme;
-    if (cfg.layout && selectLayout) selectLayout.value = cfg.layout;
+    if (cfg.layout && selectLayout) {
+      const norm = cfg.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+      selectLayout.value = norm;
+    }
 
     if (cfg.pos) {
       currentPos = cfg.pos;
@@ -452,7 +470,8 @@ function applyThemePresets(themeId) {
     inputColorHex.value = p.textColor.toUpperCase();
   }
   if (p.recommendedLayout && selectLayout) {
-    selectLayout.value = p.recommendedLayout;
+    const norm = p.recommendedLayout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+    selectLayout.value = norm;
   }
 }
 

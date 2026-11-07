@@ -46,7 +46,7 @@ Setiap tema wajib memiliki file `theme.json` valid:
     "fontFamily": "OptimaNova",
     "fontSize": 16,
     "textColor": "#FFFFFF",
-    "recommendedLayout": "vertical-wide"
+    "recommendedLayout": "vertical"
   },
   "fonts": [
     {

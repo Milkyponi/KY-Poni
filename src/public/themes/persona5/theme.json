@@ -4,13 +4,13 @@
   "version": "1.0.0",
   "author": "Milky Brain (Fonzy)",
   "description": "High-contrast comic speech bubble with sharp jagged polygon edges, distressed manga aesthetics, and All-Out Attack cut-in banners.",
-  "recommendedLayout": "vertical-wide",
+  "recommendedLayout": "vertical",
   "previewColor": "#D03D3D",
   "presets": {
     "fontFamily": "OptimaNova",
     "fontSize": 16,
     "textColor": "#FFFFFF",
-    "recommendedLayout": "vertical-wide"
+    "recommendedLayout": "vertical"
   },
   "fonts": [
     {

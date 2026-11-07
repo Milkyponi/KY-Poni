@@ -98,22 +98,31 @@ async function runTests() {
     assert.strictEqual(chatMsgEvent.data.superchat.amount, 'Rp 100.000');
     console.log('[PASS] Super Chat simulated event successfully broadcasted over WebSocket to client');
 
-    // 8. Test Preferences Persistence API (/api/config)
+    // 8. Test Preferences Persistence API (/api/config) & Layout Normalization
     console.log('[TEST] Testing GET & POST /api/config for user preferences persistence...');
     const cfgGet = await fetchJson(`http://127.0.0.1:${TEST_PORT}/api/config`);
     assert(cfgGet.theme, 'Config should return default or saved theme');
-    console.log(`[PASS] GET /api/config verified (scale=${cfgGet.scale}%, font=${cfgGet.fontFamily})`);
+    assert(cfgGet.layout === 'vertical' || cfgGet.layout === 'horizontal', 'Layout must be normalized to vertical or horizontal');
+    console.log(`[PASS] GET /api/config verified (scale=${cfgGet.scale}%, font=${cfgGet.fontFamily}, layout=${cfgGet.layout})`);
 
     const cfgSave = await fetchPost(`http://127.0.0.1:${TEST_PORT}/api/config`, {
       scale: 120,
       fontSize: 18,
       fontFamily: 'Bebas Neue',
-      textColor: '#FFE600'
+      textColor: '#FFE600',
+      layout: 'vertical-wide' // Legacy preset test -> must normalize to 'vertical'
     });
     assert.strictEqual(cfgSave.success, true);
     assert.strictEqual(cfgSave.config.scale, 120);
     assert.strictEqual(cfgSave.config.textColor, '#FFE600');
-    console.log('[PASS] POST /api/config successfully saved custom scale, font size, and text color');
+    assert.strictEqual(cfgSave.config.layout, 'vertical', 'Legacy layout vertical-wide must be normalized to vertical');
+    console.log('[PASS] POST /api/config successfully saved preferences and normalized legacy layout to vertical');
+
+    // Test Dashboard Fixed Canvas 1000x1000 serving
+    const indexHtml = await fetchText(`http://127.0.0.1:${TEST_PORT}/`);
+    assert(indexHtml.includes('Arah Aliran Chat (Layout)'), 'Dashboard should have Arah Aliran Chat label');
+    assert(indexHtml.includes('1000 x 1000 px'), 'Dashboard should specify fixed 1000 x 1000 px canvas');
+    console.log('[PASS] GET / successfully served Dashboard with Fixed 1000x1000 Canvas UI');
 
     // 9. Test Phase 5/6: Remote Theme Catalog & Dynamic Downloader/Installer
     console.log('[TEST] Testing Theme Installer (installing undertale & cyberpunk2077)...');

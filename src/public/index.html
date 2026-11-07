@@ -102,17 +102,13 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="select-layout">Preset Resolusi Kanvas</label>
+              <label for="select-layout">Arah Aliran Chat (Layout)</label>
               <select id="select-layout">
-                <option value="vertical" selected>Vertical Standar (450 x 800)</option>
-                <option value="vertical-wide">Vertical Lebar (600 x 900) ★</option>
-                <option value="vertical-compact">Vertical Ringkas (380 x 650)</option>
-                <option value="horizontal">Horizontal Ticker (800 x 300)</option>
-                <option value="horizontal-wide">Horizontal Ultrawide (1200 x 320)</option>
-                <option value="fullscreen">Full-HD 1080p (1920 x 1080)</option>
+                <option value="vertical" selected>Vertikal (Stack Atas / Bawah)</option>
+                <option value="horizontal">Horizontal (Ticker Menyamping)</option>
               </select>
               <small id="obs-dim-tip" style="font-size: 0.72rem; color: var(--accent-cyan); font-weight: 700; margin-top: 4px; display: block;">
-                💡 Rekomendasi OBS: Width 450 x Height 800 px
+                💡 Browser Source OBS: Width 1000 x Height 1000 px
               </small>
             </div>
           </div>
@@ -200,13 +196,13 @@
         <div class="preview-topbar">
           <div class="preview-badge">Live Canvas Preview (OBS Realtime)</div>
           <div id="preview-resolution" class="preview-badge" style="color: var(--accent-cyan); font-family: var(--font-mono);">
-            450 x 800 px
+            1000 x 1000 px
           </div>
         </div>
 
         <!-- Canvas Viewport -->
         <div class="canvas-viewport">
-          <div id="preview-wrapper" class="preview-canvas-wrapper" style="width: 450px; height: 680px;">
+          <div id="preview-wrapper" class="preview-canvas-wrapper">
             <iframe id="preview-frame" class="preview-iframe" src="/overlay?theme=persona5&layout=vertical"></iframe>
           </div>
         </div>
@@ -337,7 +333,7 @@
           <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; display: flex; flex-direction: column; gap: 6px;">
             <div>1. Buka <b>OBS Studio</b>, klik tanda <b>+</b> pada panel <i>Sources</i> lalu pilih <b>Browser</b>.</div>
             <div>2. Salin URL dari tab <b>Studio</b> dan tempelkan pada kolom URL.</div>
-            <div>3. Atur resolusi: <b>450 x 800</b> (Vertical) atau <b>800 x 300</b> (Horizontal Ticker).</div>
+            <div>3. Atur resolusi Browser Source: <b>Width 1000 x Height 1000 px</b>. Sesuaikan ukuran & posisi bebas langsung di OBS.</div>
             <div>4. Centang <i>"Shutdown source when not visible"</i> dan <i>"Refresh browser when scene becomes active"</i>.</div>
           </div>
         </div>

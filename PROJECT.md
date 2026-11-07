@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.6.0-alpha` (Phase 6 Milestone: Remote Theme Catalog & Theme-Bound Presets Verified)  
+**Current Version:** `v0.7.0-alpha` (Phase 7: Fixed 1000x1000 Canvas Standard & Streamlabs-Model Layout Flow)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  
@@ -64,9 +64,14 @@ Target audiens awal adalah para VTuber, gaming streamer, dan kreator YouTube yan
   * Efek visual spesial saat menerima Super Chat / Donasi atau Member Baru:
   * Layar overlay diisi slash kartu merah-hitam dinamis berputar, teks donasi tercetak besar, menahan atensi selama 3-5 detik sebelum bertransisi kembali ke chat feed.
 
-### B. Dimensi Standar OBS Canvas & Perilaku Layout
-1. **Vertical Sidebar Mode:** `450 x 800 px` (Dirancang untuk sudut kanan/kiri layar gameplay).
-2. **Bottom Ticker / Horizontal Mode:** `800 x 300 px` (Anti-shrink fixed width `min-width: 220px`, smooth slide push ke kiri saat pesan baru masuk).
+### B. Standar Kanvas OBS & Arah Aliran Chat (Streamlabs Paradigm)
+* **Kanvas Tetap Standar 1000 x 1000 px:**
+  * Pengguna tidak perlu dipusingkan dengan memilih resolusi piksel kanvas. Cukup tambahkan satu Browser Source berukuran `1000 x 1000 px` di OBS Studio.
+  * Area 1000x1000 px menjamin **zero-clipping** pada skala maksimal 150% di sisi kanan/kiri, serta kapasitas tinggi tumpukan komentar pada skala minimal (25%-70%).
+  * Penyesuaian layout visual (posisi, crop `Alt`+drag, scale) dilakukan langsung oleh streamer di OBS Studio.
+* **Arah Aliran Chat (Layout Flow):**
+  1. **Vertical Stack Mode (`vertical`):** Komentar bertumpuk vertikal (bawah ke atas untuk bottom anchor, atas ke bawah untuk top anchor).
+  2. **Horizontal Ticker Mode (`horizontal`):** Komentar berderet menyamping (kiri ke kanan / kanan ke kiri sesuai anchor).
 
 ### C. 4-Corner Screen Anchors (Posisi Sudut Layar)
 * **Pojok Kiri Bawah (`bottom-left` - Default):** Chat baru masuk dari bawah, mendorong pesan lama ke atas, rata kiri.
