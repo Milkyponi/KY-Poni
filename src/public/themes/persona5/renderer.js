@@ -1,12 +1,12 @@
 /**
- * KY-Poni - Persona 5 Theme Renderer Plugin
+ * KY-Poni - Persona 5 Theme Renderer Plugin (Origami-Anchored Hybrid Stretch)
  * Implements Standard Theme Plugin Contract (THEME_SPEC.md).
  * 
  * Features:
- * - 3-Piece Hybrid Sliced Asset Skin (bubble_left.png, bubble_mid.png, bubble_right.png)
- * - Persona 5 Ransom-Note Nameplate with dynamic Red Tile accent
- * - Dynamic 3-Tier Height Adaptation (tier-1 165px, tier-2 200px, tier-3 235px)
- * - Auto-Fit Font Scaling for long messages (anti-clipping / zero-overflow)
+ * - 3-Piece Hybrid Sliced Asset Skin with Fixed Width Caps (155px)
+ * - Origami-Anchored Nameplate (Fixed physical positioning on white ribbon)
+ * - Centered Vertical Anchor & Snug-Fit 4-Tier Progression
+ * - Auto-Fit Font Scaling for long messages (Zero-Clipping up to 250+ chars)
  */
 
 (function () {
@@ -19,19 +19,25 @@
   window.KYPoniTheme = {
     renderMessage(item, context) {
       const entry = document.createElement('div');
-      entry.className = `chat-entry ${item.type === 'superchat' ? 'is-superchat' : ''} ${item.type === 'membership' ? 'is-membership' : ''}`;
-      entry.id = `msg-${item.id}`;
+      const isSuperChat = item.type === 'superchat';
+      const isMembership = item.type === 'membership';
 
       const rawText = (item.message || '').replace(/<[^>]*>/g, '').trim();
       const rawLength = rawText.length;
+      const newlineCount = (rawText.match(/\n/g) || []).length;
 
-      // Dynamic 3-Tier Height Classification based on content volume
+      // 4-Tier Dynamic Classification based on content volume
       let tierClass = 'tier-1';
-      if (rawLength > 110 || (rawText.match(/\n/g) || []).length >= 2) {
+      if (rawLength > 175 || newlineCount >= 3) {
+        tierClass = 'tier-4';
+      } else if (rawLength > 115 || newlineCount >= 2) {
         tierClass = 'tier-3';
-      } else if (rawLength > 55 || rawText.includes('\n') || (item.type === 'superchat') || (item.type === 'membership')) {
+      } else if (rawLength > 55 || newlineCount >= 1 || isSuperChat || isMembership) {
         tierClass = 'tier-2';
       }
+
+      entry.className = `chat-entry ${tierClass} ${isSuperChat ? 'is-superchat' : ''} ${isMembership ? 'is-membership' : ''}`;
+      entry.id = `msg-${item.id}`;
 
       const bubble = document.createElement('div');
       bubble.className = `p5-dialogue-bubble ${tierClass} ${tierClass !== 'tier-1' ? 'multiline' : ''}`;
@@ -88,9 +94,9 @@
       messageBox.className = 'p5-message-box';
 
       let prefixHtml = '';
-      if (item.type === 'superchat' && item.superchat) {
+      if (isSuperChat && item.superchat) {
         prefixHtml = `<span class="p5-badge-amount">${escapeText(item.superchat.amount)}</span>`;
-      } else if (item.type === 'membership') {
+      } else if (isMembership) {
         prefixHtml = `<span class="p5-badge-member">NEW MEMBER</span>`;
       }
 
@@ -100,20 +106,25 @@
       // Auto-fit font scaling so text remains 100% enclosed without border breaches
       const fsize = context && context.fsize;
       if (fsize && fsize > 0) {
-        let effFsize = fsize;
-        if (rawLength > 120) {
-          effFsize = Math.min(fsize, 15);
-        } else if (rawLength > 70) {
-          effFsize = Math.min(fsize, 18);
-        }
-        messageText.style.fontSize = `${effFsize}px`;
-      } else {
-        if (rawLength > 120) {
-          messageText.style.fontSize = '0.98rem';
-        } else if (rawLength > 70) {
-          messageText.style.fontSize = '1.08rem';
+        const userScale = Number(fsize) / 16;
+        if (tierClass === 'tier-4') {
+          messageText.style.fontSize = `${0.86 * userScale}rem`;
+        } else if (tierClass === 'tier-3') {
+          messageText.style.fontSize = `${0.94 * userScale}rem`;
+        } else if (tierClass === 'tier-2') {
+          messageText.style.fontSize = `${1.04 * userScale}rem`;
         } else {
-          messageText.style.fontSize = '1.18rem';
+          messageText.style.fontSize = `${1.15 * userScale}rem`;
+        }
+      } else {
+        if (tierClass === 'tier-4') {
+          messageText.style.fontSize = '0.86rem';
+        } else if (tierClass === 'tier-3') {
+          messageText.style.fontSize = '0.94rem';
+        } else if (tierClass === 'tier-2') {
+          messageText.style.fontSize = '1.04rem';
+        } else {
+          messageText.style.fontSize = '1.15rem';
         }
       }
 
@@ -127,7 +138,7 @@
     },
 
     onLoad(context) {
-      console.log(`[Persona 5 Theme] Theme initialized successfully with layout: ${context.layout}`);
+      console.log(`[Persona 5 Theme] Theme initialized with Origami-Anchored Hybrid Stretch. Layout: ${context.layout}`);
     }
   };
 })();
