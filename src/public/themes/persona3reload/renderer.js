@@ -1,11 +1,12 @@
 /**
- * KY-Poni - Persona 3 Reload Theme Renderer Plugin
+ * KY-Poni - Persona 3 Reload Theme Renderer Plugin (Triple-Hybrid Adaptation)
  * Implements Standard Theme Plugin Contract (THEME_SPEC.md).
  * 
  * Features:
  * - 3-Piece Hybrid Sliced Asset Skin (bubble_left.png, bubble_mid.png, bubble_right.png)
  * - Dynamic Status Badge: TALK / SUPER CHAT / NEW MEMBER
- * - Dynamic 3-Tier Height Adaptation (tier-1 128px, tier-2 148px, tier-3 172px)
+ * - Triple-Hybrid Adaptation: Dynamic Width (460px - 700px) + 4-Tier Height (128px - 208px)
+ * - Auto-Fit Font Scaling: Prevents text clipping while preserving authentic P3R aerodynamic ratio (~3.4:1)
  * - Authentic Persona 3 Reload Tartarus Navy & Cyan Typography (Aganè font family)
  */
 
@@ -22,19 +23,22 @@
       const isSuperChat = item.type === 'superchat';
       const isMembership = item.type === 'membership';
 
-      entry.className = `chat-entry ${isSuperChat ? 'is-superchat' : ''} ${isMembership ? 'is-membership' : ''}`;
-      entry.id = `msg-${item.id}`;
-
       const rawText = (item.message || '').replace(/<[^>]*>/g, '').trim();
       const rawLength = rawText.length;
+      const newlineCount = (rawText.match(/\n/g) || []).length;
 
-      // Dynamic 3-Tier Height Classification based on content volume
+      // 4-Tier Dynamic Classification based on content volume
       let tierClass = 'tier-1';
-      if (rawLength > 120 || (rawText.match(/\n/g) || []).length >= 2) {
+      if (rawLength > 175 || newlineCount >= 3) {
+        tierClass = 'tier-4';
+      } else if (rawLength > 115 || newlineCount >= 2) {
         tierClass = 'tier-3';
-      } else if (rawLength > 60 || rawText.includes('\n') || isSuperChat || isMembership) {
+      } else if (rawLength > 55 || newlineCount >= 1 || isSuperChat || isMembership) {
         tierClass = 'tier-2';
       }
+
+      entry.className = `chat-entry ${tierClass} ${isSuperChat ? 'is-superchat' : ''} ${isMembership ? 'is-membership' : ''}`;
+      entry.id = `msg-${item.id}`;
 
       const bubble = document.createElement('div');
       bubble.className = `p3r-dialogue-bubble ${tierClass} ${tierClass !== 'tier-1' ? 'multiline' : ''}`;
@@ -82,7 +86,16 @@
 
       // Custom font-size / font-color overrides from overlay context if provided
       if (context && context.fsize && Number(context.fsize) > 0) {
-        messageText.style.fontSize = `${Number(context.fsize) / 16}rem`;
+        const userScale = Number(context.fsize) / 16;
+        if (tierClass === 'tier-4') {
+          messageText.style.fontSize = `${0.86 * userScale}rem`;
+        } else if (tierClass === 'tier-3') {
+          messageText.style.fontSize = `${0.93 * userScale}rem`;
+        } else if (tierClass === 'tier-2') {
+          messageText.style.fontSize = `${1.02 * userScale}rem`;
+        } else {
+          messageText.style.fontSize = `${1.10 * userScale}rem`;
+        }
       }
       if (context && context.color) {
         messageText.style.color = context.color;
@@ -97,7 +110,7 @@
     },
 
     onLoad(context) {
-      console.log(`[P3R Theme] Persona 3 Reload Theme successfully initialized. Anchor: ${context.pos || 'bottom-left'}`);
+      console.log(`[P3R Theme] Persona 3 Reload Theme initialized with Triple-Hybrid Adaptation. Anchor: ${context.pos || 'bottom-left'}`);
     },
 
     onSpecialEvent(item, context) {

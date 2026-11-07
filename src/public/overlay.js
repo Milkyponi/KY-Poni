@@ -84,7 +84,7 @@
   // Dynamic Theme Asset Loading (CSS + Renderer Plugin)
   const themeLink = document.getElementById('theme-stylesheet');
   if (themeLink) {
-    themeLink.href = `/themes/${theme}/style.css`;
+    themeLink.href = `/themes/${theme}/style.css?v=${Date.now()}`;
   }
 
   function loadThemePlugin(themeName) {
@@ -94,7 +94,7 @@
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = `/themes/${themeName}/renderer.js`;
+    script.src = `/themes/${themeName}/renderer.js?v=${Date.now()}`;
     script.onload = () => {
       if (window.KYPoniTheme && typeof window.KYPoniTheme.onLoad === 'function') {
         window.KYPoniTheme.onLoad(context);
