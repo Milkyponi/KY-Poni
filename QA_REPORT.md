@@ -54,10 +54,10 @@
 ---
 
 ## 2. Berkas Binari Portable Tersedia
-- **Linux Portable AppImage:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.6.0.AppImage` (Executable)
+- **Linux Portable AppImage (Installed in ~/AppImages/kyponi.appimage):**
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.7.0.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.6.0.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.7.0.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---
