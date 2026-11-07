@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.8.0-alpha` (Phase 8: Persona 3 Reload Theme Engine & Aganè Typography Integration)  
+**Current Version:** `v0.9.0-alpha` (Phase 9: Centered Vertical Anchor, Snug-Fit Tier Heights & Long Comment Hardening)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  

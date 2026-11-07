@@ -1,8 +1,8 @@
-# QA & Automated Test Report: KY-Poni (v0.8.0-alpha)
+# QA & Automated Test Report: KY-Poni (v0.9.0-alpha)
 
 - **Tanggal Eksekusi**: 2026-11-07
 - **Lead Tester**: Fonzy (Divisi Software Development)
-- **Komponen Diuji**: Persona 5 Authentic Dialogue Asset Engine, Persona 3 Reload Tartarus Theme Engine, 3-Piece Hybrid Asset Slicing, Aganè Font Family Bundling, Dynamic Status Badge (TALK/Donasi/Member), Fixed 1000x1000 Canvas Standard, Anti-RTO Watchdog.
+- **Komponen Diuji**: Persona 3 Reload Triple-Hybrid Adaptation, Centered Vertical Anchor, Snug-Fit Tier Height Progression, Aganè Font Bundling, 3-Piece Sliced Skin, Anti-RTO Watchdog.
 
 ---
 
@@ -11,16 +11,16 @@
 | No | Modul / Skenario Uji | Status | Catatan Teknis |
 |---|---|---|---|
 | 1 | Server Boot & Port Binding (`19840`) | ✅ PASS | Binding bersih di localhost, latensi 0 ms |
-| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.8.0) |
+| 2 | REST Endpoint `GET /api/status` | ✅ PASS | Mengembalikan state lifecycle runtime (v0.9.0) |
 | 3 | REST Endpoint `GET /api/themes` | ✅ PASS | Terdeteksi 3 tema resmi: Persona 5, Persona 3 Reload, & Classic |
 | 4 | REST Endpoint `GET /api/catalog` | ✅ PASS | P3R otomatis terdaftar berdampingan dengan Persona 5 |
 | 5 | OBS Overlay Serving (`GET /overlay`) | ✅ PASS | HTML kanvas transparan 60 FPS |
 | 6 | 3-Piece Hybrid Asset Skin Assembly (P3R) | ✅ PASS | Gabungan `bubble_left`, `bubble_mid`, `bubble_right` 100% solid, seamline hilang total |
 | 7 | Persona 3 Reload Official Font Bundling | ✅ PASS | Font `Agane-Roman.ttf`, `Agane-Bold.ttf`, `Agane-ExtraBold.ttf` ter-bundle di tema |
 | 8 | Dynamic Status Badge (TALK/Superchat/Member) | ✅ PASS | Badge mikro TALK (cyan), Superchat (Rp 100.000 emas), & Member (hijau) adaptif |
-| 9 | Tartarus Palette & Hard-Edge Shadow | ✅ PASS | Warna body Deep Navy & Electric Cyan dengan stylized hard shadow tajam |
-| 10 | Multiline Word-Wrapping & Breathing Room | ✅ PASS | Pesan 2 baris tertampung lapang dengan padding proporsional |
-| 11 | Real YouTube Live Ingestion Test | ✅ PASS | Teruji menyerap 70 pesan asli live chat YouTube dalam 10 detik tanpa API key |
+| 9 | Centered Vertical Anchor (Anti Top-Heavy) | ✅ PASS | Teks pesan mengapung simetris di tengah vertikal, dead space bawah hilang |
+| 10 | Snug-Fit Tier Progression (3.5:1 - 3.8:1) | ✅ PASS | 4-tier height progression (128px s/d 172px) membungkus teks tanpa balon membengkak |
+| 11 | Triple-Hybrid Long Comment Hardening | ✅ PASS | Komentar panjang (187 karakter) tampil 100% utuh tanpa terpotong (*gameplay-nya,* terlihat) |
 | 12 | YouTube Ingest Anti-RTO Resilience | ✅ PASS | Penanganan ETIMEDOUT tanpa crash, soft 'reconnecting' state teruji |
 | 13 | Auto-Recovery on Message Ingest | ✅ PASS | Pemulihan otomatis status 'connected' saat pesan baru masuk pasca sinyal pulih |
 | 14 | Self-Healing Watchdog (Backoff) | ✅ PASS | Reconnect otomatis jika RTO berlanjut >4 polling cycles tanpa intervensi streamer |

@@ -133,4 +133,8 @@ window.KYPoniTheme = {
 4. **Pencegahan Seamline:**
    * Berikan margin negatif 1px (`margin-left: -1px; margin-right: -1px;`) pada potongan tengah untuk mencegah timbulnya celah transparan akibat interpolasi sub-piksel browser.
 5. **Safe Interior Clearance:**
-   * Batasi area kotak teks (`.p5-message-box` atau sejenisnya) agar selalu memiliki ruang aman dari papan nama di atas dan garis outline di bawah.
+   * Batasi area kotak teks (`.message-box` atau sejenisnya) agar selalu memiliki ruang aman dari papan nama di atas dan garis outline di bawah.
+6. **Centered Vertical Anchor (Anti Top-Heavy Trap):**
+   * Seluruh kontainer teks pesan wajib menerapkan titik tumpu vertikal rata tengah (`display: flex; flex-direction: column; justify-content: center; align-items: flex-start;`). Dilarang membiarkan teks menempel kaku di atas (`align-items: flex-start` tanpa vertical centering) yang menyisakan kekosongan bawah (*dead space*) janggal.
+7. **Snug-Fit Tier Height Progression:**
+   * Kenaikan tinggi balon dialog antar-tier harus proporsional (*snug fit*) mengikuti jumlah baris teks nyata sehingga mempertahankan rasio aspek aerodinamis game (~3.4:1 s/d 3.8:1) tanpa ruang kosong berlebih di bagian bawah.
