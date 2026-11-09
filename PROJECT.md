@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.9.0-alpha` (Phase 9: Centered Vertical Anchor, Snug-Fit Tier Heights & Long Comment Hardening)  
+**Current Version:** `v0.9.1` (Phase 10: Persistence Hardening & Windows Compatibility Gate)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  

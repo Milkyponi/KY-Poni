@@ -10,31 +10,75 @@ const http = require('http');
 const https = require('https');
 const os = require('os');
 const { exec } = require('child_process');
+const { resolveConfigDir } = require('./config_manager');
+const { legacyIdToCanonical, LEGACY_THEME_ID_ALIASES } = require('./theme_ids');
 
 const REMOTE_CATALOG_URL = 'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/catalog.json';
 
 class ThemeManager {
-  constructor(publicThemesDir, catalogPath, userThemesDir = null) {
+  constructor(publicThemesDir, catalogPath, userThemesDir = null, options = {}) {
     this.publicThemesDir = publicThemesDir;
     this.catalogPath = catalogPath;
+    this.platform = options.platform || process.platform;
+    this.env = options.env || process.env;
+    this.homeDir = options.homeDir || os.homedir();
     this.userThemesDir = userThemesDir || this.resolveUserThemesDir();
     this.cachedRemoteCatalog = null;
     this.lastCatalogFetchTime = 0;
     this.ensureDirs();
   }
 
+  /**
+   * User themes live inside the same per-OS config directory that holds config.json,
+   * under a `themes/` subfolder. Resolved through the shared ConfigManager helper so the
+   * Linux/Windows/macOS paths can never drift apart between modules.
+   */
   resolveUserThemesDir() {
-    let baseDir = '';
-    if (process.platform === 'win32') {
-      const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
-      baseDir = path.join(appData, 'KY-Poni');
-    } else if (process.platform === 'darwin') {
-      baseDir = path.join(os.homedir(), 'Library', 'Application Support', 'KY-Poni');
-    } else {
-      const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
-      baseDir = path.join(configHome, 'ky-poni');
-    }
+    const baseDir = resolveConfigDir({
+      platform: this.platform,
+      env: this.env,
+      homeDir: this.homeDir,
+    });
     return path.join(baseDir, 'themes');
+  }
+
+  /**
+   * Renames theme folders that still carry a pre-v0.6.0 id (cyberpunk-2077 -> cyberpunk2077).
+   * Without this, an updated install sees the old folder on disk but the new catalog asks for
+   * a different name, so the theme looks "not installed" and users are told to download again.
+   * Only renames when the modern folder does not already exist, so it never destroys data.
+   *
+   * @returns {Array<{from: string, to: string}>} performed migrations
+   */
+  migrateLegacyThemeDirs() {
+    const migrations = [];
+    const aliases = LEGACY_THEME_ID_ALIASES;
+
+    for (const [legacyId, canonicalId] of Object.entries(aliases)) {
+      const legacyDir = path.join(this.userThemesDir, legacyId);
+      const canonicalDir = path.join(this.userThemesDir, canonicalId);
+
+      if (!fs.existsSync(legacyDir)) continue;
+      if (fs.existsSync(canonicalDir)) continue; // both present -> keep modern one untouched
+
+      try {
+        fs.renameSync(legacyDir, canonicalDir);
+        migrations.push({ from: legacyId, to: canonicalId });
+        console.log(`[KY-Poni Themes] Migrated legacy theme folder "${legacyId}" -> "${canonicalId}"`);
+      } catch (e) {
+        // Windows can fail with EPERM/EBUSY while a file is open; fall back to copy + remove.
+        try {
+          copyRecursiveSync(legacyDir, canonicalDir);
+          fs.rmSync(legacyDir, { recursive: true, force: true });
+          migrations.push({ from: legacyId, to: canonicalId, method: 'copy' });
+          console.log(`[KY-Poni Themes] Copied legacy theme folder "${legacyId}" -> "${canonicalId}"`);
+        } catch (copyErr) {
+          console.warn(`[KY-Poni Themes] Legacy theme migration failed for "${legacyId}":`, copyErr.message);
+        }
+      }
+    }
+
+    return migrations;
   }
 
   ensureDirs() {
@@ -52,6 +96,14 @@ class ThemeManager {
       }
     } catch (e) {
       console.warn('[KY-Poni Themes] Failed to create userThemesDir:', e.message);
+    }
+
+    // Heal renamed theme folders before any scan happens, so an updated install
+    // immediately recognises previously downloaded themes instead of offering re-download.
+    try {
+      this.migrateLegacyThemeDirs();
+    } catch (e) {
+      console.warn('[KY-Poni Themes] Legacy theme migration step skipped:', e.message);
     }
   }
 
@@ -93,7 +145,13 @@ class ThemeManager {
                   // ignore json parse error
                 }
               }
-              themeMap.set(themeId, meta);
+
+              // The folder name is authoritative for identity: packages shipped before v0.6.0
+              // still carry an old id inside their theme.json (cyberpunk-2077), which would
+              // otherwise shadow the canonical id and make the theme look uninstalled.
+              const canonicalId = legacyIdToCanonical(themeId);
+              meta.id = canonicalId;
+              themeMap.set(canonicalId, meta);
             }
           }
         }
@@ -112,19 +170,27 @@ class ThemeManager {
   }
 
   /**
-   * Resolves the absolute directory path of an installed theme
+   * Resolves the absolute directory path of an installed theme.
+   * Accepts both canonical and legacy ids so old bookmarks/URLs keep working.
    */
   getThemePath(themeId) {
-    // 1. Check user persistent directory first
-    const userTheme = path.join(this.userThemesDir, themeId);
-    if (fs.existsSync(path.join(userTheme, 'style.css'))) {
-      return userTheme;
+    if (!themeId) return null;
+    const canonicalId = legacyIdToCanonical(themeId);
+
+    // 1. Check user persistent directory first (canonical, then legacy folder name)
+    for (const candidate of [canonicalId, themeId]) {
+      const userTheme = path.join(this.userThemesDir, candidate);
+      if (fs.existsSync(path.join(userTheme, 'style.css'))) {
+        return userTheme;
+      }
     }
 
     // 2. Fall back to built-in themes directory
-    const builtInTheme = path.join(this.publicThemesDir, themeId);
-    if (fs.existsSync(path.join(builtInTheme, 'style.css'))) {
-      return builtInTheme;
+    for (const candidate of [canonicalId, themeId]) {
+      const builtInTheme = path.join(this.publicThemesDir, candidate);
+      if (fs.existsSync(path.join(builtInTheme, 'style.css'))) {
+        return builtInTheme;
+      }
     }
 
     return null;

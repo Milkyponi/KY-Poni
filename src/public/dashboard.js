@@ -35,6 +35,9 @@ const infoMsgCount = document.getElementById('info-msgcount');
 let currentPos = 'bottom-left';
 let saveConfigTimeout = null;
 
+// Boot guard: never persist during initial load. Only real user interaction may write.
+let isBootstrapping = true;
+
 // Handle Position Selector Buttons
 document.querySelectorAll('#position-selector .btn-pos').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -121,6 +124,7 @@ if (viewportEl && window.ResizeObserver) {
 window.addEventListener('resize', updatePreviewZoom);
 
 // Update OBS URL & Live Preview Frame
+// NOTE: this function renders state. Persisting is a separate concern — see scheduleSave().
 function updateOverlayParams() {
   const theme = selectTheme.value;
   let layout = selectLayout.value;
@@ -163,18 +167,42 @@ function updateOverlayParams() {
 
   updatePreviewZoom();
 
-  // Auto-Save User Preferences (debounced 500ms)
+  // Auto-Save User Preferences (debounced 500ms) — skipped while bootstrapping
+  scheduleSave();
+}
+
+/**
+ * Debounced persistence. Called from every real user interaction handler.
+ * During boot we deliberately do nothing: loading saved preferences must never
+ * write back to disk, otherwise a not-yet-populated dropdown silently overwrites
+ * the user's stored theme/font with a default value.
+ */
+function scheduleSave() {
+  if (isBootstrapping) return;
   if (saveConfigTimeout) clearTimeout(saveConfigTimeout);
   saveConfigTimeout = setTimeout(saveUserConfig, 500);
 }
 
+
+// Changing theme from the dropdown is a USER choice: keep their font/size/colour.
+// Presets are only applied on explicit actions (first install, or the reset button),
+// because silently resetting typography on every theme switch destroys customisation.
 selectTheme.addEventListener('change', () => {
-  applyThemePresets(selectTheme.value);
   updateOverlayParams();
+  loadCatalog();
 });
 selectLayout.addEventListener('change', updateOverlayParams);
 if (inputFade) inputFade.addEventListener('input', updateOverlayParams);
 if (selectKeep) selectKeep.addEventListener('change', updateOverlayParams);
+// The channel handle used to be persisted only as a side effect of touching another control.
+// Give it its own (debounced) save so typing a handle alone survives a restart.
+if (ytTargetInput) {
+  ytTargetInput.addEventListener('input', () => {
+    if (isBootstrapping) return;
+    if (saveConfigTimeout) clearTimeout(saveConfigTimeout);
+    saveConfigTimeout = setTimeout(saveUserConfig, 500);
+  });
+}
 
 // Save User Configuration
 async function saveUserConfig() {
@@ -210,46 +238,76 @@ async function saveUserConfig() {
 }
 
 // Load Saved Configuration on Startup
+// Pure read path: populates the DOM only. Callers must run loadThemes() FIRST so every
+// dynamic <option> (downloaded themes, theme-provided fonts) already exists before we
+// assign .value — otherwise the browser silently blanks the field.
+// This function must never trigger a write; see scheduleSave() for the guard.
 async function loadSavedConfig() {
   try {
     const res = await fetch('/api/config');
     if (!res.ok) return;
     const cfg = await res.json();
-
-    if (cfg.target && ytTargetInput) ytTargetInput.value = cfg.target;
-    if (cfg.theme && selectTheme) selectTheme.value = cfg.theme;
-    if (cfg.layout && selectLayout) {
-      const norm = cfg.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
-      selectLayout.value = norm;
-    }
-
-    if (cfg.pos) {
-      currentPos = cfg.pos;
-      document.querySelectorAll('#position-selector .btn-pos').forEach(b => {
-        b.classList.toggle('active', b.getAttribute('data-pos') === currentPos);
-      });
-    }
-
-    if (cfg.scale && inputScale) {
-      inputScale.value = cfg.scale;
-      if (labelScaleVal) labelScaleVal.textContent = `${cfg.scale}%`;
-    }
-    if (cfg.fontSize && inputFsize) {
-      inputFsize.value = cfg.fontSize;
-      if (labelFsizeVal) labelFsizeVal.textContent = `${cfg.fontSize}px`;
-    }
-    if (cfg.fontFamily && selectFont) selectFont.value = cfg.fontFamily;
-    if (cfg.textColor && inputColor && inputColorHex) {
-      inputColor.value = cfg.textColor;
-      inputColorHex.value = cfg.textColor.toUpperCase();
-    }
-    if (cfg.fade !== undefined && inputFade) inputFade.value = cfg.fade;
-    if (cfg.keep !== undefined && selectKeep) selectKeep.value = cfg.keep;
-
-    updateOverlayParams();
+    await applyConfigToUI(cfg);
   } catch (e) {
     console.warn('Gagal memuat config tersimpan:', e);
   }
+}
+
+/**
+ * Applies a config object to the dashboard DOM.
+ * Contains zero network writes and zero persistence side effects.
+ * @param {object} cfg configuration as returned by GET /api/config
+ */
+async function applyConfigToUI(cfg) {
+  if (!cfg) return;
+
+  if (cfg.target && ytTargetInput) ytTargetInput.value = cfg.target;
+  if (cfg.theme && selectTheme) {
+    // Only assign when the option genuinely exists; keeps the current selection otherwise.
+    if (Array.from(selectTheme.options).some(o => o.value === cfg.theme)) {
+      selectTheme.value = cfg.theme;
+    }
+  }
+  if (cfg.layout && selectLayout) {
+    const norm = cfg.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+    selectLayout.value = norm;
+  }
+
+  if (cfg.pos) {
+    currentPos = cfg.pos;
+    document.querySelectorAll('#position-selector .btn-pos').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-pos') === currentPos);
+    });
+  }
+
+  if (cfg.scale && inputScale) {
+    inputScale.value = cfg.scale;
+    if (labelScaleVal) labelScaleVal.textContent = `${cfg.scale}%`;
+  }
+  if (cfg.fontSize && inputFsize) {
+    inputFsize.value = cfg.fontSize;
+    if (labelFsizeVal) labelFsizeVal.textContent = `${cfg.fontSize}px`;
+  }
+  if (cfg.fontFamily && selectFont) {
+    // If the saved font is not offered by any installed theme (e.g. a theme was removed
+    // or an older package did not declare its font list), keep it as an explicit option
+    // rather than silently dropping the user's choice.
+    if (!Array.from(selectFont.options).some(o => o.value === cfg.fontFamily)) {
+      const opt = document.createElement('option');
+      opt.value = cfg.fontFamily;
+      opt.textContent = `${cfg.fontFamily} (Tersimpan)`;
+      selectFont.appendChild(opt);
+    }
+    selectFont.value = cfg.fontFamily;
+  }
+  if (cfg.textColor && inputColor && inputColorHex) {
+    inputColor.value = cfg.textColor;
+    inputColorHex.value = cfg.textColor.toUpperCase();
+  }
+  if (cfg.fade !== undefined && inputFade) inputFade.value = cfg.fade;
+  if (cfg.keep !== undefined && selectKeep) selectKeep.value = cfg.keep;
+
+  updateOverlayParams();
 }
 
 // Copy URL
@@ -343,12 +401,24 @@ function switchTab(tabId) {
 
 function selectThemeFromCatalog(themeId) {
   if (selectTheme) {
+    // Picking an already-installed theme from the catalog is a theme switch, not a reinstall:
+    // respect the streamer's existing font/colour customisation.
     selectTheme.value = themeId;
-    applyThemePresets(themeId);
     updateOverlayParams();
     loadCatalog();
     switchTab('tab-studio');
   }
+}
+
+/**
+ * Explicit "reset to this theme's official look" action.
+ * This is the ONLY place (besides a fresh install) where presets overwrite user typography.
+ */
+function resetThemePresets(themeId) {
+  if (!confirm(`Kembalikan font, ukuran, dan warna teks ke preset resmi tema "${themeId}"?`)) return;
+  applyThemePresets(themeId);
+  updateOverlayParams();
+  loadCatalog();
 }
 
 async function resetAllPreferences() {
@@ -370,6 +440,7 @@ async function resetAllPreferences() {
   });
 
   updateOverlayParams();
+  await saveUserConfig();
   alert('✅ Preferensi tampilan berhasil dikembalikan ke default pabrik!');
 }
 
@@ -513,26 +584,35 @@ function updateFontDropdown(themes) {
   }
 }
 
-async function loadThemes() {
+/**
+ * Populates the theme dropdown from installed themes.
+ * @param {string|null} preferredTheme  theme id to keep selected (falls back to current DOM value)
+ * The dropdown is rebuilt from scratch each call, so we must re-select deliberately:
+ * an empty <select> would otherwise resolve to the first option and silently change the theme.
+ */
+async function loadThemes(preferredTheme = null) {
   if (!selectTheme) return;
   try {
     const res = await fetch('/api/themes');
     const data = await res.json();
-    if (!data.themes) return;
+    if (!data.themes || data.themes.length === 0) return;
 
     installedThemesMap = new Map(data.themes.map(t => [t.id, t]));
     updateFontDropdown(data.themes);
 
-    const currentVal = selectTheme.value;
+    const wanted = preferredTheme || selectTheme.value;
+    const exists = data.themes.some(t => t.id === wanted);
+    // Keep the stored theme when it is still installed; only then fall back.
+    const resolved = exists ? wanted : data.themes[0].id;
+
     selectTheme.innerHTML = data.themes.map(t => `
-      <option value="${t.id}" ${t.id === currentVal ? 'selected' : ''}>
+      <option value="${t.id}" ${t.id === resolved ? 'selected' : ''}>
         ${t.name} ${t.isBuiltIn ? '' : '(Kustom)'}
       </option>
     `).join('');
 
-    if (!Array.from(selectTheme.options).some(o => o.value === currentVal) && data.themes.length > 0) {
-      selectTheme.value = data.themes[0].id;
-    }
+    selectTheme.value = resolved;
+    return resolved;
   } catch (e) {
     console.error('Failed to load themes:', e);
   }
@@ -553,10 +633,15 @@ async function installTheme(themeId, downloadUrl, btn) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal memasang tema');
 
-    await loadThemes();
+    // Fresh install is an explicit user action, so applying the theme's official
+    // preset here is correct and expected. Switching themes later will NOT reset typography.
+    await loadThemes(themeId);
     selectTheme.value = themeId;
     applyThemePresets(themeId);
     updateOverlayParams();
+    // Flush the new preference immediately instead of waiting for the debounce,
+    // so a fast window close right after install cannot lose the selection.
+    await saveUserConfig();
     await loadCatalog();
     switchTab('tab-studio');
     alert(`🎉 Tema "${themeId}" berhasil dipasang dan langsung diaktifkan dengan preset resminya!`);
@@ -585,11 +670,15 @@ async function deleteTheme(themeId, btn) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal menghapus tema');
 
-    await loadThemes();
-    if (selectTheme.value === themeId) {
-      selectTheme.value = 'persona5';
-      applyThemePresets('persona5');
+    // If the deleted theme was active, fall back to the first remaining theme.
+    // Presets are applied here because the previous theme no longer exists at all.
+    const remaining = await loadThemes();
+    if (selectTheme.value === themeId || !remaining) {
+      const fallback = remaining || 'persona5';
+      selectTheme.value = fallback;
+      applyThemePresets(fallback);
       updateOverlayParams();
+      await saveUserConfig();
     }
     await loadCatalog();
     alert(`Tema "${themeId}" berhasil dihapus.`);
@@ -732,6 +821,7 @@ async function loadCatalog() {
       if (isInstalled) {
         if (isCurrentlyActive) {
           actionButtons = `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; opacity: 0.7; cursor: default;" disabled>✓ Sedang Digunakan</button>`;
+          actionButtons += `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px;" onclick="resetThemePresets('${t.id}')" title="Kembalikan font, ukuran & warna teks ke preset resmi tema ini">↺ Preset Tema</button>`;
         } else {
           actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px;" onclick="selectThemeFromCatalog('${t.id}')">⚡ Gunakan Tema Ini</button>`;
           if (!isBuiltIn) {
@@ -1037,10 +1127,30 @@ function setupUpdaterWS() {
 }
 
 // Startup Initialization
-loadSavedConfig().then(async () => {
-  await loadThemes();
-  await loadCatalog();
+// ORDER MATTERS. Theme/font dropdowns must be fully populated BEFORE saved values are
+// assigned, otherwise assigning .value for a downloaded theme silently resolves to ""
+// and the next debounced save would overwrite the user's real preference with a default.
+(async () => {
+  try {
+    const savedRes = await fetch('/api/config');
+    if (savedRes.ok) {
+      const savedCfg = await savedRes.json();
+      // 1) Populate every dynamic option first, keeping the saved theme if it is installed.
+      await loadThemes(savedCfg.theme || null);
+      // 2) Now assign the saved values onto the fully-built DOM.
+      await applyConfigToUI(savedCfg);
+    } else {
+      await loadThemes();
+    }
+    await loadCatalog();
+  } catch (e) {
+    console.warn('[KY-Poni] Startup initialisation failed:', e);
+  } finally {
+    // 3) Enable persistence only after the UI reflects the stored state.
+    isBootstrapping = false;
+  }
+
   setupUpdaterWS();
   checkUpdateAuto();
   setInterval(pollStatus, 5000);
-});
+})();

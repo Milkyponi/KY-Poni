@@ -1,8 +1,11 @@
-# QA & Automated Test Report: KY-Poni (v0.9.0-alpha)
+# QA & Automated Test Report: KY-Poni (v0.9.1)
 
-- **Tanggal Eksekusi**: 2026-11-07
+> **Rilis terkini: v0.9.1** — Persistence Hardening & Windows Compatibility Gate.
+> Laporan v0.9.0-alpha di bawah dipertahankan sebagai riwayat; bagian v0.9.1 ada di **Bagian 4**.
+
+- **Tanggal Eksekusi Terakhir**: 2026-11-09
 - **Lead Tester**: Fonzy (Divisi Software Development)
-- **Komponen Diuji**: Persona 3 Reload Triple-Hybrid Adaptation, Centered Vertical Anchor, Snug-Fit Tier Height Progression, Aganè Font Bundling, 3-Piece Sliced Skin, Anti-RTO Watchdog.
+- **Komponen Diuji**: Persona 3 Reload Triple-Hybrid Adaptation, Centered Vertical Anchor, Snug-Fit Tier Height Progression, Aganè Font Bundling, 3-Piece Sliced Skin, Anti-RTO Watchdog, Preference Persistence, Legacy Theme ID Migration, Windows Path Compatibility.
 
 ---
 
@@ -55,9 +58,9 @@
 
 ## 2. Berkas Binari Portable Tersedia
 - **Linux Portable AppImage (Installed in ~/AppImages/kyponi.appimage):**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.7.0.AppImage` (Executable)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni-0.9.1.AppImage` (Executable)
 - **Windows Portable Executable:**
-  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.7.0.exe` (Single Portable Exe)
+  `Documents/Milky Brain/07_PROJECTS/KY-Poni/dist/KY-Poni 0.9.1.exe` (Single Portable Exe)
 - **Studio Dashboard Server (Internal):** `http://localhost:19840/`
 
 ---
@@ -75,3 +78,114 @@
   - `color`: Hex warna teks (misal: FFFFFF, FFE600, 00F0FF, FF007F)
   - `fade`: Detik auto-hide (default: 8, `0` = nonaktif)
   - `keep`: Jumlah chat terakhir yang ditahan agar layar tidak kosong (default: 1)
+
+---
+
+## 4. Laporan Pengujian v0.9.1 — Persistence Hardening & Windows Compatibility Gate
+
+**Tanggal**: 2026-11-09
+**Latar belakang**: Pengguna melaporkan preferensi kembali ke default dan tema unduhan tampak terhapus setelah pembaruan. Investigasi akar masalah: `INVESTIGATION_PREFERENCES_UPDATE_BUG.md`.
+
+### 4.1 Total Gate Otomatis
+
+| Suite | Assertion | Hasil |
+|---|---|---|
+| `test/test_server.js` (regresi server & API) | 11 | ✅ PASS |
+| `test/test_anti_rto.js` (Anti-RTO watchdog) | 4 | ✅ PASS |
+| `test/test_persistence.js` (persistensi & path lintas OS) | 17 | ✅ PASS |
+| `test/test_dashboard_boot.js` (kontrak urutan boot) | 13 | ✅ PASS |
+| `test/test_windows_compat.js` (simulasi win32 penuh) | 14 | ✅ PASS |
+| **Total** | **59** | **✅ 100% PASS** |
+
+Perintah tunggal: `npm test` → exit code 0.
+
+### 4.2 Regresi Bug Lapangan — Sebelum vs Sesudah
+
+**A. Preferensi berubah saat aplikasi dibuka (tanpa interaksi)**
+
+| Metrik | Sebelum perbaikan | Sesudah perbaikan |
+|---|---|---|
+| MD5 `config.json` sebelum boot | `548324…` | `58a53e…` |
+| MD5 setelah 15 detik idle | `82fa2c…` (**berubah**) | `58a53e…` (**identik**) |
+| Tema aktif di dashboard | `classic` (reset paksa) | `cyberpunk2077` (bertahan) |
+| Font pilihan user | hilang → `Agane` | `Chakra Petch` (bertahan) |
+
+**B. Ganti tema menghapus tipografi user**
+
+| Langkah | Sebelum | Sesudah |
+|---|---|---|
+| Kondisi awal | `Chakra Petch`, `#FFE600`, 19px | sama |
+| Pilih tema lain dari dropdown | font → `Agane`, 16px (**hilang**) | tetap `Chakra Petch`, 19px (**bertahan**) |
+| Perubahan tersimpan ke disk | ✅ | ✅ |
+
+**C. Tema unduhan tampak "hilang" setelah update**
+Kondisi: folder `cyberpunk-2077` + `config.json` menyimpan `theme: "cyberpunk-2077"`.
+
+| Pemeriksaan | Hasil |
+|---|---|
+| Folder dimigrasi ke `cyberpunk2077` | ✅ |
+| Katalog menandai `installed: true` | ✅ |
+| Tombol katalog "Gunakan Tema Ini" (bukan "Instal") | ✅ |
+| `config` dibaca sebagai `cyberpunk2077` | ✅ |
+| File config tidak ditulis ulang saat boot | ✅ |
+
+**D. Ketahanan migrasi**
+
+| Skenario | Hasil |
+|---|---|
+| Folder kanonik & folder lama keduanya ada | Kanonik dipertahankan, tidak ditimpa ✅ |
+| Migrasi dijalankan 3× berturut-turut | Tetap satu folder kanonik (idempoten) ✅ |
+| `theme.json` paket membawa ID lama | Nama folder menang ✅ |
+| `config.json` korup | Fallback default tanpa crash ✅ |
+
+### 4.3 Kompatibilitas Windows
+
+Lapis 1 — **simulasi runtime win32** (14 assertion):
+
+| Pemeriksaan | Hasil |
+|---|---|
+| `%APPDATA%\KY-Poni\config.json` (kapital) | ✅ |
+| `%APPDATA%\KY-Poni\themes\` sejajar config | ✅ |
+| Fallback `<home>\AppData\Roaming` saat `APPDATA` kosong | ✅ |
+| Preferensi bertahan setelah restart penuh | ✅ |
+| Penulisan atomik tanpa sisa `.tmp` | ✅ |
+| Fallback tulis saat `renameSync` `EPERM` (file terkunci) | ✅ |
+| Migrasi `cyberpunk-2077` → `cyberpunk2077` | ✅ |
+| Fallback copy+remove saat `renameSync` `EBUSY` | ✅ |
+| `theme.json` ID basi tidak merusak deteksi | ✅ |
+| Normalisasi ID lama saat baca config | ✅ |
+| Boot tidak menulis ulang config | ✅ |
+| Hapus tema tanpa folder yatim | ✅ |
+| Tema inti tidak bisa dihapus | ✅ |
+
+Lapis 2 — **eksekusi biner `.exe` asli di Wine 11.20**:
+
+| Bukti | Hasil |
+|---|---|
+| Membuat `C:\users\<user>\AppData\Roaming\KY-Poni\config.json` | ✅ terverifikasi di disk |
+| Membuat folder `themes\` pada lokasi sama | ✅ |
+| Nama folder kapital `KY-Poni` | ✅ |
+| Migrasi folder tema lama pada path Windows | ✅ log: `Migrated legacy theme folder "cyberpunk-2077" -> "cyberpunk2077"` |
+| Aset tema (`theme.json`, `style.css`) ikut pindah utuh | ✅ |
+
+Catatan: setelah window init, Wine menghentikan proses karena tidak ada display server (`hwnd_util.cc: 1400`, `nodrv_CreateWindow`). Keterbatasan lingkungan headless Wine, bukan cacat aplikasi — semua logika storage, migrasi, dan path Windows sudah tereksekusi sebelum titik tersebut.
+
+### 4.4 Integritas Artefak Rilis
+
+| Artefak | Versi ter-embed | Fix terverifikasi di `app.asar` |
+|---|---|---|
+| `KY-Poni-0.9.1.AppImage` | `0.9.1` | ✅ `theme_ids.js` + guard `isBootstrapping` |
+| `KY-Poni 0.9.1.exe` | `0.9.1` | ✅ `theme_ids.js`, `migrateLegacyThemeDirs`, path `%APPDATA%` |
+
+Uji runtime AppImage 0.9.1: dashboard menampilkan tema `cyberpunk2077`, font `Chakra Petch`, skala 130, warna `#FFE600`, handle `@LegacyUser` — seluruhnya bertahan dari config pengguna lama, dan file config tidak tersentuh saat boot.
+
+### 4.5 Regresi Non-Persistensi (dicek ulang)
+
+Port 19840 & teardown ✅ · `/api/status`, `/api/version` ✅ · `/api/themes` (3 tema inti) ✅ · `/api/catalog` (5 item) ✅ · `/overlay` kanvas 1000×1000 ✅ · serving aset tema dari user dir ✅ · instal & hapus tema ✅ · WebSocket broadcast & simulator ✅ · Anti-RTO watchdog ✅ · Auto-updater SemVer strict ✅ · Renderer plugin THEME_SPEC ✅
+
+### 4.6 Catatan Rilis
+
+- Format `config.json` tidak berubah — pengguna bisa downgrade tanpa kehilangan data.
+- Migrasi folder tema bersifat *one-way* dan idempoten, aman dijalankan setiap boot.
+- Normalisasi ID tema dilakukan **saat dibaca**, bukan dengan menulis ulang file.
+- Direkomendasikan sebagai rilis wajib sebelum distribusi publik.

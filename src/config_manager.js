@@ -4,13 +4,18 @@
  * - Linux: ~/.config/ky-poni/config.json ($XDG_CONFIG_HOME/ky-poni/config.json)
  * - Windows: %APPDATA%/KY-Poni/config.json
  * - macOS: ~/Library/Application Support/KY-Poni/config.json
- * 
+ *
  * Ensures streamer preferences survive across app updates, AppImage mounts, and exe replacements.
+ *
+ * Cross-platform note: the Windows folder name is `KY-Poni` (capitalised) and the Linux one is
+ * `ky-poni` (lowercase) on purpose — they match Electron's own userData folder on each OS so a
+ * single directory holds both the app profile and the user's saved preferences.
  */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { legacyIdToCanonical, isLegacyThemeId } = require('./theme_ids');
 
 const DEFAULT_CONFIG = {
   target: '@MilkyPoni',
@@ -25,24 +30,48 @@ const DEFAULT_CONFIG = {
   keep: 1,
 };
 
+/**
+ * Resolves the per-platform configuration directory.
+ * Exported so ThemeManager and the cross-platform tests share exactly one implementation.
+ *
+ * @param {object} [options]
+ * @param {string} [options.platform] Override process.platform (tests / cross-platform audit)
+ * @param {object} [options.env]      Override process.env
+ * @param {string} [options.homeDir]  Override os.homedir()
+ * @returns {string} absolute config directory
+ */
+function resolveConfigDir(options = {}) {
+  const platform = options.platform || process.platform;
+  const env = options.env || process.env;
+  const homeDir = options.homeDir || os.homedir();
+
+  if (platform === 'win32') {
+    const appData = env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
+    return path.join(appData, 'KY-Poni');
+  }
+  if (platform === 'darwin') {
+    return path.join(homeDir, 'Library', 'Application Support', 'KY-Poni');
+  }
+  const configHome = env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+  return path.join(configHome, 'ky-poni');
+}
+
 class ConfigManager {
-  constructor(legacyConfigDir = null) {
+  constructor(legacyConfigDir = null, options = {}) {
     this.legacyConfigDir = legacyConfigDir || path.join(__dirname);
+    this.platform = options.platform || process.platform;
+    this.env = options.env || process.env;
+    this.homeDir = options.homeDir || os.homedir();
     this.configPath = this.resolveConfigPath();
     this.migrateLegacyIfNeeded();
   }
 
   resolveConfigPath() {
-    let configDir = '';
-    if (process.platform === 'win32') {
-      const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
-      configDir = path.join(appData, 'KY-Poni');
-    } else if (process.platform === 'darwin') {
-      configDir = path.join(os.homedir(), 'Library', 'Application Support', 'KY-Poni');
-    } else {
-      const configHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
-      configDir = path.join(configHome, 'ky-poni');
-    }
+    const configDir = resolveConfigDir({
+      platform: this.platform,
+      env: this.env,
+      homeDir: this.homeDir,
+    });
 
     try {
       if (!fs.existsSync(configDir)) {
@@ -55,6 +84,10 @@ class ConfigManager {
     return path.join(configDir, 'config.json');
   }
 
+  /**
+   * Copies a pre-0.5 config.json that lived next to the source tree into the OS user dir.
+   * Runs only when the destination does not exist yet, so it can never clobber live prefs.
+   */
   migrateLegacyIfNeeded() {
     const legacyPath = path.join(this.legacyConfigDir, 'config.json');
     if (!fs.existsSync(this.configPath) && fs.existsSync(legacyPath)) {
@@ -75,6 +108,11 @@ class ConfigManager {
         if (parsed.layout) {
           parsed.layout = parsed.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
         }
+        // Normalize legacy theme ids so callers (and the dashboard select) never see
+        // an orphaned identifier that fails to match the catalog list.
+        if (parsed.theme && isLegacyThemeId(parsed.theme)) {
+          parsed.theme = legacyIdToCanonical(parsed.theme);
+        }
         return { ...DEFAULT_CONFIG, ...parsed };
       }
     } catch (e) {
@@ -83,14 +121,20 @@ class ConfigManager {
     return { ...DEFAULT_CONFIG };
   }
 
+  /**
+   * Merge-write the config. Never mutates the caller's object.
+   * Uses temp file + rename so a crash mid-write cannot leave a truncated
+   * (unparseable) config.json behind on either POSIX or Windows.
+   */
   updateConfig(updates) {
     const current = this.getConfig();
-    if (updates && updates.layout) {
-      updates.layout = updates.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+    const safeUpdates = { ...(updates || {}) };
+    if (safeUpdates.layout) {
+      safeUpdates.layout = safeUpdates.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
     }
-    const updated = { ...current, ...(updates || {}) };
+    const updated = { ...current, ...safeUpdates };
     try {
-      fs.writeFileSync(this.configPath, JSON.stringify(updated, null, 2), 'utf-8');
+      this.writeAtomic(updated);
       return updated;
     } catch (e) {
       throw new Error(`Gagal menyimpan konfigurasi: ${e.message}`);
@@ -99,12 +143,29 @@ class ConfigManager {
 
   resetConfig() {
     try {
-      fs.writeFileSync(this.configPath, JSON.stringify(DEFAULT_CONFIG, null, 2), 'utf-8');
+      this.writeAtomic(DEFAULT_CONFIG);
       return { ...DEFAULT_CONFIG };
     } catch (e) {
       throw new Error(`Gagal mereset konfigurasi: ${e.message}`);
     }
   }
+
+  writeAtomic(payload) {
+    const dir = path.dirname(this.configPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const tmpPath = `${this.configPath}.tmp-${process.pid}-${Date.now()}`;
+    fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2), 'utf-8');
+    try {
+      fs.renameSync(tmpPath, this.configPath);
+    } catch (e) {
+      // Windows can hold a transient lock (antivirus / Explorer preview) on the target.
+      // Fall back to a direct overwrite before giving up entirely.
+      try { fs.unlinkSync(tmpPath); } catch (cleanupErr) { /* ignore */ }
+      fs.writeFileSync(this.configPath, JSON.stringify(payload, null, 2), 'utf-8');
+    }
+  }
 }
 
-module.exports = { ConfigManager, DEFAULT_CONFIG };
+module.exports = { ConfigManager, DEFAULT_CONFIG, resolveConfigDir };
