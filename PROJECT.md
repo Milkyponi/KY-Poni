@@ -1,17 +1,18 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v0.9.1` (Phase 10: Persistence Hardening & Windows Compatibility Gate)  
+**Current Version:** `v1.0.0` (Rilis Publik Pertama)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  
-**Status:** In Development (Stage 2: Modular Architecture & Plugin System)
+**Status:** Released — distribusi publik aktif
 
 ### 📚 Dokumentasi Arsitektur Resmi Proyek:
 - **[PRD.md](PRD.md):** Product Requirements Document lengkap (visi, pengguna, spesifikasi fungsional & non-fungsional).
 - **[THEME_SPEC.md](THEME_SPEC.md):** Standar Kontrak Plugin Tema Game (antarmuka `renderer.js`, `theme.json`, aset grafis).
 - **[ROADMAP.md](ROADMAP.md):** Peta jalan jangka panjang fitur & rilis tema baru (Undertale, Cyberpunk, P3 Reload).
-- **[changelogs/](changelogs/):** Arsip riwayat rilis lengkap dari versi 0.1.0 hingga terkini.
+- **[QA_REPORT.md](QA_REPORT.md):** Hasil audit kelayakan distribusi & suite pengujian otomatis.
+- **[SOP_RELEASE.md](SOP_RELEASE.md):** Prosedur rilis resmi proyek ini (uji manual Bos + verifikasi teknis Fonzy).
 
 ---
 

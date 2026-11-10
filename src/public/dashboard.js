@@ -861,11 +861,11 @@ async function loadCatalog() {
           <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.5px;">KOLEKSI GAME BERIKUTNYA</div>
         </div>
         <div class="theme-body">
-          <div class="theme-name" style="color: var(--text-muted);">Persona 3 Reload & Retro 16-Bit JRPG</div>
+          <div class="theme-name" style="color: var(--text-muted);">Persona 4 Golden</div>
           <div class="theme-tag-row">
             <span class="theme-tag">Segera Hadir</span>
-            <span class="theme-tag">Ocean Blue</span>
-            <span class="theme-tag">Chrono</span>
+            <span class="theme-tag">Midnight Channel</span>
+            <span class="theme-tag">Yellow</span>
           </div>
         </div>
         <div class="theme-card-footer" style="justify-content: flex-end;">

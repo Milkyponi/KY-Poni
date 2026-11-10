@@ -40,7 +40,7 @@ Dokumen ini adalah peta jalan jangka panjang (*long-term roadmap*) pengembangan 
 * **Tujuan Utama:** Menghilangkan seluruh utang teknis (*technical debt*) dan membuat codebase mudah di-maintain jangka panjang oleh developer maupun AI agent.
 * **Deliverables:**
   1. **Dokumentasi Lengkap:** Penerbitan `PRD.md`, `THEME_SPEC.md`, dan `ROADMAP.md`.
-  2. **Organisasi Changelog:** Memindahkan seluruh arsip rilis ke folder `changelogs/`.
+  2. **Riwayat Rilis:** Catatan rilis per versi dipublikasikan di halaman GitHub Releases, bukan lagi sebagai berkas changelog terpisah di dalam repo.
   3. **Modular Native Backend Router:** Memecah monolit `src/server.js` ke dalam modul router native Node.js di `src/routes/` (`config.js`, `status.js`, `ingest.js`, `themes.js`, `updater.js`, `static.js`).
   4. **Dynamic Theme Plugin System:** Menghapus seluruh hardcoded `if (theme === ...)` di `overlay.js`. Setiap tema mengekspor `renderer.js` sendiri yang dimuat secara dinamis saat runtime.
   5. **Modular Dashboard Controller:** Merapikan logika dashboard ke komponen kontrol terisolasi.

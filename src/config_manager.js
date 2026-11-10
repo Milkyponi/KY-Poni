@@ -45,6 +45,12 @@ function resolveConfigDir(options = {}) {
   const env = options.env || process.env;
   const homeDir = options.homeDir || os.homedir();
 
+  // Explicit override. The automated test suite sets this so a test run can never
+  // read or write the real streamer profile (it used to clobber a live config.json).
+  if (env.KY_PONI_CONFIG_HOME) {
+    return env.KY_PONI_CONFIG_HOME;
+  }
+
   if (platform === 'win32') {
     const appData = env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
     return path.join(appData, 'KY-Poni');
@@ -87,9 +93,14 @@ class ConfigManager {
   /**
    * Copies a pre-0.5 config.json that lived next to the source tree into the OS user dir.
    * Runs only when the destination does not exist yet, so it can never clobber live prefs.
+   *
+   * Deliberately skipped when running from a packaged archive: inside app.asar the legacy
+   * path resolves to the developer's own leftover profile, so a fresh install would silently
+   * inherit the developer's scale/font/theme instead of starting from DEFAULT_CONFIG.
    */
   migrateLegacyIfNeeded() {
     const legacyPath = path.join(this.legacyConfigDir, 'config.json');
+    if (legacyPath.includes('.asar')) return;
     if (!fs.existsSync(this.configPath) && fs.existsSync(legacyPath)) {
       try {
         fs.copyFileSync(legacyPath, this.configPath);

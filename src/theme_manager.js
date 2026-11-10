@@ -355,6 +355,25 @@ class ThemeManager {
   }
 
   /**
+   * Opens the user themes directory in the OS file manager.
+   * The route used to call a method that did not exist on this class, so
+   * GET /api/themes/open-folder always failed with a 500 TypeError.
+   */
+  openThemesFolder() {
+    this.ensureDirs();
+    const dir = this.userThemesDir;
+    const cmd = process.platform === 'win32'
+      ? `explorer "${dir}"`
+      : process.platform === 'darwin'
+        ? `open "${dir}"`
+        : `xdg-open "${dir}"`;
+
+    return new Promise((resolve) => {
+      exec(cmd, () => resolve(dir));
+    });
+  }
+
+  /**
    * Deletes an installed theme package from the user themes directory.
    * Core themes (persona5, classic) cannot be deleted.
    */

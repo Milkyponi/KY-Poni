@@ -1,106 +1,74 @@
-# KY-Poni ⚡
+# KY-Poni
 
-<p align="center">
-  <img src="src/public/assets/logo.svg" alt="KY-Poni Logo" width="140" height="140">
-</p>
+Overlay chat livestream bergaya antarmuka video game untuk OBS Studio. Berjalan lokal di komputer kamu, tanpa login, tanpa API key, tanpa langganan.
 
-<p align="center">
-  <b>Stylized Game-Aesthetic Livestream Chat Overlay for OBS Studio</b><br>
-  <i>Hadirkan chat box livestreaming unik berkarakter anime & video game di OBS tanpa kompromi performa.</i>
-</p>
+![Katalog tema KY-Poni](docs/screenshots/catalog.png)
 
-<p align="center">
-  <a href="https://github.com/Milkyponi/KY-Poni/releases/latest"><img src="https://img.shields.io/github/v/release/Milkyponi/KY-Poni?style=for-the-badge&color=D03D3D" alt="Latest Release"></a>
-  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-blue?style=for-the-badge" alt="Platforms">
-  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
-</p>
+## Kenapa KY-Poni
 
----
+Overlay chat yang umum dipakai memberi kotak yang bentuknya sama untuk semua streamer. KY-Poni menggantinya dengan bahasa visual dari game itu sendiri: balon dialog Persona 5, jendela percakapan Persona 3 Reload, textbox Undertale, sampai HUD Cyberpunk 2077.
 
-## 🎭 Fitur Unggulan
+Yang membuatnya beda:
 
-- 🎮 **Persona 5 Authentic Aesthetic (Flagship Theme)**:
-  - Balon kata jajar genjang komik (*slanted origami ribbon*) berlatar hitam pekat dengan outline cel-shaded putih tebal.
-  - Foto profil polaroid miring (*tilted square avatar*) dengan aksen duri komik (*comic shards*).
-  - Tag username miring modular (Ungu Lavender, Toska Mint, Kuning Neon, Merah Phantom).
-  - Banner alert donasi & membership dua tingkat (*two-tier split banner*).
-  - Animasi cut-in heboh *All-Out Attack* saat menerima Super Chat.
-- ⚡ **Zero-Quota YouTube Chat Ingest**:
-  - Cukup masukkan Channel Handle (misal: `@MilkyPoni`) atau URL live stream.
-  - Tidak perlu login Google, tidak perlu OAuth, dan **tidak memakan kuota API**.
-- 📐 **4-Corner Screen Anchors (Fleksibilitas Posisi Layar)**:
-  - Dukungan 4 sudut: Kiri Bawah, Kanan Bawah, Kiri Atas, Kanan Atas.
-  - Sisi atas otomatis mendorong pesan dari atas ke bawah (*top-to-bottom flow*) agar tidak menutupi HUD game.
-  - Sisi kanan otomatis membalik arah bayangan dan tab nama agar tidak terpotong tepi layar OBS.
-- ⏱️ **Auto-Hide Timer & Retention Guard ("Keep Last N")**:
-  - Pesan lama otomatis memudar setelah N detik.
-  - Dilengkapi fitur penjaga: menahan pesan terakhir agar layar stream tidak menjadi kosong saat kolom chat sedang sepi.
-- 🎨 **Kustomisasi Tipografi & Skala Bebas**:
-  - Skala canvas keseluruhan (70% - 150%).
-  - Ukuran font teks (12px - 26px).
-  - Pilihan font kurasi: Space Grotesk, Bebas Neue, Inter, Bangers, Montserrat, VT323 (Pixel).
-  - Custom text color picker & palet swatch neon.
-- 📦 **Dynamic Remote Theme Catalog**:
-  - Unduh dan pasang tema kustom tambahan langsung dari dalam aplikasi.
-  - Komunitas dapat membuat tema mereka sendiri di folder `~/.config/ky-poni/themes/` atau `%APPDATA%/KY-Poni/themes/`.
-- 🚀 **In-App Auto-Updater**:
-  - Otomatis mengecek rilis pembaruan dari GitHub Releases.
-  - Tombol update langsung di dalam aplikasi tanpa perlu download manual dari browser.
+- **Tanpa login dan tanpa API key.** Chat dibaca langsung dari YouTube lewat protokol internal, jadi kuota Google Data API tidak terpakai sama sekali.
+- **Sepenuhnya lokal.** Satu proses di `localhost:19840`. Tidak ada server perantara, tidak ada data penonton yang dikirim ke mana pun.
+- **Ringan dipakai bareng game.** Aplikasi desktop kecil; tidak berebut RAM dengan game yang sedang jalan.
+- **Katalog tema terbuka.** Tema baru bisa ditambah tanpa merilis ulang aplikasi, dan kamu bisa membuat tema sendiri.
 
----
+## Pratinjau
 
-## 📥 Unduh & Instalasi
+![Persona 5 dan Persona 3 Reload](docs/screenshots/showcase_overlay.png)
 
-Unduh rilis portable terbaru pada halaman **[Releases](https://github.com/Milkyponi/KY-Poni/releases/latest)**:
+| Persona 5 Phantom | Persona 3 Reload |
+| --- | --- |
+| ![Persona 5](docs/screenshots/persona5_overlay.png) | ![Persona 3 Reload](docs/screenshots/persona3reload_overlay.png) |
 
-| Platform | Format | Cara Menjalankan |
-|---|---|---|
-| **Windows** | `KY-Poni.exe` (Portable) | Double-click file `.exe`, aplikasi langsung terbuka tanpa instalasi. |
-| **Linux** | `KY-Poni.AppImage` (Portable) | Beri izin eksekusi (`chmod +x KY-Poni*.AppImage`), lalu jalankan. |
+Keduanya menampilkan chat biasa, Super Chat, dan member baru sekaligus.
 
----
+## Unduh
 
-## 🎬 Cara Memasang di OBS Studio
+Ambil berkas terbaru dari halaman [Releases](https://github.com/Milkyponi/KY-Poni/releases/latest).
 
-1. Buka aplikasi **KY-Poni**.
-2. Masukkan handle channel YouTube Anda (contoh: `@MilkyPoni`) lalu klik **"⚡ Hubungkan Stream"**.
-3. Sesuaikan tema, sudut layar, ukuran font, dan warna yang Anda sukai di dashboard.
-4. Klik tombol **"📋 Salin"** pada kotak **OBS Browser Source URL**.
-5. Buka **OBS Studio**:
-   - Tambah Source baru: pilih **Browser**.
-   - Paste URL yang telah disalin (contoh: `http://localhost:19840/overlay?theme=persona5&layout=vertical&pos=bottom-left`).
-   - Atur Width: `450` dan Height: `800` (atau `800 x 300` untuk mode horizontal ticker).
-   - Centang opsi *"Shutdown source when not visible"*.
-6. Selesai! Chat livestream Anda akan muncul dengan animasi otentik di layar siaran.
+| Platform | Berkas | Menjalankan |
+| --- | --- | --- |
+| Windows | `KY-Poni <versi>.exe` | Klik dua kali. Portable, tanpa instalasi. |
+| Linux | `KY-Poni-<versi>.AppImage` | `chmod +x` lalu jalankan. |
 
----
+## Pasang di OBS
 
-## 🛠️ Pengembangan Lokal
+1. Buka KY-Poni, isi channel handle YouTube (misalnya `@MilkyPoni`), lalu hubungkan.
+2. Atur tema, sudut layar, ukuran font, dan warna di dashboard.
+3. Salin URL dari kotak OBS Browser Source.
+4. Di OBS, tambahkan source **Browser**, tempel URL tersebut.
+5. Set ukuran source ke **1000 × 1000 px**. Posisi dan skala diatur lewat OBS seperti source biasa.
+
+Kanvas 1000 × 1000 dipakai supaya teks tidak terpotong di skala maksimal dan tumpukan chat tetap muat di skala minimal.
+
+## Tema
+
+Tema bawaan: **Persona 5 Phantom**, **Persona 3 Reload**, dan **Clean Modern Minimal**. Tema tambahan (**Undertale**, **Cyberpunk 2077**) dipasang langsung dari tab Katalog Tema di dalam aplikasi.
+
+Tema disimpan di folder data pengguna, jadi tetap ada setelah aplikasi diperbarui:
+
+- Linux: `~/.config/ky-poni/themes/`
+- Windows: `%APPDATA%\KY-Poni\themes\`
+
+Ingin membuat tema sendiri? Kontraknya ada di [THEME_SPEC.md](THEME_SPEC.md) — cukup `theme.json`, `style.css`, dan `renderer.js`.
+
+## Pengembangan
 
 ```bash
-# Clone repository
 git clone https://github.com/Milkyponi/KY-Poni.git
 cd KY-Poni
-
-# Install dependensi
 npm install
-
-# Jalankan dalam mode desktop app
-npm start
-
-# Jalankan server background mandiri (opsional)
-npm run start:server
-
-# Eksekusi automated test suite
-npm test
-
-# Build paket distribusi portable
-npm run build:linux   # Menghasilkan .AppImage di folder dist/
-npm run build:win     # Menghasilkan .exe portable di folder dist/
+npm start        # jendela desktop
+npm test         # suite otomatis
+npm run build:linux
+npm run build:win
 ```
 
----
+Arsitektur dan keputusan teknis dijelaskan di [PROJECT.md](PROJECT.md), rencana fitur di [ROADMAP.md](ROADMAP.md).
 
-## 📄 Lisensi
+## Lisensi
 
-Proyek ini dirilis di bawah lisensi [MIT](LICENSE). Dikembangkan dengan penuh semangat di **Milky Brain HQ**.
+[MIT](LICENSE).

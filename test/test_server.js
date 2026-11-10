@@ -4,7 +4,17 @@
 
 const assert = require('assert');
 const http = require('http');
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
 const { WebSocket } = require('ws');
+
+// Isolate the whole suite from the real streamer profile BEFORE src/server is required.
+// Without this the suite wrote into ~/.config/ky-poni (clobbering a live config.json and
+// installing/deleting themes in the user's real themes folder).
+const TEST_CONFIG_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'kyp-server-test-'));
+process.env.KY_PONI_CONFIG_HOME = TEST_CONFIG_HOME;
+
 const { server, wss, youtubeIngest } = require('../src/server');
 
 const TEST_PORT = 19841;
