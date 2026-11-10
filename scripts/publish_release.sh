@@ -34,7 +34,7 @@ echo "📦 Building Windows Portable Executable..."
 npm run build:win
 
 APPIMAGE_PATH="${PROJECT_ROOT}/dist/KY-Poni-${VERSION}.AppImage"
-WIN_EXE_PATH="${PROJECT_ROOT}/dist/KY-Poni ${VERSION}.exe"
+WIN_EXE_PATH="${PROJECT_ROOT}/dist/KY-Poni-${VERSION}.exe"
 
 if [[ ! -f "${APPIMAGE_PATH}" ]]; then
   echo "❌ Error: AppImage not found at ${APPIMAGE_PATH}" >&2
@@ -71,7 +71,7 @@ echo "✅ Release successfully published: https://github.com/Milkyponi/KY-Poni/r
 DISCORD_SCRIPT="/home/milkyponi/.hermes/scripts/discord_webhook.py"
 if [[ -f "${DISCORD_SCRIPT}" ]]; then
   echo "📢 Sending release notifications to Discord Milky Brain HQ..."
-  python3 "${DISCORD_SCRIPT}" project-archive "🚀 **KY-Poni ${TAG} Berhasil Dirilis ke Publik!**\n\nDownload:\n• Linux: https://github.com/Milkyponi/KY-Poni/releases/download/${TAG}/KY-Poni-${VERSION}.AppImage\n• Windows: https://github.com/Milkyponi/KY-Poni/releases/download/${TAG}/KY-Poni%20${VERSION}.exe\n\nRepository: https://github.com/Milkyponi/KY-Poni" || true
+  python3 "${DISCORD_SCRIPT}" project-archive "🚀 **KY-Poni ${TAG} Berhasil Dirilis ke Publik!**\n\nDownload:\n• Linux: https://github.com/Milkyponi/KY-Poni/releases/download/${TAG}/KY-Poni-${VERSION}.AppImage\n• Windows: https://github.com/Milkyponi/KY-Poni/releases/download/${TAG}/KY-Poni-${VERSION}.exe\n\nRepository: https://github.com/Milkyponi/KY-Poni" || true
 fi
 
 echo "🎉 All release tasks completed!"

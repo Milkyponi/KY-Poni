@@ -31,7 +31,7 @@ Ambil berkas terbaru dari halaman [Releases](https://github.com/Milkyponi/KY-Pon
 
 | Platform | Berkas | Menjalankan |
 | --- | --- | --- |
-| Windows | `KY-Poni <versi>.exe` | Klik dua kali. Portable, tanpa instalasi. |
+| Windows | `KY-Poni-<versi>.exe` | Klik dua kali. Portable, tanpa instalasi. |
 | Linux | `KY-Poni-<versi>.AppImage` | `chmod +x` lalu jalankan. |
 
 ## Pasang di OBS

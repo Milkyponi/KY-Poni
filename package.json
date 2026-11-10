@@ -32,12 +32,14 @@
         "AppImage"
       ],
       "category": "AudioVideo",
-      "executableName": "ky-poni"
+      "executableName": "ky-poni",
+      "artifactName": "${productName}-${version}.${ext}"
     },
     "win": {
       "target": [
         "portable"
-      ]
+      ],
+      "artifactName": "${productName}-${version}.${ext}"
     }
   },
   "keywords": [
