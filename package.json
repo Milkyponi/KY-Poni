@@ -9,7 +9,7 @@
     "build:linux": "electron-builder --linux AppImage",
     "build:win": "electron-builder --win portable",
     "build:all": "electron-builder --linux AppImage --win portable",
-    "test": "node test/test_server.js && node test/test_anti_rto.js && node test/test_persistence.js && node test/test_dashboard_boot.js && node test/test_windows_compat.js",
+    "test": "node test/test_server.js && node test/test_anti_rto.js && node test/test_persistence.js && node test/test_dashboard_boot.js && node test/test_windows_compat.js && node test/test_security_hardening.js",
     "test:persistence": "node test/test_persistence.js",
     "test:boot": "node test/test_dashboard_boot.js",
     "test:windows": "node test/test_windows_compat.js"
