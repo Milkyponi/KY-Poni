@@ -280,30 +280,51 @@ class YouTubeChatIngest extends EventEmitter {
     ];
     const randomAvatar = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
 
+    // `type` datang dari body HTTP dan dipakai untuk menentukan kelas CSS di
+    // renderer — batasi ke nilai yang dikenal.
+    const allowedTypes = ['chat', 'superchat', 'membership'];
+    const safeType = allowedTypes.includes(type) ? type : 'chat';
+
+    // ESCAPE DI BATAS SISTEM.
+    // Field `message` dirender lewat innerHTML oleh persona5/classic/overlay
+    // (jalur ingest YouTube sudah meng-escape sendiri, tetapi simulator dulu
+    // meneruskan payload mentah sehingga terjadi stored XSS).
+    // `rawText` sengaja TIDAK di-escape: renderer persona3reload meng-escape
+    // sendiri dan akan menampilkan entitas ganda kalau di-escape dua kali.
+    const safeMessage = escapeHtml(customData.message);
+    const safeAuthor = escapeHtml(customData.author);
+    const safeAmount = escapeHtml(customData.amount);
+    const safeColor = /^#[0-9a-fA-F]{3,8}$/.test(String(customData.color || ''))
+      ? String(customData.color)
+      : '#E60012';
+    const safeAvatar = (typeof customData.avatar === 'string' && /^https?:\/\//i.test(customData.avatar))
+      ? customData.avatar
+      : randomAvatar;
+
     let result = {
       id: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      type,
+      type: safeType,
       author: {
-        name: customData.author || 'PhantomViewer',
+        name: safeAuthor || 'PhantomViewer',
         channelId: 'UC_mock_user',
-        avatar: customData.avatar || randomAvatar,
-        badges: customData.badges || [],
+        avatar: safeAvatar,
+        badges: Array.isArray(customData.badges) ? customData.badges : [],
       },
-      message: customData.message || 'For real?! Ini beneran keren banget!',
+      message: safeMessage || 'For real?! Ini beneran keren banget!',
       rawText: customData.rawText || customData.message || 'For real?!',
       superchat: null,
       timestamp: new Date().toISOString(),
     };
 
-    if (type === 'superchat') {
+    if (safeType === 'superchat') {
       result.superchat = {
-        amount: customData.amount || 'Rp 50.000',
-        color: customData.color || '#E60012',
+        amount: safeAmount || 'Rp 50.000',
+        color: safeColor,
       };
-      result.message = customData.message || 'Semangat live streamnya Bos! Lookin cool!';
-    } else if (type === 'membership') {
+      result.message = safeMessage || 'Semangat live streamnya Bos! Lookin cool!';
+    } else if (safeType === 'membership') {
       result.author.badges.push({ type: 'member', label: 'MEMBER' });
-      result.message = customData.message || 'Baru saja bergabung menjadi anggota!';
+      result.message = safeMessage || 'Baru saja bergabung menjadi anggota!';
     }
 
     this.emit('message', result);

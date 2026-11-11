@@ -2,7 +2,7 @@
  * KY-Poni - In-App Auto-Updater Routes
  */
 
-const { sendJson, sendError, parseJsonBody } = require('./helpers');
+const { sendJson, sendError, parseJsonBody, sendBodyError } = require('./helpers');
 
 async function handleUpdaterRoutes(req, res, pathname, ctx) {
   const { appUpdater, broadcast } = ctx;
@@ -29,7 +29,7 @@ async function handleUpdaterRoutes(req, res, pathname, ctx) {
 
       sendJson(res, 200, result);
     } catch (err) {
-      sendError(res, 500, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }
@@ -40,7 +40,7 @@ async function handleUpdaterRoutes(req, res, pathname, ctx) {
       const openedPath = await appUpdater.openDownloadedFile(payload.filePath);
       sendJson(res, 200, { success: true, path: openedPath });
     } catch (err) {
-      sendError(res, 500, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }
@@ -51,7 +51,7 @@ async function handleUpdaterRoutes(req, res, pathname, ctx) {
       const result = appUpdater.installAndRestart(payload.filePath);
       sendJson(res, 200, result);
     } catch (err) {
-      sendError(res, 500, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }

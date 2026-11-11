@@ -1,4 +1,10 @@
-# QA & Audit Kelayakan Distribusi: KY-Poni v1.0.0
+# QA & Audit Kelayakan Distribusi: KY-Poni v1.0.1
+
+> **v1.0.1 — Security Patch.** Versi ini menutup 8 temuan audit keamanan yang
+> diverifikasi lewat eksploitasi live (bukan hanya pembacaan kode). Rincian lengkap,
+> termasuk bukti RCE/CORS bypass pada v1.0.0, ada di
+> `docs/investigations/2026-11-11-AUDIT-Security-Verification-OpenCode.md`.
+> Tidak ada perubahan fitur; seluruh perilaku pengguna tetap sama.
 
 - **Tanggal**: 2026-11-10
 - **Lead Tester**: Fonzy (Divisi Software Development)
@@ -120,4 +126,5 @@ Prosedur rilis ke depan mengikuti [SOP_RELEASE.md](SOP_RELEASE.md): uji pengalam
 
 | Versi | Tanggal | Catatan |
 | --- | --- | --- |
+| 1.0.1 | 2026-11-11 | Security patch. 8 temuan audit ditutup: CORS wildcard (bypass origin guard), RCE di endpoint updater, shell injection `extractZip`, stored XSS simulator, zip-slip, SSRF/`downloadUrl` tanpa allowlist, body tanpa batas, graceful shutdown menggantung. Plus celah port pada origin guard. Suite regresi baru `test_security_regression.js` (30 cek serangan). Total 108 assertion PASS. |
 | 1.0.0 | 2026-11-10 | Rilis publik pertama. Audit distribusi, 4 cacat diperbaiki, SOP dua gerbang berlaku. |

@@ -1,0 +1,425 @@
+/**
+ * KY-Poni - Security Regression Suite v2
+ *
+ * Berbeda dari test_security_hardening.js (yang hanya memeriksa preflight OPTIONS),
+ * suite ini menyerang JALUR YANG DIPAKAI PENYERANG:
+ *
+ *  - response GET/POST NYATA dari origin eksternal (bukan cuma OPTIONS)
+ *  - penulisan header CORS wildcard pada response sukses maupun gagal
+ *  - bypass preflight lewat Content-Type "simple request" (text/plain)
+ *  - RCE lewat filePath pada /api/updater/open & /api/updater/restart
+ *  - traversal lewat assetName pada /api/updater/download
+ *  - XSS lewat payload /api/simulate (escape di batas sistem)
+ *  - zip-slip pada arsip tema
+ *  - SSRF / salin path lokal lewat downloadUrl tema
+ *  - batas ukuran body (413)
+ *
+ * Setiap test menegaskan SERANGAN GAGAL, bukan sekadar fungsi normal jalan.
+ */
+
+const assert = require('assert');
+const http = require('http');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { execFileSync } = require('child_process');
+
+const PORT = 19845;
+const BASE = `http://127.0.0.1:${PORT}`;
+
+let passed = 0;
+let failed = 0;
+
+function check(name, fn) {
+  try {
+    fn();
+    console.log(`[PASS] ${name}`);
+    passed++;
+  } catch (err) {
+    console.log(`[FAIL] ${name}\n       ${err.message}`);
+    failed++;
+  }
+}
+
+async function checkAsync(name, fn) {
+  try {
+    await fn();
+    console.log(`[PASS] ${name}`);
+    passed++;
+  } catch (err) {
+    console.log(`[FAIL] ${name}\n       ${err.message}`);
+    failed++;
+  }
+}
+
+function request(method, path, { body, headers = {}, rawBody } = {}) {
+  return new Promise((resolve, reject) => {
+    const payload = rawBody !== undefined ? rawBody : (body !== undefined ? JSON.stringify(body) : null);
+    const opts = {
+      hostname: '127.0.0.1',
+      port: PORT,
+      path,
+      method,
+      headers: { ...headers },
+      // Koneksi baru per request: body raksasa yang ditolak dini bisa mereset
+      // socket, dan keep-alive akan mengaburkan hasil test berikutnya.
+      agent: false,
+    };
+    if (payload !== null) {
+      if (!opts.headers['Content-Type']) opts.headers['Content-Type'] = 'application/json';
+      opts.headers['Content-Length'] = Buffer.byteLength(payload);
+    }
+    const req = http.request(opts, (res) => {
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+    });
+    req.on('error', reject);
+    if (payload !== null) req.write(payload);
+    req.end();
+  });
+}
+
+async function main() {
+  // Bersihkan sisa eksperimen sebelumnya supaya test deterministik.
+  const themesDir = path.join(os.homedir(), '.config', 'ky-poni', 'themes');
+
+  const { server, wss, youtubeIngest } = require('../src/server');
+
+  await new Promise((resolve, reject) => {
+    server.on('error', reject);
+    server.listen(PORT, '127.0.0.1', resolve);
+  });
+
+  console.log('🧪 KY-Poni Security Regression Suite v2\n');
+
+  // ---------------------------------------------------------------------
+  // A. CORS: response NYATA, bukan preflight
+  // ---------------------------------------------------------------------
+
+  await checkAsync('GET response from external Origin is 403', async () => {
+    const r = await request('GET', '/api/version', { headers: { Origin: 'https://evil.example' } });
+    assert.strictEqual(r.status, 403, `expected 403, got ${r.status}`);
+  });
+
+  await checkAsync('GET 403 response carries NO Access-Control-Allow-Origin', async () => {
+    const r = await request('GET', '/api/version', { headers: { Origin: 'https://evil.example' } });
+    assert.strictEqual(r.headers['access-control-allow-origin'], undefined,
+      `ACAO harus tidak ada, tapi bernilai "${r.headers['access-control-allow-origin']}"`);
+  });
+
+  await checkAsync('POST 403 response carries NO Access-Control-Allow-Origin', async () => {
+    const r = await request('POST', '/api/simulate',
+      { body: { type: 'chat', message: 'x' }, headers: { Origin: 'https://evil.example' } });
+    assert.strictEqual(r.status, 403);
+    assert.strictEqual(r.headers['access-control-allow-origin'], undefined,
+      `ACAO harus tidak ada, tapi bernilai "${r.headers['access-control-allow-origin']}"`);
+  });
+
+  await checkAsync('trusted localhost Origin IS allowed (not 403)', async () => {
+    const r = await request('GET', '/api/version',
+      { headers: { Origin: `http://localhost:${PORT}` } });
+    assert.strictEqual(r.status, 200, `expected 200, got ${r.status}`);
+  });
+
+  await checkAsync('trusted Origin is echoed back, never "*"', async () => {
+    const origin = `http://localhost:${PORT}`;
+    const r = await request('GET', '/api/version', { headers: { Origin: origin } });
+    assert.strictEqual(r.headers['access-control-allow-origin'], origin);
+  });
+
+  await checkAsync('no-Origin request still works (OBS/curl/Electron)', async () => {
+    const r = await request('GET', '/api/version');
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.headers['access-control-allow-origin'], undefined);
+  });
+
+  // Ini regresi inti bug v1.0.0: Content-Type text/plain membuat request
+  // menjadi "simple request" (tanpa preflight), jadi guard harus tetap menolak
+  // berdasarkan Origin — bukan mengandalkan preflight.
+  await checkAsync('preflight-bypass via text/plain still rejected (403)', async () => {
+    const r = await request('POST', '/api/simulate', {
+      rawBody: JSON.stringify({ type: 'chat', message: 'pwn' }),
+      headers: { Origin: 'https://evil.example', 'Content-Type': 'text/plain' },
+    });
+    assert.strictEqual(r.status, 403, `expected 403, got ${r.status}`);
+  });
+
+  await checkAsync('DNS-rebinding style Host+Origin mismatch rejected', async () => {
+    const r = await request('GET', '/api/version', {
+      headers: { Origin: 'http://attacker.example', Host: 'attacker.example' },
+    });
+    assert.strictEqual(r.status, 403);
+  });
+
+  // Regresi celah "localhost port lain": guard hanya memeriksa hostname di v1.0.0,
+  // sehingga halaman yang di-serve proses lain di 127.0.0.1:PORT_LAIN tetap lolos.
+  await checkAsync('same hostname but DIFFERENT port is rejected (403)', async () => {
+    const r = await request('GET', '/api/version', {
+      headers: { Origin: 'http://127.0.0.1:19998' },
+    });
+    assert.strictEqual(r.status, 403, `origin localhost port lain harus ditolak, dapat ${r.status}`);
+  });
+
+  await checkAsync('same hostname "localhost" but different port is rejected', async () => {
+    const r = await request('GET', '/api/version', {
+      headers: { Origin: 'http://localhost:19998' },
+    });
+    assert.strictEqual(r.status, 403, `origin localhost:19998 harus ditolak, dapat ${r.status}`);
+  });
+
+  await checkAsync('origin without explicit port is rejected', async () => {
+    const r = await request('GET', '/api/version', {
+      headers: { Origin: 'http://localhost' },
+    });
+    assert.strictEqual(r.status, 403, `origin tanpa port harus ditolak, dapat ${r.status}`);
+  });
+
+  // ---------------------------------------------------------------------
+  // B. RCE pada endpoint updater
+  // ---------------------------------------------------------------------
+
+  const RCE_MARKERS = [
+    path.join(os.tmpdir(), 'kyponi_rce_open_marker'),
+    path.join(os.tmpdir(), 'kyponi_rce_restart_marker'),
+  ];
+
+  for (const m of RCE_MARKERS) { try { fs.unlinkSync(m); } catch (e) {} }
+
+  await checkAsync('/api/updater/open rejects shell metacharacters (no RCE)', async () => {
+    const marker = RCE_MARKERS[0];
+    const r = await request('POST', '/api/updater/open', {
+      body: { filePath: `/tmp/x" ; touch ${marker} ; echo "` },
+    });
+    // Boleh error apa pun asal BUKAN sukses, dan marker tidak boleh ada.
+    assert.ok(r.status >= 400, `endpoint harus menolak, tapi status ${r.status}`);
+    await new Promise(res => setTimeout(res, 300));
+    assert.strictEqual(fs.existsSync(marker), false, 'perintah shell tereksekusi (RCE!)');
+  });
+
+  await checkAsync('/api/updater/restart rejects shell metacharacters (no RCE)', async () => {
+    const marker = RCE_MARKERS[1];
+    const r = await request('POST', '/api/updater/restart', {
+      body: { filePath: `/tmp/x" ; touch ${marker} ; echo "` },
+    });
+    assert.ok(r.status >= 400, `endpoint harus menolak, tapi status ${r.status}`);
+    await new Promise(res => setTimeout(res, 300));
+    assert.strictEqual(fs.existsSync(marker), false, 'perintah shell tereksekusi (RCE!)');
+  });
+
+  await checkAsync('/api/updater/open rejects absolute path outside Downloads', async () => {
+    const r = await request('POST', '/api/updater/open', { body: { filePath: '/etc/passwd' } });
+    assert.ok(r.status >= 400, `harus 4xx/5xx, dapat ${r.status}`);
+    assert.ok(!/root:x:0/.test(r.body), 'isi /etc/passwd bocor di response');
+  });
+
+  await checkAsync('/api/updater/restart rejects traversal path', async () => {
+    const r = await request('POST', '/api/updater/restart', { body: { filePath: '../../etc/shadow' } });
+    assert.ok(r.status >= 400, `harus 4xx/5xx, dapat ${r.status}`);
+  });
+
+  await checkAsync('/api/updater/download rejects traversal assetName', async () => {
+    const r = await request('POST', '/api/updater/download', {
+      body: { downloadUrl: 'https://example.com/a.AppImage', assetName: '../../../tmp/evil.AppImage' },
+    });
+    // Tidak boleh menulis di luar Downloads; resolusi membuang komponen direktori.
+    assert.ok(!/\.\.\//.test(r.body || ''), 'path traversal tercermin di response');
+  });
+
+  // ---------------------------------------------------------------------
+  // C. XSS lewat simulator
+  // ---------------------------------------------------------------------
+
+  await checkAsync('/api/simulate escapes HTML in message', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: 'chat', message: '<img src=x onerror=alert(1)>' },
+    });
+    assert.strictEqual(r.status, 200);
+    const item = JSON.parse(r.body).item;
+    assert.ok(!/<img/i.test(item.message), `payload XSS lolos mentah: ${item.message}`);
+    assert.ok(item.message.includes('&lt;img'), 'HTML tidak di-escape dengan benar');
+  });
+
+  await checkAsync('/api/simulate escapes HTML in author name', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: 'chat', message: 'ok', author: '<script>alert(2)</script>' },
+    });
+    const item = JSON.parse(r.body).item;
+    assert.ok(!/<script/i.test(item.author.name), `author XSS lolos: ${item.author.name}`);
+  });
+
+  await checkAsync('/api/simulate rejects javascript: avatar URL', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: 'chat', message: 'ok', avatar: 'javascript:alert(3)' },
+    });
+    const item = JSON.parse(r.body).item;
+    assert.ok(!/^javascript:/i.test(item.author.avatar), `avatar javascript: lolos: ${item.author.avatar}`);
+  });
+
+  await checkAsync('/api/simulate sanitises type to known values', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: '<script>x</script>', message: 'ok' },
+    });
+    const item = JSON.parse(r.body).item;
+    assert.strictEqual(item.type, 'chat', `type tidak disanitasi: ${item.type}`);
+  });
+
+  await checkAsync('/api/simulate keeps rawText unescaped for p3r double-escape safety', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: 'chat', message: 'a & b', rawText: 'a & b' },
+    });
+    const item = JSON.parse(r.body).item;
+    assert.strictEqual(item.rawText, 'a & b', 'rawText seharusnya tidak di-escape (p3r escape sendiri)');
+    assert.ok(item.message.includes('&amp;'), 'message seharusnya di-escape');
+  });
+
+  // ---------------------------------------------------------------------
+  // D. Zip-slip
+  // ---------------------------------------------------------------------
+
+  await checkAsync('zip-slip archive is rejected (entry with ../)', async () => {
+    const tmpZip = path.join(os.tmpdir(), `kyponi_zipslip_${Date.now()}.zip`);
+    const stageDir = path.join(os.tmpdir(), `kyponi_zipslip_stage_${Date.now()}`);
+    fs.mkdirSync(stageDir, { recursive: true });
+
+    // Buat zip berisi entri traversal memakai python (zip tersedia di Fedora).
+    const py = `
+import zipfile, sys
+z = zipfile.ZipFile(sys.argv[1], 'w')
+z.writestr('../../../../tmp/kyponi_zipslip_escape.txt', 'escaped')
+z.writestr('style.css', 'body{}')
+z.close()
+`;
+    try {
+      execFileSync('python3', ['-c', py, tmpZip], { stdio: 'pipe' });
+      const { ThemeManager } = require('../src/theme_manager');
+      const tm = new ThemeManager(
+        path.join(__dirname, '..', 'src', 'public', 'themes'),
+        path.join(__dirname, '..', 'src', 'catalog', 'catalog.json'),
+      );
+      const destDir = path.join(stageDir, 'theme');
+      fs.mkdirSync(destDir, { recursive: true });
+
+      let rejected = false;
+      try {
+        await tm.extractZip(tmpZip, destDir);
+      } catch (err) {
+        rejected = true;
+      }
+      assert.strictEqual(rejected, true, 'zip slip TIDAK ditolak — ekstraksi lolos');
+      assert.strictEqual(fs.existsSync('/tmp/kyponi_zipslip_escape.txt'), false,
+        'berkas traversal berhasil ditulis di luar direktori');
+    } finally {
+      try { fs.unlinkSync(tmpZip); } catch (e) {}
+      try { fs.rmSync(stageDir, { recursive: true, force: true }); } catch (e) {}
+      try { fs.unlinkSync('/tmp/kyponi_zipslip_escape.txt'); } catch (e) {}
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // E. SSRF / path lokal lewat downloadUrl
+  // ---------------------------------------------------------------------
+
+  await checkAsync('downloadUrl to internal metadata IP is rejected', async () => {
+    const r = await request('POST', '/api/themes/install', {
+      body: { themeId: 'ssrfprobe', downloadUrl: 'http://169.254.169.254/latest/meta-data/' },
+    });
+    assert.strictEqual(r.status, 400, `harus 400, dapat ${r.status}: ${r.body}`);
+  });
+
+  await checkAsync('downloadUrl with local file path is rejected', async () => {
+    const r = await request('POST', '/api/themes/install', {
+      body: { themeId: 'localprobe', downloadUrl: '/etc/passwd' },
+    });
+    assert.strictEqual(r.status, 400, `harus 400, dapat ${r.status}: ${r.body}`);
+  });
+
+  await checkAsync('downloadUrl from non-catalog https host is rejected', async () => {
+    const r = await request('POST', '/api/themes/install', {
+      body: { themeId: 'evilhost', downloadUrl: 'https://evil.example/theme.zip' },
+    });
+    assert.strictEqual(r.status, 400, `harus 400, dapat ${r.status}: ${r.body}`);
+  });
+
+  await checkAsync('downloadUrl http (non-TLS) to catalog host is rejected', async () => {
+    const r = await request('POST', '/api/themes/install', {
+      body: {
+        themeId: 'plainhttp',
+        downloadUrl: 'http://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/x.zip',
+      },
+    });
+    assert.strictEqual(r.status, 400, `harus 400, dapat ${r.status}: ${r.body}`);
+  });
+
+  await checkAsync('downloadUrl pointing at a LOOKALIKE host is rejected', async () => {
+    const r = await request('POST', '/api/themes/install', {
+      body: {
+        themeId: 'lookalike',
+        downloadUrl: 'https://raw.githubusercontent.com.evil.example/Milkyponi/ky-poni-themes/x.zip',
+      },
+    });
+    assert.strictEqual(r.status, 400, `harus 400, dapat ${r.status}: ${r.body}`);
+  });
+
+  // ---------------------------------------------------------------------
+  // F. Batas ukuran body
+  // ---------------------------------------------------------------------
+
+  await checkAsync('oversized body returns 413, not 200', async () => {
+    const huge = JSON.stringify({ x: 'A'.repeat(2 * 1024 * 1024) });
+    let r;
+    try {
+      r = await request('POST', '/api/config', { rawBody: huge });
+    } catch (err) {
+      // Koneksi direset karena kita berhenti membaca — itu perilaku yang sah
+      // untuk penolakan dini; anggap sebagai penolakan yang benar.
+      return;
+    }
+    assert.ok(r.status === 413 || r.status === 400,
+      `body 2MB seharusnya ditolak (413/400), dapat ${r.status}`);
+    assert.notStrictEqual(r.status, 200, 'body 2MB diterima — tidak ada batas ukuran');
+  });
+
+  // ---------------------------------------------------------------------
+  // G. Theme install yang sah tetap jalan (jangan over-block)
+  // ---------------------------------------------------------------------
+
+  await checkAsync('valid local package theme still installs', async () => {
+    const r = await request('POST', '/api/themes/install', { body: { themeId: 'undertale' } });
+    assert.strictEqual(r.status, 200, `install tema sah gagal: ${r.status} ${r.body}`);
+  });
+
+  await checkAsync('installed theme still deletable', async () => {
+    const r = await request('POST', '/api/themes/delete', { body: { themeId: 'undertale' } });
+    assert.strictEqual(r.status, 200, `delete tema sah gagal: ${r.status} ${r.body}`);
+  });
+
+  // ---------------------------------------------------------------------
+  // Selesai
+  // ---------------------------------------------------------------------
+
+  // Bersihkan direktori eksperimen
+  for (const p of ['ssrfprobe', 'localprobe', 'evilhost', 'plainhttp', 'lookalike']) {
+    try { fs.rmSync(path.join(themesDir, p), { recursive: true, force: true }); } catch (e) {}
+  }
+
+  youtubeIngest.disconnect();
+  for (const c of Array.from(wss.clients || [])) { try { c.terminate(); } catch (e) {} }
+  await new Promise(res => wss.close(() => server.close(res)));
+
+  console.log(`\n${'='.repeat(56)}`);
+  console.log(`  ${passed} passed, ${failed} failed`);
+  console.log('='.repeat(56));
+
+  if (failed > 0) {
+    console.log('\n❌ SECURITY REGRESSION FAILURES — jangan rilis.');
+    process.exit(1);
+  }
+  console.log('\n✅ ALL SECURITY REGRESSION TESTS PASSED');
+  process.exit(0);
+}
+
+main().catch(err => {
+  console.error('Suite crashed:', err);
+  process.exit(1);
+});

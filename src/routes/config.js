@@ -2,7 +2,7 @@
  * KY-Poni - Persistent Configuration Routes
  */
 
-const { sendJson, sendError, parseJsonBody } = require('./helpers');
+const { sendJson, sendError, parseJsonBody, sendBodyError } = require('./helpers');
 
 async function handleConfigRoutes(req, res, pathname, ctx) {
   const { configManager } = ctx;
@@ -24,7 +24,7 @@ async function handleConfigRoutes(req, res, pathname, ctx) {
         const updated = configManager.updateConfig(body);
         sendJson(res, 200, { success: true, config: updated });
       } catch (err) {
-        sendError(res, 400, err.message);
+        sendBodyError(res, err);
       }
       return true;
     }

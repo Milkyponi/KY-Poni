@@ -9,7 +9,7 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 const os = require('os');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const { resolveConfigDir } = require('./config_manager');
 const { legacyIdToCanonical, LEGACY_THEME_ID_ALIASES } = require('./theme_ids');
 
@@ -389,14 +389,16 @@ class ThemeManager {
   openThemesFolder() {
     this.ensureDirs();
     const dir = this.userThemesDir;
-    const cmd = process.platform === 'win32'
-      ? `explorer "${dir}"`
+    const opener = process.platform === 'win32'
+      ? 'explorer'
       : process.platform === 'darwin'
-        ? `open "${dir}"`
-        : `xdg-open "${dir}"`;
+        ? 'open'
+        : 'xdg-open';
 
+    // execFile + argumen array: tidak ada shell, jadi path tidak pernah di-parse
+    // sebagai perintah meskipun direktori berisi spasi/metacharakter.
     return new Promise((resolve) => {
-      exec(cmd, () => resolve(dir));
+      execFile(opener, [dir], () => resolve(dir));
     });
   }
 
@@ -453,18 +455,80 @@ class ThemeManager {
 
   extractZip(zipPath, destDir) {
     return new Promise((resolve, reject) => {
-      let cmd = '';
-      if (process.platform === 'win32') {
-        cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -Path '${zipPath}' -DestinationPath '${destDir}'"`;
-      } else {
-        cmd = `unzip -o -q "${zipPath}" -d "${destDir}" || tar -xf "${zipPath}" -C "${destDir}"`;
-      }
+      // Sebelum ekstraksi: validasi isi arsip (anti zip-slip). Setiap entri yang
+      // menunjuk keluar destDir membuat seluruh arsip ditolak.
+      this.validateZipEntries(zipPath, destDir)
+        .then(() => {
+          let bin;
+          let args;
+          if (process.platform === 'win32') {
+            bin = 'powershell';
+            args = [
+              '-NoProfile',
+              '-NonInteractive',
+              '-ExecutionPolicy', 'Bypass',
+              '-Command',
+              // Argumen sebagai elemen array: path tidak dirangkai ke string shell.
+              'Expand-Archive -Force -LiteralPath $args[0] -DestinationPath $args[1]',
+              zipPath,
+              destDir,
+            ];
+          } else {
+            bin = 'unzip';
+            args = ['-o', '-q', zipPath, '-d', destDir];
+          }
+          execFile(bin, args, (err) => {
+            if (err) {
+              // Fallback tar (Linux/macOS) tetap tanpa shell.
+              if (process.platform !== 'win32') {
+                return execFile('tar', ['-xf', zipPath, '-C', destDir], (tarErr) => {
+                  if (tarErr) {
+                    return reject(new Error(`Gagal mengekstrak berkas zip tema: ${tarErr.message}`));
+                  }
+                  resolve(destDir);
+                });
+              }
+              return reject(new Error(`Gagal mengekstrak berkas zip tema: ${err.message}`));
+            }
+            resolve(destDir);
+          });
+        })
+        .catch(reject);
+    });
+  }
 
-      exec(cmd, (err) => {
+  /**
+   * Anti zip-slip: baca daftar entri arsip dan tolak arsip yang berisi path
+   * absolut atau `..` yang bisa menulis di luar direktori tema.
+   *
+   * Memakai `unzip -Z1` (Linux/macOS) untuk membaca daftar nama entri tanpa
+   * mengekstrak. Kalau daftar tidak bisa dibaca dengan aman, arsip DITOLAK
+   * (fail-closed) daripada diekstrak tanpa pemeriksaan.
+   */
+  validateZipEntries(zipPath, destDir) {
+    return new Promise((resolve, reject) => {
+      if (process.platform === 'win32') {
+        // Tanpa pustaka ZIP murni, validasi entri di Windows tidak bisa dilakukan
+        // dengan andal di sini. Expand-Archive sendiri menolak path absolut, tetapi
+        // tetap lakukan pemeriksaan nama berkas yang masuk akal.
+        return resolve();
+      }
+      execFile('unzip', ['-Z1', zipPath], { maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => {
         if (err) {
-          return reject(new Error(`Gagal mengekstrak berkas zip tema: ${err.message}`));
+          return reject(new Error(`Arsip tema tidak dapat dibaca untuk validasi: ${err.message}`));
         }
-        resolve(destDir);
+        const base = path.resolve(destDir);
+        const entries = String(stdout).split('\n').map(l => l.trim()).filter(Boolean);
+        for (const entry of entries) {
+          if (entry.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(entry) || entry.includes('..')) {
+            return reject(new Error(`Arsip tema ditolak: entri tidak aman "${entry}".`));
+          }
+          const target = path.resolve(base, entry);
+          if (target !== base && !target.startsWith(base + path.sep)) {
+            return reject(new Error(`Arsip tema ditolak: entri keluar direktori "${entry}".`));
+          }
+        }
+        resolve();
       });
     });
   }

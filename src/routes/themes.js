@@ -4,8 +4,38 @@
 
 const fs = require('fs');
 const path = require('path');
-const { sendJson, sendError, parseJsonBody } = require('./helpers');
+const { sendJson, sendError, parseJsonBody, sendBodyError } = require('./helpers');
 const { isValidThemeId } = require('../theme_manager');
+
+// Allowlist sumber unduhan tema.
+//
+// Sebelumnya `downloadUrl` dari body HTTP diterima apa adanya, sehingga penyerang
+// bisa menyuruh KY-Poni mengunduh dari host mana pun (SSRF ke 169.254.169.254 dsb.)
+// atau menyalin path lokal seperti /etc/passwd ke dalam folder tema.
+// Sekarang hanya URL https ke repositori katalog resmi yang diizinkan.
+const TRUSTED_THEME_HOSTS = [
+  'raw.githubusercontent.com',
+  'github.com',
+  'objects.githubusercontent.com',
+  'codeload.github.com',
+];
+const TRUSTED_THEME_PATH_PREFIXES = [
+  '/Milkyponi/ky-poni-themes/',
+];
+
+function isTrustedThemeDownloadUrl(rawUrl) {
+  if (typeof rawUrl !== 'string') return false;
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch (e) {
+    return false;
+  }
+  if (parsed.protocol !== 'https:') return false;
+  if (!TRUSTED_THEME_HOSTS.includes(parsed.hostname)) return false;
+  const fullPath = parsed.pathname;
+  return TRUSTED_THEME_PATH_PREFIXES.some(prefix => fullPath.startsWith(prefix));
+}
 
 async function handleThemesRoutes(req, res, pathname, ctx) {
   const { themeManager, PACKAGES_DIR } = ctx;
@@ -40,13 +70,23 @@ async function handleThemesRoutes(req, res, pathname, ctx) {
       }
 
       // Check if there is a pre-packaged zip in src/catalog/packages/
+      let source;
       const localPackageZip = path.join(PACKAGES_DIR, `${themeId}.zip`);
-      const source = fs.existsSync(localPackageZip) ? localPackageZip : payload.downloadUrl;
+      if (fs.existsSync(localPackageZip)) {
+        source = localPackageZip;
+      } else if (payload.downloadUrl !== undefined) {
+        // Hanya URL katalog resmi yang diterima (cegah SSRF & salin path lokal).
+        if (!isTrustedThemeDownloadUrl(payload.downloadUrl)) {
+          sendError(res, 400, 'Field "downloadUrl" harus berupa URL https ke katalog tema resmi (Milkyponi/ky-poni-themes).');
+          return true;
+        }
+        source = payload.downloadUrl;
+      }
 
       const installResult = await themeManager.installTheme(themeId, source);
       sendJson(res, 200, installResult);
     } catch (err) {
-      sendError(res, 500, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }
@@ -61,7 +101,7 @@ async function handleThemesRoutes(req, res, pathname, ctx) {
       const deleteResult = themeManager.deleteTheme(payload.themeId);
       sendJson(res, 200, deleteResult);
     } catch (err) {
-      sendError(res, 500, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }
