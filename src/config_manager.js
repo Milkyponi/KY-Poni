@@ -114,17 +114,33 @@ class ConfigManager {
   getConfig() {
     try {
       if (fs.existsSync(this.configPath)) {
+        // Tolak berkas yang jelas rusak/terlalu besar (mis. tersisa payload uji)
+        // alih-alih memuatnya dan menyebarkan isinya ke seluruh aplikasi.
+        const stat = fs.statSync(this.configPath);
+        if (stat.size > 256 * 1024) {
+          console.warn(`[KY-Poni ConfigManager] config.json terlalu besar (${stat.size} byte), memakai default.`);
+          return { ...DEFAULT_CONFIG };
+        }
+
         const raw = fs.readFileSync(this.configPath, 'utf-8');
         const parsed = JSON.parse(raw);
-        if (parsed.layout) {
-          parsed.layout = parsed.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+
+        // Hanya key berskema yang diteruskan. Berkas lama yang sempat menyimpan
+        // key sampah tidak akan mengontaminasi state aplikasi.
+        const clean = {};
+        for (const key of Object.keys(DEFAULT_CONFIG)) {
+          if (parsed[key] !== undefined) clean[key] = parsed[key];
+        }
+
+        if (clean.layout) {
+          clean.layout = clean.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
         }
         // Normalize legacy theme ids so callers (and the dashboard select) never see
         // an orphaned identifier that fails to match the catalog list.
-        if (parsed.theme && isLegacyThemeId(parsed.theme)) {
-          parsed.theme = legacyIdToCanonical(parsed.theme);
+        if (clean.theme && isLegacyThemeId(clean.theme)) {
+          clean.theme = legacyIdToCanonical(clean.theme);
         }
-        return { ...DEFAULT_CONFIG, ...parsed };
+        return { ...DEFAULT_CONFIG, ...clean };
       }
     } catch (e) {
       console.warn('[KY-Poni ConfigManager] Error reading config file, using default:', e.message);
@@ -136,20 +152,82 @@ class ConfigManager {
    * Merge-write the config. Never mutates the caller's object.
    * Uses temp file + rename so a crash mid-write cannot leave a truncated
    * (unparseable) config.json behind on either POSIX or Windows.
+   *
+   * Hanya key yang ada di dalam skema yang disimpan. Sebelumnya key arbitrer
+   * dari body HTTP ikut masuk apa adanya — payload 20 MB berisi satu field
+   * bernama `x` berhasil tersimpan dan membuat config.json membengkak 20 MB
+   * (terjadi sungguhan saat uji batas body). Nilai juga dipangkas sesuai tipe.
    */
   updateConfig(updates) {
     const current = this.getConfig();
-    const safeUpdates = { ...(updates || {}) };
-    if (safeUpdates.layout) {
-      safeUpdates.layout = safeUpdates.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
-    }
-    const updated = { ...current, ...safeUpdates };
+    const sanitized = this.sanitizeUpdates(updates);
+    const updated = { ...current, ...sanitized };
     try {
       this.writeAtomic(updated);
       return updated;
     } catch (e) {
       throw new Error(`Gagal menyimpan konfigurasi: ${e.message}`);
     }
+  }
+
+  /**
+   * Saring input dari klien: hanya key yang dikenal, dengan tipe & panjang wajar.
+   * Key tak dikenal DIBUANG (bukan dikembalikan sebagai error) supaya klien lama
+   * yang mengirim field tambahan tidak tiba-tiba gagal menyimpan preferensi.
+   */
+  sanitizeUpdates(updates) {
+    const out = {};
+    if (!updates || typeof updates !== 'object') return out;
+
+    const str = (v, max) => (typeof v === 'string' && v.length <= max ? v : undefined);
+    const num = (v, min, max) => (typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max ? v : undefined);
+    const hex = (v) => (typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v) ? v : undefined);
+    const oneOf = (v, allowed) => (typeof v === 'string' && allowed.includes(v) ? v : undefined);
+
+    // target: handle/live URL YouTube — dibatasi panjangnya, bukan kontrol karakter.
+    if ('target' in updates) {
+      const v = str(updates.target, 256);
+      if (v !== undefined) out.target = v.replace(/[\x00-\x1f\x7f]/g, '');
+    }
+    if ('theme' in updates) {
+      const v = str(updates.theme, 64);
+      if (v !== undefined) out.theme = v;
+    }
+    if ('layout' in updates) {
+      if (typeof updates.layout === 'string') {
+        out.layout = updates.layout.startsWith('horizontal') ? 'horizontal' : 'vertical';
+      }
+    }
+    if ('pos' in updates) {
+      const v = oneOf(updates.pos, ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center']);
+      if (v !== undefined) out.pos = v;
+    }
+    if ('scale' in updates) {
+      const v = num(updates.scale, 10, 400);
+      if (v !== undefined) out.scale = v;
+    }
+    if ('fontSize' in updates) {
+      const v = num(updates.fontSize, 6, 96);
+      if (v !== undefined) out.fontSize = v;
+    }
+    if ('fontFamily' in updates) {
+      const v = str(updates.fontFamily, 64);
+      if (v !== undefined) out.fontFamily = v;
+    }
+    if ('textColor' in updates) {
+      const v = hex(updates.textColor);
+      if (v !== undefined) out.textColor = v;
+    }
+    if ('fade' in updates) {
+      const v = num(updates.fade, 0, 600);
+      if (v !== undefined) out.fade = v;
+    }
+    if ('keep' in updates) {
+      const v = num(updates.keep, 0, 200);
+      if (v !== undefined) out.keep = v;
+    }
+
+    return out;
   }
 
   resetConfig() {

@@ -22,11 +22,28 @@ function escapeHtml(value) {
 }
 
 /**
- * Escape untuk nilai yang masuk ke atribut JS inline (onclick="...") di dalam
- * string HTML. Dua lapis: escape JS dulu, lalu escape HTML oleh escapeHtml().
+ * Escape untuk nilai yang masuk ke atribut JS inline, mis.
+ *   onclick="installTheme('${escapeJsAttr(t.id)}', this)"
+ *
+ * Nilai berada di dalam string berkutip TUNGGAL di dalam atribut HTML berkutip
+ * ganda. Jadi yang harus di-escape adalah:
+ *   1. backslash (agar tidak jadi escape sequence)
+ *   2. kutip tunggal (agar tidak menutup string JS)
+ *   3. karakter HTML & < > " (agar tidak menutup atribut)
+ *
+ * JANGAN memakai JSON.stringify di sini: hasilnya menambahkan kutip ganda sendiri
+ * sehingga `installTheme('"undertale"', ...)` — id menjadi `"undertale"` dan
+ * gagal validasi isValidThemeId. Pemasangan tema jadi selalu gagal.
  */
 function escapeJsAttr(value) {
-  return escapeHtml(JSON.stringify(String(value === undefined || value === null ? '' : value)));
+  const s = String(value === undefined || value === null ? '' : value);
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 const selectTheme = document.getElementById('select-theme');

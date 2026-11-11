@@ -240,12 +240,29 @@ async function main() {
     assert.ok(item.message.includes('&lt;img'), 'HTML tidak di-escape dengan benar');
   });
 
-  await checkAsync('/api/simulate escapes HTML in author name', async () => {
+  await checkAsync('/api/simulate keeps author name raw but renderers escape it', async () => {
     const r = await request('POST', '/api/simulate', {
       body: { type: 'chat', message: 'ok', author: '<script>alert(2)</script>' },
     });
     const item = JSON.parse(r.body).item;
-    assert.ok(!/<script/i.test(item.author.name), `author XSS lolos: ${item.author.name}`);
+    // author.name sengaja MENTAH di batas sistem: setiap renderer meng-escape
+    // sendiri (p5 per karakter, classic/cyberpunk textContent, p3r innerText).
+    // Yang wajib dijamin: SEMUA renderer benar-benar meng-escape, bukan
+    // menginterpolasi nama ke innerHTML mentah.
+    assert.strictEqual(item.author.name, '<script>alert(2)</script>',
+      'author.name seharusnya mentah (kontrak renderer)');
+
+    const renderers = {
+      persona5: fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'themes', 'persona5', 'renderer.js'), 'utf8'),
+      persona3reload: fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'themes', 'persona3reload', 'renderer.js'), 'utf8'),
+      classic: fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'themes', 'classic', 'renderer.js'), 'utf8'),
+    };
+    // p5: escape per karakter
+    assert.ok(/escapeText\(char\)/.test(renderers.persona5), 'p5 tidak escape nama per karakter');
+    // classic: textContent
+    assert.ok(/nameSpan\.textContent/.test(renderers.classic), 'classic tidak memakai textContent untuk nama');
+    // p3r: innerText
+    assert.ok(/username\.innerText/.test(renderers.persona3reload), 'p3r tidak memakai innerText untuk nama');
   });
 
   await checkAsync('/api/simulate rejects javascript: avatar URL', async () => {
@@ -536,8 +553,103 @@ z.close()
   });
 
   // ---------------------------------------------------------------------
+  // K. Kontrak escape lintas renderer (regresi "teks chat jadi aneh")
+  //
+  // Bug nyata: simulateMessage() meng-escape author.name dan superchat.amount
+  // padahal SEMUA renderer sudah meng-escape sendiri. Hasilnya double escape:
+  // "Budi & Sari" tampil sebagai "B U D I &A M P ; S A R I" di nameplate
+  // Persona 5. Sebaliknya persona3reload membaca item.message (sudah ber-entitas)
+  // lalu meng-escape lagi, sehingga "&amp;" muncul literal.
+  //
+  // Cek ini mengunci kontrak: message di-escape, sisanya mentah, dan setiap
+  // renderer memakai sumber yang tepat untuk dirinya sendiri.
+  // ---------------------------------------------------------------------
+
+  await checkAsync('simulate keeps author.name RAW (renderer escapes it)', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: 'chat', message: 'ok', author: 'Budi & Sari' },
+    });
+    const item = JSON.parse(r.body).item;
+    assert.strictEqual(item.author.name, 'Budi & Sari',
+      `author.name ter-escape di batas sistem (double escape): ${item.author.name}`);
+  });
+
+  await checkAsync('simulate keeps superchat.amount RAW', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: 'superchat', message: 'ok', amount: 'Rp 50.000 & pajak' },
+    });
+    const item = JSON.parse(r.body).item;
+    assert.strictEqual(item.superchat.amount, 'Rp 50.000 & pajak',
+      `amount ter-escape (double escape): ${item.superchat.amount}`);
+  });
+
+  await checkAsync('simulate STILL escapes message (XSS protection kept)', async () => {
+    const r = await request('POST', '/api/simulate', {
+      body: { type: 'chat', message: 'a & b <script>x</script>' },
+    });
+    const item = JSON.parse(r.body).item;
+    assert.ok(item.message.includes('&amp;'), 'message tidak di-escape — XSS terbuka lagi');
+    assert.ok(!/<script/i.test(item.message), 'tag script lolos ke message');
+  });
+
+  await checkAsync('persona3reload renderer reads rawText, not escaped message', async () => {
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', 'src', 'public', 'themes', 'persona3reload', 'renderer.js'), 'utf8');
+    assert.ok(/item\.rawText/.test(src),
+      'p3r tidak memakai item.rawText — akan double-escape karena message sudah ber-entitas');
+    // Pastikan jalur pemasangan tetap meng-escape (XSS tetap tertutup).
+    assert.ok(/escapeText\(rawText\)/.test(src), 'p3r tidak meng-escape saat memasang teks');
+  });
+
+  await checkAsync('persona5 renderer escapes each char itself (contract check)', async () => {
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', 'src', 'public', 'themes', 'persona5', 'renderer.js'), 'utf8');
+    // p5 membangun nameplate per karakter dan meng-escape tiap karakter.
+    assert.ok(/escapeText\(char\)/.test(src),
+      'p5 tidak meng-escape per karakter — author mentah akan jadi XSS');
+  });
+
+  // ---------------------------------------------------------------------
   // J. XSS di dashboard (metadata tema dari katalog)
   // ---------------------------------------------------------------------
+  await checkAsync('dashboard escapeJsAttr does NOT add its own quotes', async () => {
+    // Regresi nyata: escapeJsAttr memakai JSON.stringify sehingga onclick menjadi
+    // installTheme('"undertale"', ...) — id berisi kutip ganda, gagal validasi,
+    // dan tombol "Instal" di dashboard SELALU gagal. Ini keluhan
+    // "kok tema ngga bisa di download".
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'dashboard.js'), 'utf8');
+
+    assert.ok(!/JSON\.stringify/.test(src.split('function escapeJsAttr')[1].split('}')[0]),
+      'escapeJsAttr masih memakai JSON.stringify (menambah kutip ganda)');
+
+    // Simulasikan fungsi yang ada di dashboard dan pastikan tidak menambah kutip.
+    const { execFileSync } = require('child_process');
+    const probe = `
+      const fs = require('fs');
+      const src = fs.readFileSync(${JSON.stringify(path.join(__dirname, '..', 'src', 'public', 'dashboard.js'))}, 'utf8');
+      const start = src.indexOf('function escapeJsAttr');
+      const body = src.slice(start, src.indexOf('\\n}', start) + 2);
+      eval(body);
+      console.log(JSON.stringify({
+        plain: escapeJsAttr('undertale'),
+        url: escapeJsAttr('https://github.com/Milkyponi/ky-poni-themes/x.zip'),
+        quote: escapeJsAttr("a'b"),
+      }));
+    `;
+    const tmp = path.join(os.tmpdir(), `kyponi_esc_probe_${Date.now()}.js`);
+    fs.writeFileSync(tmp, probe);
+    let out;
+    try {
+      out = execFileSync('node', [tmp], { encoding: 'utf8', timeout: 10000 });
+    } finally {
+      try { fs.unlinkSync(tmp); } catch (e) {}
+    }
+    const r = JSON.parse(out);
+    assert.strictEqual(r.plain, 'undertale', `id jadi "${r.plain}" (ada kutip tambahan)`);
+    assert.strictEqual(r.url, 'https://github.com/Milkyponi/ky-poni-themes/x.zip',
+      `url rusak: ${r.url}`);
+    assert.strictEqual(r.quote, "a\\'b", `kutip tunggal tidak di-escape: ${r.quote}`);
+  });
 
   await checkAsync('dashboard has escapeHtml helper and escapes theme metadata', async () => {
     const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'dashboard.js'), 'utf8');

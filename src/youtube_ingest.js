@@ -280,23 +280,33 @@ class YouTubeChatIngest extends EventEmitter {
     ];
     const randomAvatar = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
 
+    // ESCAPE DI BATAS SISTEM — tapi HANYA pada field yang memang butuh.
+    //
+    // Kontrak renderer (diverifikasi di semua 5 renderer):
+    //   message        -> SEMUA renderer menulisnya via innerHTML
+    //                     (p5: prefixHtml + item.message, classic: innerHTML,
+    //                      overlay fallback: innerHTML). Jadi HARUS di-escape di sini.
+    //   author.name    -> renderer meng-escape sendiri: p5 memecah per karakter
+    //                     dengan escapeText(), classic/cyberpunk pakai textContent,
+    //                     p3r pakai innerText. Jadi HARUS mentah. Kalau di-escape
+    //                     di sini, nama tampil rusak: "Budi & Sari" -> "B U D I &A M P ;".
+    //   superchat.amount -> semua pemakai escape sendiri / textContent. HARUS mentah.
+    //   rawText        -> p3r meng-escape sendiri. HARUS mentah (cegah double escape).
+    //
+    // Kesalahan sebelumnya: ketiganya di-escape seragam sehingga karakter &, <, >
+    // tampil sebagai entitas di nameplate tema Persona 5.
+    const safeMessage = escapeHtml(customData.message);
+
     // `type` datang dari body HTTP dan dipakai untuk menentukan kelas CSS di
     // renderer — batasi ke nilai yang dikenal.
     const allowedTypes = ['chat', 'superchat', 'membership'];
     const safeType = allowedTypes.includes(type) ? type : 'chat';
 
-    // ESCAPE DI BATAS SISTEM.
-    // Field `message` dirender lewat innerHTML oleh persona5/classic/overlay
-    // (jalur ingest YouTube sudah meng-escape sendiri, tetapi simulator dulu
-    // meneruskan payload mentah sehingga terjadi stored XSS).
-    // `rawText` sengaja TIDAK di-escape: renderer persona3reload meng-escape
-    // sendiri dan akan menampilkan entitas ganda kalau di-escape dua kali.
-    const safeMessage = escapeHtml(customData.message);
-    const safeAuthor = escapeHtml(customData.author);
-    const safeAmount = escapeHtml(customData.amount);
+    // color dipakai sebagai nilai CSS, jadi tetap divalidasi ketat (bukan display text).
     const safeColor = /^#[0-9a-fA-F]{3,8}$/.test(String(customData.color || ''))
       ? String(customData.color)
       : '#E60012';
+    // avatar dipakai sebagai src <img>, jadi wajib http(s).
     const safeAvatar = (typeof customData.avatar === 'string' && /^https?:\/\//i.test(customData.avatar))
       ? customData.avatar
       : randomAvatar;
@@ -305,7 +315,8 @@ class YouTubeChatIngest extends EventEmitter {
       id: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       type: safeType,
       author: {
-        name: safeAuthor || 'PhantomViewer',
+        // Mentah: renderer yang meng-escape (lihat kontrak di atas).
+        name: customData.author || 'PhantomViewer',
         channelId: 'UC_mock_user',
         avatar: safeAvatar,
         badges: Array.isArray(customData.badges) ? customData.badges : [],
@@ -318,7 +329,8 @@ class YouTubeChatIngest extends EventEmitter {
 
     if (safeType === 'superchat') {
       result.superchat = {
-        amount: safeAmount || 'Rp 50.000',
+        // Mentah: classic/p3r memakai textContent/innerText, p5 escape sendiri.
+        amount: customData.amount || 'Rp 50.000',
         color: safeColor,
       };
       result.message = safeMessage || 'Semangat live streamnya Bos! Lookin cool!';
