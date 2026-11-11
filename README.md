@@ -69,6 +69,12 @@ npm run build:win
 
 Arsitektur dan keputusan teknis dijelaskan di [PROJECT.md](PROJECT.md), rencana fitur di [ROADMAP.md](ROADMAP.md).
 
+## Dukung Pengembang
+
+Kalau KY-Poni berguna buat stream kamu, dukung pengembangannya lewat [Trakteer](https://trakteer.id/milkyponi) — trakteer kopi Poni buat menjaga tema-tema baru tetap jalan. ☕
+
+[![Trakteer](https://img.shields.io/badge/Trakteer-milkyponi-e85d8a?logo=buymeacoffee&logoColor=white)](https://trakteer.id/milkyponi)
+
 ## Lisensi
 
 [MIT](LICENSE).
