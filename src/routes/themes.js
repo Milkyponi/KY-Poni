@@ -5,36 +5,18 @@
 const fs = require('fs');
 const path = require('path');
 const { sendJson, sendError, parseJsonBody, sendBodyError } = require('./helpers');
-const { isValidThemeId } = require('../theme_manager');
+const { isValidThemeId, TRUSTED_THEME_HOSTS, TRUSTED_THEME_PATH_PREFIXES } = require('../theme_manager');
+const { validateDownloadUrl } = require('../url_guard');
 
-// Allowlist sumber unduhan tema.
-//
-// Sebelumnya `downloadUrl` dari body HTTP diterima apa adanya, sehingga penyerang
-// bisa menyuruh KY-Poni mengunduh dari host mana pun (SSRF ke 169.254.169.254 dsb.)
-// atau menyalin path lokal seperti /etc/passwd ke dalam folder tema.
-// Sekarang hanya URL https ke repositori katalog resmi yang diizinkan.
-const TRUSTED_THEME_HOSTS = [
-  'raw.githubusercontent.com',
-  'github.com',
-  'objects.githubusercontent.com',
-  'codeload.github.com',
-];
-const TRUSTED_THEME_PATH_PREFIXES = [
-  '/Milkyponi/ky-poni-themes/',
-];
-
+// Allowlist sumber unduhan tema berasal dari theme_manager (satu sumber
+// kebenaran), sehingga route dan downloader tidak bisa berbeda pendapat.
 function isTrustedThemeDownloadUrl(rawUrl) {
-  if (typeof rawUrl !== 'string') return false;
-  let parsed;
-  try {
-    parsed = new URL(rawUrl);
-  } catch (e) {
-    return false;
-  }
-  if (parsed.protocol !== 'https:') return false;
-  if (!TRUSTED_THEME_HOSTS.includes(parsed.hostname)) return false;
-  const fullPath = parsed.pathname;
-  return TRUSTED_THEME_PATH_PREFIXES.some(prefix => fullPath.startsWith(prefix));
+  const verdict = validateDownloadUrl(rawUrl, {
+    allowedHosts: TRUSTED_THEME_HOSTS,
+    allowedPathPrefixes: TRUSTED_THEME_PATH_PREFIXES,
+    requireHttps: true,
+  });
+  return verdict.ok;
 }
 
 async function handleThemesRoutes(req, res, pathname, ctx) {

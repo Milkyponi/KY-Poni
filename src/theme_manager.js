@@ -10,10 +10,28 @@ const http = require('http');
 const https = require('https');
 const os = require('os');
 const { execFile } = require('child_process');
+const { extractZipFile } = require('./zip_reader');
+const { validateDownloadUrl } = require('./url_guard');
 const { resolveConfigDir } = require('./config_manager');
 const { legacyIdToCanonical, LEGACY_THEME_ID_ALIASES } = require('./theme_ids');
 
 const REMOTE_CATALOG_URL = 'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/catalog.json';
+
+// ---------------------------------------------------------------------------
+// Allowlist sumber unduhan tema — SATU sumber kebenaran.
+// Dipakai oleh route (/api/themes/install) DAN oleh downloadFile() saat
+// memvalidasi setiap redirect. Kalau daftar ini disalin ke dua tempat, cepat
+// atau lambat keduanya akan berbeda dan allowlist jadi tidak bermakna.
+// ---------------------------------------------------------------------------
+const TRUSTED_THEME_HOSTS = [
+  'raw.githubusercontent.com',
+  'github.com',
+  'objects.githubusercontent.com',
+  'codeload.github.com',
+];
+const TRUSTED_THEME_PATH_PREFIXES = [
+  '/Milkyponi/ky-poni-themes/',
+];
 
 /**
  * Nama tema yang sah: hanya huruf kecil, angka, dan tanda minus; tidak diawali/diakhiri
@@ -423,8 +441,34 @@ class ThemeManager {
     throw new Error(`Tema "${themeId}" tidak ditemukan.`);
   }
 
-  downloadFile(url, dest) {
+  /**
+   * Unduh berkas dari URL ke `dest`.
+   *
+   * Redirect divalidasi ULANG terhadap allowlist host katalog. Tanpa ini,
+   * allowlist di route bisa dilewati: server yang "diizinkan" cukup membalas
+   * 302 ke alamat internal (metadata cloud, localhost admin, dsb) dan
+   * implementasi lama akan mengikutinya tanpa bertanya (SSRF via redirect).
+   *
+   * `redirectCount` mencegah loop redirect tak berujung.
+   */
+  downloadFile(url, dest, redirectCount = 0) {
+    const MAX_REDIRECTS = 5;
+
     return new Promise((resolve, reject) => {
+      if (redirectCount > MAX_REDIRECTS) {
+        return reject(new Error('Terlalu banyak redirect saat mengunduh tema.'));
+      }
+
+      // Validasi SETIAP URL yang dikunjungi, termasuk tujuan redirect.
+      const verdict = validateDownloadUrl(url, {
+        allowedHosts: TRUSTED_THEME_HOSTS,
+        allowedPathPrefixes: TRUSTED_THEME_PATH_PREFIXES,
+        requireHttps: true,
+      });
+      if (!verdict.ok) {
+        return reject(new Error(`URL unduhan ditolak: ${verdict.reason}`));
+      }
+
       const client = url.startsWith('https://') ? https : http;
       const file = fs.createWriteStream(dest);
 
@@ -432,7 +476,14 @@ class ThemeManager {
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
           file.close();
           try { fs.unlinkSync(dest); } catch (e) {}
-          return this.downloadFile(response.headers.location, dest).then(resolve).catch(reject);
+          // Resolve relatif terhadap URL saat ini, lalu validasi & lanjutkan.
+          let nextUrl;
+          try {
+            nextUrl = new URL(response.headers.location, url).toString();
+          } catch (e) {
+            return reject(new Error('Redirect tujuan tidak sah.'));
+          }
+          return this.downloadFile(nextUrl, dest, redirectCount + 1).then(resolve).catch(reject);
         }
         if (response.statusCode !== 200) {
           file.close();
@@ -453,83 +504,26 @@ class ThemeManager {
     });
   }
 
+  /**
+   * Ekstrak arsip zip tema.
+   *
+   * Memakai pembaca ZIP murni Node (`zip_reader.js`) — TIDAK memanggil biner
+   * eksternal. Alasan: `unzip` tidak ada di semua distro (Fedora minimal, Arch
+   * base, container) dan `powershell` hanya ada di Windows. Ketergantungan pada
+   * biner eksternal membuat pemasangan tema GAGAL TOTAL di PC orang lain yang
+   * tidak punya biner itu — regresi yang tidak terlihat di mesin developer.
+   * Dengan zlib bawaan Node, perilaku identik di Linux/Windows/macOS.
+   *
+   * Validasi zip-slip dilakukan di dalam zip_reader SEBELUM satu byte pun ditulis.
+   */
   extractZip(zipPath, destDir) {
     return new Promise((resolve, reject) => {
-      // Sebelum ekstraksi: validasi isi arsip (anti zip-slip). Setiap entri yang
-      // menunjuk keluar destDir membuat seluruh arsip ditolak.
-      this.validateZipEntries(zipPath, destDir)
-        .then(() => {
-          let bin;
-          let args;
-          if (process.platform === 'win32') {
-            bin = 'powershell';
-            args = [
-              '-NoProfile',
-              '-NonInteractive',
-              '-ExecutionPolicy', 'Bypass',
-              '-Command',
-              // Argumen sebagai elemen array: path tidak dirangkai ke string shell.
-              'Expand-Archive -Force -LiteralPath $args[0] -DestinationPath $args[1]',
-              zipPath,
-              destDir,
-            ];
-          } else {
-            bin = 'unzip';
-            args = ['-o', '-q', zipPath, '-d', destDir];
-          }
-          execFile(bin, args, (err) => {
-            if (err) {
-              // Fallback tar (Linux/macOS) tetap tanpa shell.
-              if (process.platform !== 'win32') {
-                return execFile('tar', ['-xf', zipPath, '-C', destDir], (tarErr) => {
-                  if (tarErr) {
-                    return reject(new Error(`Gagal mengekstrak berkas zip tema: ${tarErr.message}`));
-                  }
-                  resolve(destDir);
-                });
-              }
-              return reject(new Error(`Gagal mengekstrak berkas zip tema: ${err.message}`));
-            }
-            resolve(destDir);
-          });
-        })
-        .catch(reject);
-    });
-  }
-
-  /**
-   * Anti zip-slip: baca daftar entri arsip dan tolak arsip yang berisi path
-   * absolut atau `..` yang bisa menulis di luar direktori tema.
-   *
-   * Memakai `unzip -Z1` (Linux/macOS) untuk membaca daftar nama entri tanpa
-   * mengekstrak. Kalau daftar tidak bisa dibaca dengan aman, arsip DITOLAK
-   * (fail-closed) daripada diekstrak tanpa pemeriksaan.
-   */
-  validateZipEntries(zipPath, destDir) {
-    return new Promise((resolve, reject) => {
-      if (process.platform === 'win32') {
-        // Tanpa pustaka ZIP murni, validasi entri di Windows tidak bisa dilakukan
-        // dengan andal di sini. Expand-Archive sendiri menolak path absolut, tetapi
-        // tetap lakukan pemeriksaan nama berkas yang masuk akal.
-        return resolve();
+      try {
+        const result = extractZipFile(zipPath, destDir);
+        resolve(destDir);
+      } catch (err) {
+        reject(new Error(`Gagal mengekstrak berkas zip tema: ${err.message}`));
       }
-      execFile('unzip', ['-Z1', zipPath], { maxBuffer: 8 * 1024 * 1024 }, (err, stdout) => {
-        if (err) {
-          return reject(new Error(`Arsip tema tidak dapat dibaca untuk validasi: ${err.message}`));
-        }
-        const base = path.resolve(destDir);
-        const entries = String(stdout).split('\n').map(l => l.trim()).filter(Boolean);
-        for (const entry of entries) {
-          if (entry.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(entry) || entry.includes('..')) {
-            return reject(new Error(`Arsip tema ditolak: entri tidak aman "${entry}".`));
-          }
-          const target = path.resolve(base, entry);
-          if (target !== base && !target.startsWith(base + path.sep)) {
-            return reject(new Error(`Arsip tema ditolak: entri keluar direktori "${entry}".`));
-          }
-        }
-        resolve();
-      });
     });
   }
 }
@@ -548,4 +542,4 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-module.exports = { ThemeManager, REMOTE_CATALOG_URL, isValidThemeId, isSafeThemeLookupId };
+module.exports = { ThemeManager, REMOTE_CATALOG_URL, isValidThemeId, isSafeThemeLookupId, TRUSTED_THEME_HOSTS, TRUSTED_THEME_PATH_PREFIXES };

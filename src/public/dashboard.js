@@ -4,6 +4,31 @@
  * & User Preferences Persistence (/api/config)
  */
 
+/**
+ * Escape teks sebelum dimasukkan ke template HTML.
+ *
+ * Dashboard banyak memakai innerHTML untuk membangun kartu tema. Data seperti
+ * `name`, `tags`, dan `downloadUrl` berasal dari katalog (remote atau berkas
+ * lokal yang bisa ditambahkan user), jadi tidak boleh dipercaya. Tanpa escape,
+ * nama tema berisi `<img onerror=...>` akan dieksekusi di dashboard.
+ */
+function escapeHtml(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Escape untuk nilai yang masuk ke atribut JS inline (onclick="...") di dalam
+ * string HTML. Dua lapis: escape JS dulu, lalu escape HTML oleh escapeHtml().
+ */
+function escapeJsAttr(value) {
+  return escapeHtml(JSON.stringify(String(value === undefined || value === null ? '' : value)));
+}
+
 const selectTheme = document.getElementById('select-theme');
 const selectLayout = document.getElementById('select-layout');
 const inputFade = document.getElementById('input-fade');
@@ -606,8 +631,8 @@ async function loadThemes(preferredTheme = null) {
     const resolved = exists ? wanted : data.themes[0].id;
 
     selectTheme.innerHTML = data.themes.map(t => `
-      <option value="${t.id}" ${t.id === resolved ? 'selected' : ''}>
-        ${t.name} ${t.isBuiltIn ? '' : '(Kustom)'}
+      <option value="${escapeHtml(t.id)}" ${t.id === resolved ? 'selected' : ''}>
+        ${escapeHtml(t.name)} ${t.isBuiltIn ? '' : '(Kustom)'}
       </option>
     `).join('');
 
@@ -821,15 +846,15 @@ async function loadCatalog() {
       if (isInstalled) {
         if (isCurrentlyActive) {
           actionButtons = `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; opacity: 0.7; cursor: default;" disabled>✓ Sedang Digunakan</button>`;
-          actionButtons += `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px;" onclick="resetThemePresets('${t.id}')" title="Kembalikan font, ukuran & warna teks ke preset resmi tema ini">↺ Preset Tema</button>`;
+          actionButtons += `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px;" onclick="resetThemePresets('${escapeJsAttr(t.id)}')" title="Kembalikan font, ukuran & warna teks ke preset resmi tema ini">↺ Preset Tema</button>`;
         } else {
-          actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px;" onclick="selectThemeFromCatalog('${t.id}')">⚡ Gunakan Tema Ini</button>`;
+          actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px;" onclick="selectThemeFromCatalog('${escapeJsAttr(t.id)}')">⚡ Gunakan Tema Ini</button>`;
           if (!isBuiltIn) {
-            actionButtons += `<button class="btn btn-danger" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px; background: rgba(220, 38, 38, 0.2); border: 1px solid #DC2626; color: #FCA5A5; border-radius: 4px; cursor: pointer;" onclick="deleteTheme('${t.id}', this)" title="Hapus tema beserta font bawaannya">🗑️ Hapus</button>`;
+            actionButtons += `<button class="btn btn-danger" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px; background: rgba(220, 38, 38, 0.2); border: 1px solid #DC2626; color: #FCA5A5; border-radius: 4px; cursor: pointer;" onclick="deleteTheme('${escapeJsAttr(t.id)}', this)" title="Hapus tema beserta font bawaannya">🗑️ Hapus</button>`;
           }
         }
       } else {
-        actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px; background: var(--accent-cyan); color: #000; font-weight: 800; border: none; border-radius: 4px; cursor: pointer;" onclick="installTheme('${t.id}', '${t.downloadUrl}', this)">⚡ Instal & Pasang</button>`;
+        actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px; background: var(--accent-cyan); color: #000; font-weight: 800; border: none; border-radius: 4px; cursor: pointer;" onclick="installTheme('${escapeJsAttr(t.id)}', '${escapeJsAttr(t.downloadUrl)}', this)">⚡ Instal & Pasang</button>`;
       }
 
       return `
@@ -837,12 +862,12 @@ async function loadCatalog() {
           ${bannerVisual}
           <div class="theme-body">
             <div class="theme-name-row">
-              <div class="theme-name">${t.name}</div>
+              <div class="theme-name">${escapeHtml(t.name)}</div>
               ${statusBadge}
             </div>
 
             <div class="theme-tag-row">
-              ${(t.tags || []).map(tag => `<span class="theme-tag">${tag}</span>`).join('')}
+              ${(t.tags || []).map(tag => `<span class="theme-tag">${escapeHtml(tag)}</span>`).join('')}
             </div>
           </div>
 

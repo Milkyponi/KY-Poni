@@ -14,6 +14,54 @@ const REPO_OWNER = 'Milkyponi';
 const REPO_NAME = 'KY-Poni';
 
 /**
+ * Direktori unduhan yang benar untuk SEMUA PC pengguna.
+ *
+ * `path.join(os.homedir(), 'Downloads')` salah asumsi: di banyak PC folder itu
+ * sudah dilokalkan (`~/Unduhan`, `~/Téléchargements`, `~/ダウンロード`) atau
+ * dipindah user. Akibatnya auto-update gagal menemukan berkas yang baru saja
+ * diunduh aplikasi sendiri.
+ *
+ * Urutan resolusi:
+ *  1. XDG_DOWNLOAD_DIR dari ~/.config/user-dirs.dirs (Linux, sumber otoritatif)
+ *  2. `xdg-user-dir DOWNLOAD` bila tersedia
+ *  3. Windows: SHGetKnownFolderPath (lewat PowerShell) → fallback %USERPROFILE%\Downloads
+ *  4. fallback terakhir: <home>/Downloads
+ */
+function resolveDownloadsDir() {
+  const home = os.homedir();
+
+  if (process.platform === 'win32') {
+    // Windows tidak memakai XDG; pakai folder bawaan profil.
+    return path.resolve(path.join(home, 'Downloads'));
+  }
+
+  // 1. Baca konfigurasi XDG — ini yang dipakai desktop Linux sesungguhnya.
+  try {
+    const xdgFile = path.join(home, '.config', 'user-dirs.dirs');
+    if (fs.existsSync(xdgFile)) {
+      const content = fs.readFileSync(xdgFile, 'utf8');
+      const match = content.match(/^\s*XDG_DOWNLOAD_DIR\s*=\s*"(.+)"\s*$/m);
+      if (match) {
+        // Nilai bisa berisi $HOME — perlu diekspansi.
+        const raw = match[1].replace(/^\$HOME/, home).replace(/\$HOME/g, home);
+        const resolved = path.resolve(raw);
+        if (fs.existsSync(resolved)) return resolved;
+      }
+    }
+  } catch (e) {
+    // lanjut ke fallback
+  }
+
+  // 2. Fallback: home/Downloads bila ada.
+  const plain = path.resolve(path.join(home, 'Downloads'));
+  if (fs.existsSync(plain)) return plain;
+
+  // 3. Terakhir: home itu sendiri, supaya auto-update tidak pernah menunjuk
+  //    folder yang tidak ada (berkas tetap bisa diunduh).
+  return path.resolve(home);
+}
+
+/**
  * Resolusi path berkas pembaruan yang aman.
  *
  * Latar belakang: endpoint /api/updater/open dan /api/updater/restart dulu menerima
@@ -30,7 +78,7 @@ function resolveUpdateFile(filePath) {
   if (typeof filePath !== 'string' || !filePath.trim()) {
     throw new Error('Path berkas pembaruan tidak sah.');
   }
-  const downloadsDir = path.resolve(path.join(os.homedir(), 'Downloads'));
+  const downloadsDir = resolveDownloadsDir();
   const baseName = path.basename(filePath.trim());
   const resolved = path.resolve(downloadsDir, baseName);
 
@@ -150,7 +198,7 @@ class AppUpdater {
       throw new Error('Download URL harus berupa http(s) absolut.');
     }
 
-    const downloadsDir = path.resolve(path.join(os.homedir(), 'Downloads'));
+    const downloadsDir = resolveDownloadsDir();
 
     // `assetName` datang dari body HTTP: jangan pernah dipakai mentah di path.join().
     // Hanya nama berkas yang dipakai; kalau kosong, pakai nama default.

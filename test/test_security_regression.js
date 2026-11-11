@@ -395,6 +395,163 @@ z.close()
   });
 
   // ---------------------------------------------------------------------
+  // H. Universalitas: patch harus aman di PC orang lain, bukan hanya di sini
+  // ---------------------------------------------------------------------
+
+  await checkAsync('ZIP extraction works WITHOUT external "unzip" binary', async () => {
+    // Regresi nyata: implementasi berbasis `unzip`/`tar`/`powershell` gagal total
+    // di distro minimal / Arch base / container. Pembaca ZIP murni Node tidak.
+    const { extractZipFile } = require('../src/zip_reader');
+    const tmpZip = path.join(os.tmpdir(), `kyponi_purezip_${Date.now()}.zip`);
+    const tmpOut = path.join(os.tmpdir(), `kyponi_purezip_out_${Date.now()}`);
+    const py = `
+import zipfile, sys
+z = zipfile.ZipFile(sys.argv[1], 'w')
+z.writestr('style.css', 'body{color:red}')
+z.writestr('theme.json', '{"id":"t"}')
+z.close()
+`;
+    try {
+      execFileSync('python3', ['-c', py, tmpZip], { stdio: 'pipe' });
+      const res = extractZipFile(tmpZip, tmpOut);
+      assert.ok(res.written >= 2, `hanya ${res.written} berkas diekstrak`);
+      assert.ok(fs.existsSync(path.join(tmpOut, 'style.css')), 'style.css tidak diekstrak');
+      assert.ok(fs.readFileSync(path.join(tmpOut, 'style.css'), 'utf8').includes('color:red'),
+        'isi berkas tidak benar');
+    } finally {
+      try { fs.unlinkSync(tmpZip); } catch (e) {}
+      try { fs.rmSync(tmpOut, { recursive: true, force: true }); } catch (e) {}
+    }
+  });
+
+  await checkAsync('zip_reader rejects traversal AND absolute paths', async () => {
+    const { extractZipFile } = require('../src/zip_reader');
+    const tmpZip = path.join(os.tmpdir(), `kyponi_zipguard_${Date.now()}.zip`);
+    const tmpOut = path.join(os.tmpdir(), `kyponi_zipguard_out_${Date.now()}`);
+    const py = `
+import zipfile, sys
+z = zipfile.ZipFile(sys.argv[1], 'w')
+z.writestr('../../../../tmp/kyponi_reg_escape.txt', 'pwn')
+z.writestr('/tmp/kyponi_reg_abs.txt', 'pwn')
+z.writestr('style.css', 'ok')
+z.close()
+`;
+    try {
+      execFileSync('python3', ['-c', py, tmpZip], { stdio: 'pipe' });
+      let rejected = false;
+      try { extractZipFile(tmpZip, tmpOut); } catch (e) { rejected = true; }
+      assert.strictEqual(rejected, true, 'arsip berbahaya TIDAK ditolak');
+      assert.strictEqual(fs.existsSync('/tmp/kyponi_reg_escape.txt'), false, 'traversal berhasil');
+      assert.strictEqual(fs.existsSync('/tmp/kyponi_reg_abs.txt'), false, 'absolute path berhasil');
+    } finally {
+      try { fs.unlinkSync(tmpZip); } catch (e) {}
+      try { fs.rmSync(tmpOut, { recursive: true, force: true }); } catch (e) {}
+      try { fs.unlinkSync('/tmp/kyponi_reg_escape.txt'); } catch (e) {}
+      try { fs.unlinkSync('/tmp/kyponi_reg_abs.txt'); } catch (e) {}
+    }
+  });
+
+  await checkAsync('downloads dir follows XDG_DOWNLOAD_DIR (localised folders)', async () => {
+    // Regresi nyata: hardcode ~/Downloads gagal di PC berbahasa Indonesia
+    // yang foldernya ~/Unduhan. Auto-update tidak menemukan berkasnya sendiri.
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'kyponi_xdg_'));
+    try {
+      fs.mkdirSync(path.join(tmpHome, '.config'), { recursive: true });
+      fs.mkdirSync(path.join(tmpHome, 'Unduhan'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpHome, '.config', 'user-dirs.dirs'),
+        'XDG_DOWNLOAD_DIR="$HOME/Unduhan"\n'
+      );
+      const script = `
+        const path = require('path');
+        const { AppUpdater } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'updater.js'))});
+        const up = new AppUpdater('1.0.1');
+        up.openDownloadedFile('KY-Poni-test.AppImage')
+          .then(p => console.log('RESOLVED:' + p))
+          .catch(e => console.log('ERROR:' + e.message));
+      `;
+      fs.writeFileSync(path.join(tmpHome, 'probe.js'), script);
+      fs.writeFileSync(path.join(tmpHome, 'Unduhan', 'KY-Poni-test.AppImage'), 'x');
+      const out = execFileSync('node', [path.join(tmpHome, 'probe.js')], {
+        env: { ...process.env, HOME: tmpHome },
+        encoding: 'utf8',
+        timeout: 15000,
+      });
+      assert.ok(out.includes('Unduhan'), `folder lokal tidak terdeteksi: ${out}`);
+    } finally {
+      try { fs.rmSync(tmpHome, { recursive: true, force: true }); } catch (e) {}
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // I. SSRF lewat redirect & validasi URL terpusat
+  // ---------------------------------------------------------------------
+
+  await checkAsync('url_guard rejects redirect targets to internal addresses', async () => {
+    const { validateDownloadUrl } = require('../src/url_guard');
+    const { TRUSTED_THEME_HOSTS, TRUSTED_THEME_PATH_PREFIXES } = require('../src/theme_manager');
+    const opts = {
+      allowedHosts: TRUSTED_THEME_HOSTS,
+      allowedPathPrefixes: TRUSTED_THEME_PATH_PREFIXES,
+      requireHttps: true,
+    };
+    const bad = [
+      'http://169.254.169.254/latest/meta-data/',   // metadata cloud
+      'http://127.0.0.1:8080/admin',                // localhost lain port
+      'http://10.0.0.5/internal',                   // jaringan privat
+      'file:///etc/passwd',                         // skema file
+      'https://raw.githubusercontent.com/other/repo/x.zip', // repo lain
+      'https://raw.githubusercontent.com.evil.example/Milkyponi/ky-poni-themes/x.zip',
+    ];
+    for (const u of bad) {
+      const v = validateDownloadUrl(u, opts);
+      assert.strictEqual(v.ok, false, `URL berbahaya lolos: ${u}`);
+    }
+  });
+
+  await checkAsync('url_guard ACCEPTS the legitimate catalog URL', async () => {
+    const { validateDownloadUrl } = require('../src/url_guard');
+    const { TRUSTED_THEME_HOSTS, TRUSTED_THEME_PATH_PREFIXES } = require('../src/theme_manager');
+    const v = validateDownloadUrl(
+      'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/packages/undertale.zip',
+      { allowedHosts: TRUSTED_THEME_HOSTS, allowedPathPrefixes: TRUSTED_THEME_PATH_PREFIXES, requireHttps: true }
+    );
+    assert.strictEqual(v.ok, true, `URL katalog sah ditolak: ${v.reason}`);
+  });
+
+  await checkAsync('downloadFile validates URL BEFORE making a request', async () => {
+    const { ThemeManager } = require('../src/theme_manager');
+    const tm = new ThemeManager(
+      path.join(__dirname, '..', 'src', 'public', 'themes'),
+      path.join(__dirname, '..', 'src', 'catalog', 'catalog.json'),
+    );
+    const tmp = path.join(os.tmpdir(), `kyponi_dl_${Date.now()}.zip`);
+    let rejected = false;
+    try {
+      await tm.downloadFile('http://127.0.0.1:19997/theme.zip', tmp);
+    } catch (e) {
+      rejected = true;
+    }
+    assert.strictEqual(rejected, true, 'downloadFile mengikuti URL non-allowlist');
+  });
+
+  // ---------------------------------------------------------------------
+  // J. XSS di dashboard (metadata tema dari katalog)
+  // ---------------------------------------------------------------------
+
+  await checkAsync('dashboard has escapeHtml helper and escapes theme metadata', async () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'dashboard.js'), 'utf8');
+    assert.ok(/function escapeHtml/.test(src), 'dashboard tidak punya escapeHtml');
+    assert.ok(/function escapeJsAttr/.test(src), 'dashboard tidak punya escapeJsAttr');
+    // Data dari server tidak boleh masuk template tanpa escape.
+    assert.ok(!/\$\{t\.name\}(?![\s\S]{0,40}escapeHtml)/.test(src) || !/\$\{t\.name\}/.test(src.replace(/\$\{escapeHtml\(t\.name\)\}/g, '')),
+      'theme name masih diinterpolasi mentah');
+    assert.ok(src.includes('${escapeJsAttr(t.downloadUrl)}'), 'downloadUrl tidak di-escape di onclick');
+    assert.ok(src.includes('${escapeJsAttr(t.id)}'), 'theme id tidak di-escape di onclick');
+    assert.ok(src.includes('${escapeHtml(tag)}'), 'tag tidak di-escape');
+  });
+
+  // ---------------------------------------------------------------------
   // Selesai
   // ---------------------------------------------------------------------
 
