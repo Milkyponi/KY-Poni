@@ -10,14 +10,26 @@ const { handleThemesRoutes } = require('./themes');
 const { handleUpdaterRoutes } = require('./updater');
 const { handleStaticRoutes } = require('./static');
 
+const { sendJson, sendError, parseJsonBody, isTrustedLocalOrigin } = require('./helpers');
+
 async function dispatchRequest(req, res, ctx) {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
 
-  // Global CORS Headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Origin guard: tolak permintaan yang datang dari website eksternal.
+  // Dashboard/overlay/Electron satu-origin dengan server ini, jadi tidak terpengaruh.
+  if (!isTrustedLocalOrigin(req.headers.origin, req.headers.host)) {
+    sendJson(res, 403, { error: 'Permintaan lintas-origin ditolak.' });
+    return;
+  }
+
+  // CORS headers: hanya di-echo untuk origin lokal terpercaya
+  // (tidak lagi wildcard '*' yang membuka API ke website mana pun).
+  if (req.headers.origin && isTrustedLocalOrigin(req.headers.origin, req.headers.host)) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);

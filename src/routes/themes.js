@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { sendJson, sendError, parseJsonBody } = require('./helpers');
+const { isValidThemeId } = require('../theme_manager');
 
 async function handleThemesRoutes(req, res, pathname, ctx) {
   const { themeManager, PACKAGES_DIR } = ctx;
@@ -33,8 +34,8 @@ async function handleThemesRoutes(req, res, pathname, ctx) {
     try {
       const payload = await parseJsonBody(req);
       const themeId = payload.themeId;
-      if (!themeId) {
-        sendError(res, 400, 'Field "themeId" wajib diisi');
+      if (!isValidThemeId(themeId)) {
+        sendError(res, 400, 'Field "themeId" tidak valid. Hanya huruf kecil, angka, dan tanda minus yang diizinkan.');
         return true;
       }
 
@@ -53,6 +54,10 @@ async function handleThemesRoutes(req, res, pathname, ctx) {
   if (pathname === '/api/themes/delete' && req.method === 'POST') {
     try {
       const payload = await parseJsonBody(req);
+      if (!isValidThemeId(payload.themeId)) {
+        sendError(res, 400, 'Field "themeId" tidak valid. Hanya huruf kecil, angka, dan tanda minus yang diizinkan.');
+        return true;
+      }
       const deleteResult = themeManager.deleteTheme(payload.themeId);
       sendJson(res, 200, deleteResult);
     } catch (err) {

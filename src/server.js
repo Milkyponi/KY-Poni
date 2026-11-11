@@ -11,6 +11,7 @@ const { ThemeManager } = require('./theme_manager');
 const { ConfigManager } = require('./config_manager');
 const { AppUpdater } = require('./updater');
 const { dispatchRequest } = require('./routes');
+const { isTrustedLocalOrigin } = require('./routes/helpers');
 const pkg = require('../package.json');
 
 const PORT = parseInt(process.env.PORT || '19840', 10);
@@ -40,7 +41,16 @@ const server = http.createServer((req, res) => {
 });
 
 // Create WebSocket Server
-const wss = new WebSocketServer({ server, path: '/ws' });
+// verifyClient: koneksi WS dari origin eksternal (website lain di browser) ditolak,
+// melengkapi origin guard di dispatcher HTTP. OBS/dashboard/Electron tidak terpengaruh.
+const wss = new WebSocketServer({
+  server,
+  path: '/ws',
+  verifyClient: (info) => isTrustedLocalOrigin(
+    info.req.headers.origin,
+    info.req.headers.host
+  ),
+});
 const connectedClients = new Set();
 
 wss.on('connection', (ws) => {

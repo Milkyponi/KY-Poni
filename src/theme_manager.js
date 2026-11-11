@@ -15,6 +15,33 @@ const { legacyIdToCanonical, LEGACY_THEME_ID_ALIASES } = require('./theme_ids');
 
 const REMOTE_CATALOG_URL = 'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/catalog.json';
 
+/**
+ * Nama tema yang sah: hanya huruf kecil, angka, dan tanda minus; tidak diawali/diakhiri
+ * minus; maksimal 64 karakter. Dipakai sebagai nama folder sehingga harus dijaga ketat.
+ *
+ * Latar belakang: sebelumnya themeId dari API langsung dipakai di path.join() dan
+ * perintah ekstraksi shell, sehingga nilai seperti "../escape" atau "x'; <perintah>"
+ * bisa menyusup keluar folder themes / menitip perintah ke shell.
+ */
+const THEME_ID_PATTERN = /^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?$/;
+
+function isValidThemeId(themeId) {
+  return typeof themeId === 'string' && THEME_ID_PATTERN.test(themeId);
+}
+
+/**
+ * Pemeriksaan longgar untuk PENCARIAN tema (getThemePath): folder tema user boleh
+ * dibuat manual dengan nama bebas, jadi hanya hal yang berbahaya ditolak —
+ * pemisah path dan ".." yang memungkinkan traversal keluar folder tema.
+ */
+function isSafeThemeLookupId(themeId) {
+  return typeof themeId === 'string'
+    && themeId.length > 0
+    && !themeId.includes('/')
+    && !themeId.includes('\\')
+    && !themeId.includes('..');
+}
+
 class ThemeManager {
   constructor(publicThemesDir, catalogPath, userThemesDir = null, options = {}) {
     this.publicThemesDir = publicThemesDir;
@@ -174,7 +201,7 @@ class ThemeManager {
    * Accepts both canonical and legacy ids so old bookmarks/URLs keep working.
    */
   getThemePath(themeId) {
-    if (!themeId) return null;
+    if (!isSafeThemeLookupId(themeId)) return null;
     const canonicalId = legacyIdToCanonical(themeId);
 
     // 1. Check user persistent directory first (canonical, then legacy folder name)
@@ -298,8 +325,8 @@ class ThemeManager {
    * Installs an official theme package into the user themes directory (~/.config/ky-poni/themes/)
    */
   async installTheme(themeId, sourceUrlOrPath) {
-    if (!themeId || typeof themeId !== 'string') {
-      throw new Error('themeId wajib diisi');
+    if (!isValidThemeId(themeId)) {
+      throw new Error('themeId tidak valid. Hanya huruf kecil, angka, dan tanda minus yang diizinkan.');
     }
 
     this.ensureDirs();
@@ -378,6 +405,9 @@ class ThemeManager {
    * Core themes (persona5, classic) cannot be deleted.
    */
   deleteTheme(themeId) {
+    if (!isValidThemeId(themeId)) {
+      throw new Error('themeId tidak valid. Hanya huruf kecil, angka, dan tanda minus yang diizinkan.');
+    }
     if (themeId === 'persona5' || themeId === 'classic' || themeId === 'persona3reload') {
       throw new Error(`Tema "${themeId}" adalah tema inti bawaan dan tidak dapat dihapus.`);
     }
@@ -454,4 +484,4 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-module.exports = { ThemeManager, REMOTE_CATALOG_URL };
+module.exports = { ThemeManager, REMOTE_CATALOG_URL, isValidThemeId, isSafeThemeLookupId };
