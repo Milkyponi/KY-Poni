@@ -11,9 +11,9 @@
 
 | Platform | Path | Ukuran | SHA-256 |
 | --- | --- | --- | --- |
-| Linux (terpasang) | `/home/milkyponi/AppImages/kyponi.appimage` | 123 MB | `1b11506087b2c6090e1eadb119f90eb686dcc18821723c41e925dc5be010c544` |
+| Linux (terpasang) | `/home/milkyponi/AppImages/kyponi.appimage` | 123 MB | `9498ba0725f0bb14f0cdd300a568093858b84824e3d9348a84af44ada6bd5dfd` |
 | Linux (arsip) | `07_PROJECTS/KY-Poni/dist/KY-Poni-1.1.0.AppImage` | 123 MB | idem (hash identik) |
-| Windows (arsip) | `07_PROJECTS/KY-Poni/dist/KY-Poni-1.1.0.exe` | 107 MB | `f1f0276df9f01a7fe7980a22c2f3497631f8b6a33907626a73f8566b45594350` |
+| Windows (arsip) | `07_PROJECTS/KY-Poni/dist/KY-Poni-1.1.0.exe` | 107 MB | `b900e3eb1c9578f978e2916578cbf64bc67376492540666db4dc35bf88cda366` |
 
 Hash AppImage terpasang = hash artefak yang diuji, jadi yang Bos jalankan memang biner yang lolos gerbang.
 

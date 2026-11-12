@@ -247,7 +247,21 @@ if (ytTargetInput) {
 }
 
 // Save User Configuration
-async function saveUserConfig() {
+//
+// PENTING: hanya field yang BENAR-BENAR diubah pengguna yang dikirim.
+//
+// Versi lama mengirim seluruh field dari DOM setiap kali menyimpan. Kalau satu field saja
+// belum sempat dipulihkan dari config tersimpan (boot belum selesai, tema belum termuat,
+// atau dashboard dibuka sebelum /api/config menjawab), satu interaksi kecil — menggeser
+// slider skala, misalnya — akan menuliskan nilai default ke SEMUA field dan menghapus
+// preferensi streamer secara permanen. Kejadian nyata: config profil tertimpa default
+// hanya karena aplikasi sempat dibuka lalu ditutup.
+//
+// `lastKnownConfig` adalah snapshot terakhir yang diketahui benar (dari server). Field yang
+// nilainya masih sama dengan snapshot tidak ikut dikirim, sehingga tidak mungkin menimpa.
+let lastKnownConfig = null;
+
+async function saveUserConfig(forceFields = null) {
   let layoutVal = selectLayout ? selectLayout.value : 'vertical';
   if (layoutVal.startsWith('horizontal')) {
     layoutVal = 'horizontal';
@@ -255,7 +269,7 @@ async function saveUserConfig() {
     layoutVal = 'vertical';
   }
 
-  const config = {
+  const current = {
     target: ytTargetInput ? ytTargetInput.value.trim() : '@MilkyPoni',
     theme: selectTheme ? selectTheme.value : 'persona5',
     layout: layoutVal,
@@ -268,12 +282,36 @@ async function saveUserConfig() {
     keep: selectKeep ? parseInt(selectKeep.value, 10) : 1,
   };
 
+  // Kirim hanya yang berubah dibanding snapshot server. Tanpa snapshot (boot gagal),
+  // tolak menyimpan sama sekali — lebih baik tidak menyimpan daripada menimpa.
+  let payload = current;
+  if (Array.isArray(forceFields)) {
+    payload = {};
+    for (const key of forceFields) {
+      if (key in current) payload[key] = current[key];
+    }
+  } else if (lastKnownConfig) {
+    payload = {};
+    for (const key of Object.keys(current)) {
+      if (current[key] !== lastKnownConfig[key]) payload[key] = current[key];
+    }
+  } else {
+    console.warn('[KY-Poni] Simpan dilewati: konfigurasi acuan belum termuat.');
+    return;
+  }
+
+  if (Object.keys(payload).length === 0) return; // tidak ada perubahan nyata
+
   try {
-    await fetch('/api/config', {
+    const res = await fetch('/api/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config),
+      body: JSON.stringify(payload),
     });
+    if (res.ok) {
+      const saved = await res.json();
+      if (saved && saved.config) lastKnownConfig = { ...saved.config };
+    }
   } catch (e) {
     console.warn('Gagal menyimpan config lokal:', e);
   }
@@ -1202,6 +1240,9 @@ function setupUpdaterWS() {
     const savedRes = await fetch('/api/config');
     if (savedRes.ok) {
       const savedCfg = await savedRes.json();
+      // Snapshot acuan HARUS dipasang sebelum nilai apa pun masuk ke DOM, supaya
+      // saveUserConfig() hanya mengirim field yang benar-benar diubah pengguna.
+      lastKnownConfig = { ...savedCfg };
       // 1) Populate every dynamic option first, keeping the saved theme if it is installed.
       await loadThemes(savedCfg.theme || null);
       // 2) Now assign the saved values onto the fully-built DOM.
