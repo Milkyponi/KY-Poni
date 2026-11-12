@@ -5,6 +5,7 @@
 
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const { WebSocketServer } = require('ws');
 const { YouTubeChatIngest } = require('./youtube_ingest');
 const { ThemeManager } = require('./theme_manager');
@@ -126,6 +127,18 @@ function scheduleAutoConnect(options = {}) {
   const timer = setTimeout(async () => {
     let target = '';
     try {
+      // Instalasi baru TIDAK boleh auto-connect.
+      //
+      // DEFAULT_CONFIG.target berisi '@MilkyPoni' sebagai contoh di kolom input. Tanpa
+      // pemeriksaan ini, setiap pengguna yang baru memasang aplikasi akan otomatis
+      // mencoba menyambung ke kanal pengembang — status di dashboardnya jadi "menunggu
+      // siaran" untuk kanal orang lain. Auto-connect hanya sah bila pengguna benar-benar
+      // pernah menyimpan target sendiri, yang dibuktikan oleh keberadaan config.json.
+      if (!fs.existsSync(configManager.configPath)) {
+        console.log('[KY-Poni AutoConnect] Belum ada config tersimpan (instalasi baru). Tidak menyambung otomatis.');
+        return;
+      }
+
       const cfg = configManager.getConfig();
       target = (cfg && cfg.target) ? String(cfg.target).trim() : '';
     } catch (e) {
