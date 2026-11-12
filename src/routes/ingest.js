@@ -15,16 +15,35 @@ async function handleIngestRoutes(req, res, pathname, ctx) {
         return true;
       }
 
-      youtubeIngest.connect(payload.target).then(() => {
-        console.log(`[KY-Poni] Connected to stream target: ${payload.target}`);
-      }).catch(err => {
-        console.error(`[KY-Poni] Failed to connect:`, err.message);
-      });
+      const target = String(payload.target).trim();
+
+      // Validasi format SEBELUM menyentuh jaringan. Format yang tidak dikenali harus
+      // ditolak dengan pesan jelas, bukan diteruskan lalu gagal dengan "pastikan live".
+      if (!youtubeIngest.parseTarget(target)) {
+        sendError(
+          res,
+          400,
+          `Format target tidak dikenali: "${target}". ` +
+          'Gunakan @handle, Channel ID (UC...), URL kanal, atau URL live/video YouTube.'
+        );
+        return true;
+      }
+
+      // Tunggu hasil nyata (live / waiting / error) supaya dashboard tidak perlu menebak.
+      // Handler connect menangani mode 'waiting' sendiri dan tidak melempar error untuk itu.
+      try {
+        await youtubeIngest.connect(target);
+      } catch (err) {
+        sendError(res, 400, err.message);
+        return true;
+      }
 
       sendJson(res, 200, {
         success: true,
-        target: payload.target,
-        status: 'connecting',
+        target,
+        status: youtubeIngest.status,
+        liveId: youtubeIngest.activeLiveId,
+        channelId: youtubeIngest.activeChannelId,
       });
     } catch (err) {
       sendBodyError(res, err);

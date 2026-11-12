@@ -6,6 +6,15 @@
 const { EventEmitter } = require('events');
 const { LiveChat } = require('youtube-chat');
 const axios = require('axios');
+const { classify, toLiveChatTarget } = require('./youtube_target');
+const { YouTubeResolver } = require('./youtube_resolver');
+const { installLiveChatShim } = require('./innertube_live_source');
+
+// WAJIB dipanggil sebelum LiveChat.start() mana pun.
+// Sejak Nov 2026 YouTube menyajikan `<link rel="canonical" href="undefined">`, sehingga
+// youtube-chat (rilis terakhir 2022) gagal menemukan liveId dan SEMUA jalur koneksi mati —
+// termasuk v1.0.1 yang sudah dirilis. Shim ini mengganti hanya fungsi pengambil opsi awal.
+installLiveChatShim();
 
 // Set global timeout on axios so requests don't hang indefinitely during network RTO
 try {
@@ -13,53 +22,40 @@ try {
 } catch (e) {}
 
 class YouTubeChatIngest extends EventEmitter {
-  constructor() {
+  constructor(options = {}) {
     super();
     this.liveChat = null;
     this.status = 'idle'; // 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error'
     this.currentTarget = null;
     this.activeLiveId = null;
+    this.activeChannelId = null;
     this.messageCount = 0;
     this.consecutiveErrors = 0;
     this.reconnectAttempts = 0;
     this.reconnectTimer = null;
     this.isManuallyStopped = false;
+
+    // Pemantauan "menunggu live": kanal dikenal tetapi belum menyiarkan.
+    this.waitPollTimer = null;
+    this.waitPollInterval = options.waitPollInterval || 60000;
+    this.resolver = options.resolver || new YouTubeResolver();
+
+    // Nomor urut sesi. Dipakai untuk mengabaikan event dari sesi yang sudah digantikan.
+    this.sessionToken = 0;
   }
 
   parseTarget(input) {
-    if (!input || typeof input !== 'string') return null;
-    const clean = input.trim();
-
-    // Check for watch URL
-    const watchMatch = clean.match(/(?:v=|\/live\/|\/shorts\/)([a-zA-Z0-9_-]{11})/);
-    if (watchMatch) {
-      return { liveId: watchMatch[1] };
-    }
-
-    // Check for channel handle: @Username or youtube.com/@Username
-    const handleMatch = clean.match(/@([a-zA-Z0-9_.-]+)/);
-    if (handleMatch) {
-      return { handle: `@${handleMatch[1]}` };
-    }
-
-    // Check for raw channelId: UC...
-    if (clean.startsWith('UC') && clean.length >= 22) {
-      return { channelId: clean };
-    }
-
-    // Fallback: assume raw video ID if 11 chars, otherwise handle
-    if (clean.length === 11 && !clean.includes(' ')) {
-      return { liveId: clean };
-    }
-
-    // Default to handle if prefixed or not
-    return { handle: clean.startsWith('@') ? clean : `@${clean}` };
+    // Klasifikasi tunggal ada di youtube_target.js (modul terpisah, bisa dites offline).
+    // Alias ini dipertahankan karena test suite dan kode lama memakai nama parseTarget().
+    return classify(input);
   }
+
 
   async connect(rawTarget) {
     this.isManuallyStopped = false;
     this.consecutiveErrors = 0;
     this.reconnectAttempts = 0;
+    this.clearWaitPoll();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -68,38 +64,164 @@ class YouTubeChatIngest extends EventEmitter {
   }
 
   async startSession(rawTarget) {
-    const targetObj = this.parseTarget(rawTarget);
-    if (!targetObj) {
-      throw new Error(`Target YouTube channel atau livestream tidak valid: "${rawTarget}"`);
+    const descriptor = this.parseTarget(rawTarget);
+    if (!descriptor) {
+      // Pesan menyebut format yang DIDUKUNG, bukan menyalahkan streamer soal status live.
+      throw new Error(
+        `Format target tidak dikenali: "${rawTarget}". ` +
+        'Gunakan @handle, Channel ID (UC...), URL kanal, atau URL live/video YouTube.'
+      );
     }
 
+    // Naikkan nomor sesi SEBELUM menghentikan sesi lama.
+    //
+    // Diuji langsung: `liveChat.stop()` memancarkan event 'end' secara SINKRON, dan itu
+    // terjadi sebelum setupListeners() untuk sesi baru dijalankan. Kalau token dinaikkan
+    // belakangan, event 'end' dari sesi lama masih dianggap sah (token-nya masih sama),
+    // sehingga log menampilkan "Siaran berakhir" setiap kali pengguna berganti target
+    // padahal siaran masih berjalan. Menaikkan token di sini membuat event tersebut basi.
+    this.sessionToken++;
+
     if (this.liveChat) {
-      try { this.liveChat.stop('Restarting session'); } catch (e) {}
+      const previous = this.liveChat;
       this.liveChat = null;
+      try { previous.stop('Restarting session'); } catch (e) {}
     }
 
     this.status = 'connecting';
     this.currentTarget = rawTarget;
     this.emit('status_change', { status: this.status, target: this.currentTarget });
 
+    // Bentuk legacy (/c/Nama, /user/Nama) harus diterjemahkan dulu ke identitas kanal.
+    let resolvedDescriptor = descriptor;
+    if (descriptor.kind === 'remote') {
+      const normalized = await this.resolver.normalize(rawTarget);
+      if (!normalized.ok) {
+        const err = new Error(normalized.reason || 'Kanal tidak dapat diterjemahkan.');
+        this.status = 'error';
+        this.emit('status_change', { status: this.status, error: err.message });
+        throw err;
+      }
+      resolvedDescriptor = normalized.descriptor;
+    }
+
+    const liveChatTarget = toLiveChatTarget(resolvedDescriptor);
+    if (!liveChatTarget) {
+      const err = new Error(`Target "${rawTarget}" tidak dapat dipakai untuk membaca chat.`);
+      this.status = 'error';
+      this.emit('status_change', { status: this.status, error: err.message });
+      throw err;
+    }
+
     try {
-      this.liveChat = new LiveChat(targetObj);
+      this.liveChat = new LiveChat(liveChatTarget);
       this.setupListeners(this.liveChat);
 
       const ok = await this.liveChat.start();
       if (!ok) {
-        throw new Error(`Tidak dapat memulai live chat untuk target "${rawTarget}". Pastikan channel sedang live streaming.`);
+        // Kanal dikenal tetapi belum menyiarkan: ini kondisi NORMAL, bukan error pengguna.
+        // Jangan lempar error dengan pesan menyesatkan; masuk mode "menunggu live"
+        // yang memeriksa ulang secara berkala.
+        const liveId = this.liveChat && this.liveChat.liveId;
+        const looksOffline = !liveId;
+
+        if (looksOffline && (resolvedDescriptor.kind === 'handle' || resolvedDescriptor.kind === 'channelId')) {
+          this.enterWaitingForLive(rawTarget, resolvedDescriptor);
+          return true;
+        }
+
+        throw new Error(
+          `Tidak dapat membaca live chat untuk "${rawTarget}". ` +
+          'Pastikan siaran sudah dimulai dan live chat-nya aktif (bukan ditutup).'
+        );
       }
 
       return true;
     } catch (err) {
-      if (this.status !== 'reconnecting') {
+      if (this.status !== 'reconnecting' && this.status !== 'waiting') {
         this.status = 'error';
-        this.emit('status_change', { status: this.status, error: err.message });
+        this.emit('status_change', { status: this.status, target: this.currentTarget, error: err.message });
       }
       throw err;
     }
   }
+
+  /**
+   * Kanal dikenal tetapi belum live. Status ini jujur kepada pengguna: bukan "error",
+   * bukan pula "connected". Periksa ulang secara ringan (0 kuota, ~1 KB per cek) sampai
+   * siaran dimulai, lalu sambungkan otomatis tanpa campur tangan pengguna.
+   */
+  enterWaitingForLive(rawTarget, descriptor) {
+    this.status = 'waiting';
+    this.clearWaitPoll();
+
+    const emitWaiting = (extra = {}) => {
+      this.emit('status_change', {
+        status: 'waiting',
+        target: rawTarget,
+        channelId: this.activeChannelId,
+        message: 'Kanal dikenali. Menunggu siaran dimulai...',
+        ...extra,
+      });
+    };
+
+    if (descriptor.channelId) this.activeChannelId = descriptor.channelId;
+    emitWaiting();
+
+    console.log(`[KY-Poni YouTube] Target "${rawTarget}" dikenali tetapi belum live. Menunggu siaran...`);
+
+    this.waitPollTimer = setInterval(async () => {
+      if (this.isManuallyStopped) { this.clearWaitPoll(); return; }
+      if (this.status !== 'waiting') { this.clearWaitPoll(); return; }
+
+      let probe;
+      try {
+        probe = await this.resolver.probe(rawTarget);
+      } catch (e) {
+        return; // gangguan jaringan sesaat: biarkan siklus berikutnya mencoba
+      }
+
+      if (probe.channelId) this.activeChannelId = probe.channelId;
+
+      if (probe.state === 'live') {
+        console.log(`[KY-Poni YouTube] Siaran terdeteksi (${probe.videoId || 'live'}). Menyambungkan chat otomatis...`);
+        this.clearWaitPoll();
+        this.status = 'connecting';
+        this.emit('status_change', { status: 'connecting', target: rawTarget, liveId: probe.videoId || null });
+
+        try {
+          await this.startSession(rawTarget);
+        } catch (err) {
+          console.warn(`[KY-Poni YouTube] Gagal menyambung setelah siaran terdeteksi: ${err.message}`);
+          // Kembali ke mode menunggu, bukan mati total: streamer bisa mulai siaran kapan saja.
+          this.enterWaitingForLive(rawTarget, descriptor);
+        }
+      } else if (probe.state === 'not_found') {
+        // Kanal benar-benar tidak ada: berhenti memantau, laporkan sekali.
+        this.clearWaitPoll();
+        this.status = 'error';
+        this.emit('status_change', {
+          status: 'error',
+          target: rawTarget,
+          error: 'Kanal tidak ditemukan di YouTube. Periksa kembali handle atau Channel ID-nya.',
+        });
+      }
+      // state 'offline' / 'unknown': tetap menunggu, tidak perlu mengganggu pengguna.
+    }, this.waitPollInterval);
+
+    // Jangan menahan proses tetap hidup hanya karena timer pemantauan.
+    if (this.waitPollTimer && typeof this.waitPollTimer.unref === 'function') {
+      this.waitPollTimer.unref();
+    }
+  }
+
+  clearWaitPoll() {
+    if (this.waitPollTimer) {
+      clearInterval(this.waitPollTimer);
+      this.waitPollTimer = null;
+    }
+  }
+
 
   triggerSelfHealingReconnect() {
     if (this.reconnectTimer || this.isManuallyStopped || !this.currentTarget) return;
@@ -139,6 +261,7 @@ class YouTubeChatIngest extends EventEmitter {
 
   async disconnect() {
     this.isManuallyStopped = true;
+    this.clearWaitPoll();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -153,13 +276,21 @@ class YouTubeChatIngest extends EventEmitter {
     }
     this.status = 'idle';
     this.activeLiveId = null;
+    this.activeChannelId = null;
     this.consecutiveErrors = 0;
     this.reconnectAttempts = 0;
     this.emit('status_change', { status: this.status });
   }
 
   setupListeners(liveChat) {
+    // Token identitas sesi. Pendekatan referensi (`this.liveChat !== liveChat`) TERBUKTI
+    // tidak cukup: saat mengganti target, referensi dilepas lebih dulu agar `stop()` aman,
+    // sehingga pada momen event 'end' dipancarkan `this.liveChat` bernilai null dan guard
+    // berbasis referensi justru meloloskan event basi. Token angka tidak punya lubang itu.
+    const sessionToken = ++this.sessionToken;
+
     liveChat.on('start', (liveId) => {
+      if (sessionToken !== this.sessionToken) return; // sesi basi
       this.status = 'connected';
       this.activeLiveId = liveId;
       this.consecutiveErrors = 0;
@@ -173,13 +304,33 @@ class YouTubeChatIngest extends EventEmitter {
     });
 
     liveChat.on('end', (reason) => {
+      // KRITIS: event 'end' bisa datang dari sesi yang sudah digantikan. Tanpa guard ini,
+      // mengganti target memicu "siaran berakhir" pada sesi baru yang sedang sehat, dan
+      // dashboard berkedip ke mode waiting padahal chat baru mengalir normal.
+      if (sessionToken !== this.sessionToken) {
+        return;
+      }
+
       console.log(`[KY-Poni YouTube] Live Chat ended: ${reason}`);
-      if (!this.isManuallyStopped && this.currentTarget) {
+      if (this.isManuallyStopped || !this.currentTarget) {
+        this.status = 'idle';
+        this.emit('status_change', { status: this.status, target: this.currentTarget, reason });
+        return;
+      }
+
+      // Siaran selesai ≠ gangguan jaringan. Daripada berulang kali reconnect ke siaran
+      // yang sudah berakhir, masuk mode "menunggu live": aplikasi siap menyambung lagi
+      // otomatis saat streamer memulai siaran berikutnya.
+      const descriptor = this.parseTarget(this.currentTarget);
+      const canWait = descriptor && (descriptor.kind === 'handle' || descriptor.kind === 'channelId');
+
+      if (canWait) {
+        console.log('[KY-Poni YouTube] Siaran berakhir. Beralih ke mode menunggu siaran berikutnya.');
+        this.activeLiveId = null;
+        this.enterWaitingForLive(this.currentTarget, descriptor);
+      } else {
         console.warn('[KY-Poni YouTube] Stream ended unexpectedly. Self-healing reconnect scheduled...');
         this.triggerSelfHealingReconnect();
-      } else {
-        this.status = 'idle';
-        this.emit('status_change', { status: this.status, reason });
       }
     });
 

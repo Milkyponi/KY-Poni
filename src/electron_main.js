@@ -7,7 +7,7 @@
 const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('path');
 const http = require('http');
-const { server, youtubeIngest, themeManager, PORT } = require('./server');
+const { server, youtubeIngest, themeManager, PORT, scheduleAutoConnect } = require('./server');
 
 // Enforce single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
@@ -57,8 +57,11 @@ async function startLocalServer() {
       console.log(`[KY-Poni Desktop] Outdated server v${status.version} detected on port ${PORT}. Upgrading to v${currentAppVer}...`);
       await shutdownOldServer(PORT);
     } else {
+      // Server lain (atau instance lama) sudah melayani port ini. Instance ITU pemilik
+      // auto-connect; menjadwalkan auto-connect di sini akan membuat dua klien chat
+      // berebut siaran yang sama.
       console.log(`[KY-Poni Desktop] Existing server detected on port ${PORT}. Reusing active instance.`);
-      return;
+      return false;
     }
   }
 
@@ -66,22 +69,28 @@ async function startLocalServer() {
     server.once('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         console.warn(`[KY-Poni Desktop] Port ${PORT} was claimed during startup. Proceeding with existing server.`);
-        resolve();
+        resolve(false);
       } else {
         console.error('[KY-Poni Desktop] Server error:', err);
-        resolve();
+        resolve(false);
       }
     });
 
     serverInstance = server.listen(PORT, '127.0.0.1', () => {
       console.log(`[KY-Poni Desktop] Local broadcaster active on port ${PORT}`);
-      resolve();
+      resolve(true);
     });
   });
 }
 
 async function createWindow() {
-  await startLocalServer();
+  const ownsServer = await startLocalServer();
+
+  // Hanya instance yang benar-benar memiliki server lokal yang menjalankan auto-connect.
+  // Ini yang membuat "buka aplikasi langsung tersambung" bekerja tanpa menduplikasi klien.
+  if (ownsServer) {
+    scheduleAutoConnect({ delay: 1500 });
+  }
 
   mainWindow = new BrowserWindow({
     width: 1320,

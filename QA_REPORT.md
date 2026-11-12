@@ -1,10 +1,16 @@
-# QA & Audit Kelayakan Distribusi: KY-Poni v1.0.1
+# QA & Audit Kelayakan Distribusi: KY-Poni v1.1.0
 
-> **v1.0.1 — Security Patch.** Versi ini menutup 8 temuan audit keamanan yang
-> diverifikasi lewat eksploitasi live (bukan hanya pembacaan kode). Rincian lengkap,
-> termasuk bukti RCE/CORS bypass pada v1.0.0, ada di
-> `docs/investigations/2026-11-11-AUDIT-Security-Verification-OpenCode.md`.
-> Tidak ada perubahan fitur; seluruh perilaku pengguna tetap sama.
+> **v1.1.0 — Connectivity Overhaul.** Versi ini memperbaiki tiga keluhan pengguna yang
+> dilaporkan langsung (Channel ID tidak terdeteksi, harus copy-paste link live setiap kali,
+> alur konektivitas dianggap ribet) **dan** menyelamatkan aplikasi dari kematian total:
+> sejak November 2026 YouTube menyajikan `<link rel="canonical" href="undefined">`, sehingga
+> pustaka `youtube-chat` tidak lagi bisa menemukan `liveId`. Semua jalur koneksi di v1.0.1
+> (handle, channelId, liveId) gagal dengan "Live Stream was not found" — termasuk untuk
+> siaran yang benar-benar sedang live. Rincian investigasi:
+> `docs/investigations/2026-11-12-Konektivitas-YouTube-OAuth-vs-InnerTube.md`.
+>
+> **Catatan gate:** artefak 1.1.0 lolos Gerbang 1 (verifikasi teknis, 169 assertion).
+> Gerbang 2 (uji pengalaman Bos) berstatus **menunggu**. Push & rilis GitHub belum dilakukan.
 
 - **Tanggal**: 2026-11-10
 - **Lead Tester**: Fonzy (Divisi Software Development)
@@ -126,5 +132,6 @@ Prosedur rilis ke depan mengikuti [SOP_RELEASE.md](SOP_RELEASE.md): uji pengalam
 
 | Versi | Tanggal | Catatan |
 | --- | --- | --- |
+| 1.1.0 | 2026-11-12 | **Connectivity Overhaul.** Tiga keluhan pengguna diperbaiki + penyelamatan dari regresi YouTube. **(a) Parser:** `parseTarget()` dulu memeriksa `handle` sebelum `channelId`, sehingga `youtube.com/channel/UC...`, `youtu.be/`, `/c/`, `/user/` semuanya dibungkus jadi `@handle` dan menembak URL tidak ada (HTTP 404) — pengguna melihat "Pastikan channel sedang live streaming" padahal sedang live. Klasifikasi dipindah ke modul `youtube_target.js`; **14/14 format** input kini dikenali (sebelumnya 9/14). **(b) Auto-connect:** target tersimpan di `config.json` kini dipakai menyambung otomatis saat aplikasi dibuka; hanya instance pemilik server yang menjalankannya. **(c) Status jujur:** mode `waiting` baru untuk "kanal dikenal, siaran belum mulai", plus status `error` yang kini benar-benar ditampilkan (sebelumnya tenggelam jadi "Disconnected"). **(d) Regresi YouTube Nov 2026:** `<link rel="canonical" href="undefined">` membuat `youtube-chat` (rilis 2022) gagal menemukan `liveId` di SEMUA jalur — v1.0.1 tidak bisa konek sama sekali. Shim `innertube_live_source.js` mengganti hanya `fetchLivePage` dengan jalur `navigation/resolve_url` + `next`, tanpa scraping HTML dan tanpa kredensial. **(e) Bug state machine:** `stop()` memancarkan `end` sinkron sebelum sesi baru dipasang, memicu "Siaran berakhir" palsu setiap ganti target; diperbaiki dengan token nomor sesi yang dinaikkan sebelum `stop()`. Verifikasi: 9/9 format tersambung end-to-end dengan chat nyata; ganti target 3× beruntun tetap `connected`; `messageCount` naik 62→248 pada build terpaket. **169 assertion PASS, 0 gagal.** Kedua artefak dibangun & diverifikasi (AppImage 123 MB, `sha256 73c9bfb1…`; `.exe` 107 MB, `sha256 308a7418…`). Uji GUI Windows via Wine **tidak dapat dijalankan** (lingkungan build headless, tidak ada display server) — paritas path `%APPDATA%\\KY-Poni` diverifikasi lewat suite `test_windows_compat.js` 14/14. |
 | 1.0.1 | 2026-11-11 | Security patch + perbaikan regresi. Menutup 8 temuan audit (CORS wildcard yang menetralkan origin guard, RCE endpoint updater, shell injection `extractZip`, stored XSS simulator, zip-slip, SSRF/`downloadUrl`, body tanpa batas, graceful shutdown menggantung) plus celah port pada origin guard. Juga: ekstraksi ZIP murni Node (tanpa `unzip`/`tar`/PowerShell), folder unduhan ikut XDG, XSS metadata tema dashboard, validasi skema config. Lalu 3 regresi fungsional diperbaiki: tombol Instal tema (kutip ganda di onclick), double-escape nama penonton, P3R `&amp;` literal. Suite `test_security_regression.js` 43 cek. Total 121 assertion PASS. **Kedua artefak (AppImage + .exe) diuji fungsional** — `.exe` dijalankan lewat Wine: versi 1.0.1, 4 overlay 200, escape kontrak benar, unduh tema `installed: true` ke `%APPDATA%\KY-Poni\themes`. |
 | 1.0.0 | 2026-11-10 | Rilis publik pertama. Audit distribusi, 4 cacat diperbaiki, SOP dua gerbang berlaku. |

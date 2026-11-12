@@ -65,6 +65,7 @@ wss.on('connection', (ws) => {
       status: youtubeIngest.status,
       target: youtubeIngest.currentTarget,
       liveId: youtubeIngest.activeLiveId,
+      channelId: youtubeIngest.activeChannelId,
       messageCount: youtubeIngest.messageCount,
       version: pkg.version,
     },
@@ -106,6 +107,56 @@ youtubeIngest.on('status_change', (statusData) => {
   broadcast({ type: 'SYSTEM_STATUS', data: statusData });
 });
 
+/**
+ * Auto-connect saat aplikasi dibuka.
+ *
+ * Keluhan yang diselesaikan: "setiap live harus copy-paste link live URL". Target kanal
+ * sudah lama tersimpan di config.json, tetapi tidak pernah dipakai untuk menyambung —
+ * streamer harus menekan tombol Hubungkan setiap kali membuka aplikasi.
+ *
+ * Perilaku:
+ *   - Diam saja bila target kosong/placeholder default yang belum pernah dikonfirmasi.
+ *   - Tidak melempar error ke UI bila kanal sedang offline: ingest masuk mode 'waiting'
+ *     dan menunggu siaran dimulai.
+ *   - Kegagalan jaringan tidak boleh menggagalkan boot server. Aplikasi tetap harus terbuka.
+ */
+function scheduleAutoConnect(options = {}) {
+  const delay = options.delay !== undefined ? options.delay : 1200;
+
+  const timer = setTimeout(async () => {
+    let target = '';
+    try {
+      const cfg = configManager.getConfig();
+      target = (cfg && cfg.target) ? String(cfg.target).trim() : '';
+    } catch (e) {
+      console.warn('[KY-Poni AutoConnect] Gagal membaca konfigurasi:', e.message);
+      return;
+    }
+
+    if (!target) {
+      console.log('[KY-Poni AutoConnect] Tidak ada target tersimpan. Menunggu pengguna memilih kanal.');
+      return;
+    }
+
+    if (!youtubeIngest.parseTarget(target)) {
+      console.warn(`[KY-Poni AutoConnect] Target tersimpan tidak dikenali: "${target}". Dilewati.`);
+      return;
+    }
+
+    console.log(`[KY-Poni AutoConnect] Menyambung otomatis ke target tersimpan: ${target}`);
+    try {
+      await youtubeIngest.connect(target);
+    } catch (err) {
+      // Bukan kondisi fatal: dashboard tetap menampilkan status dan tombol Hubungkan.
+      console.warn(`[KY-Poni AutoConnect] Gagal menyambung otomatis: ${err.message}`);
+    }
+  }, delay);
+
+  // Jangan menahan proses hidup hanya karena jadwal auto-connect.
+  if (timer && typeof timer.unref === 'function') timer.unref();
+  return timer;
+}
+
 // Start Server if executed directly
 if (require.main === module) {
   server.listen(PORT, '127.0.0.1', () => {
@@ -114,6 +165,7 @@ if (require.main === module) {
     console.log(`  Dashboard: http://localhost:${PORT}/`);
     console.log(`  OBS URL:   http://localhost:${PORT}/overlay?theme=persona5`);
     console.log(`====================================================`);
+    scheduleAutoConnect();
   });
 
   const gracefulShutdown = () => {
@@ -147,5 +199,6 @@ module.exports = {
   configManager,
   appUpdater,
   broadcast,
+  scheduleAutoConnect,
   PORT,
 };

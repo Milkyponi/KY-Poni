@@ -1,7 +1,7 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v1.0.1` (Security Patch — Hardening Hasil Audit)  
+**Current Version:** `v1.1.0` (Connectivity Overhaul — Parser, Auto-Connect & YouTube Compatibility Fix)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  
@@ -13,6 +13,7 @@
 - **[ROADMAP.md](ROADMAP.md):** Peta jalan jangka panjang fitur & rilis tema baru (Undertale, Cyberpunk, P3 Reload).
 - **[QA_REPORT.md](QA_REPORT.md):** Hasil audit kelayakan distribusi & suite pengujian otomatis.
 - **[SOP_RELEASE.md](SOP_RELEASE.md):** Prosedur rilis resmi proyek ini (uji manual Bos + verifikasi teknis Fonzy).
+- **[docs/HANDOFF-v1.1.0-GATE2.md](docs/HANDOFF-v1.1.0-GATE2.md):** Serah-terima uji v1.1.0 untuk Bos (Gerbang 2, menunggu).
 
 ---
 

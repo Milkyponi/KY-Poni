@@ -370,7 +370,7 @@ btnCopyUrl.addEventListener('click', async () => {
 btnConnect.addEventListener('click', async () => {
   const target = ytTargetInput.value.trim();
   if (!target) {
-    alert('Masukkan handle YouTube atau URL live stream terlebih dahulu.');
+    alert('Masukkan handle YouTube, Channel ID, atau URL live stream terlebih dahulu.');
     return;
   }
 
@@ -386,16 +386,14 @@ btnConnect.addEventListener('click', async () => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal terhubung');
-    
-    setUIStatus('connected', `Terhubung ke ${target}`);
-    btnConnect.style.display = 'none';
-    btnDisconnect.style.display = 'inline-flex';
-    streamInfo.style.display = 'block';
-    if (data.liveId) infoLiveId.textContent = data.liveId;
+
+    // Jangan mengklaim "Terhubung" sebelum server melaporkan status sebenarnya.
+    // Server bisa langsung 'connected', atau 'waiting' bila kanal belum menyiarkan.
     saveUserConfig();
+    await pollStatus();
   } catch (err) {
     alert(`Error koneksi: ${err.message}`);
-    setUIStatus('error', err.message);
+    setUIStatus('error', '❌ ' + err.message);
   } finally {
     btnConnect.disabled = false;
     btnConnect.innerHTML = '<span>⚡</span> Hubungkan Stream';
@@ -924,6 +922,65 @@ async function loadCatalog() {
   }
 }
 
+/**
+ * Satu-satunya tempat yang menerjemahkan status ingest ke tampilan dashboard.
+ *
+ * Sebelumnya logika ini terduplikasi di pollStatus() dan setupUpdaterWS(), dan keduanya
+ * tidak menangani status 'error' maupun 'waiting' — akibatnya kegagalan koneksi tampil
+ * sebagai "Disconnected" biasa tanpa penjelasan.
+ */
+function applyStreamStatus(data) {
+  if (!data || !data.status) return;
+
+  const showConnected = () => {
+    btnConnect.style.display = 'none';
+    btnDisconnect.style.display = 'inline-flex';
+    streamInfo.style.display = 'block';
+  };
+
+  switch (data.status) {
+    case 'connected':
+      setUIStatus('connected', `Live: ${data.target || ''}`.trim());
+      showConnected();
+      if (data.liveId) infoLiveId.textContent = data.liveId;
+      if (typeof data.messageCount === 'number') infoMsgCount.textContent = data.messageCount;
+      break;
+
+    case 'waiting':
+      // Kanal dikenali, siaran belum dimulai. Bukan error: aplikasi akan menyambung sendiri.
+      setUIStatus('connecting', `⏳ Menunggu siaran dimulai...`);
+      showConnected();
+      infoLiveId.textContent = data.channelId ? `menunggu (${data.channelId})` : 'menunggu siaran';
+      break;
+
+    case 'connecting':
+      setUIStatus('connecting', data.liveId ? 'Siaran ditemukan, menyambungkan chat...' : 'Menghubungkan...');
+      showConnected();
+      break;
+
+    case 'reconnecting':
+      setUIStatus('connecting', '⚠️ Sinyal drop, memulihkan koneksi stream...');
+      showConnected();
+      break;
+
+    case 'error':
+      // Tampilkan alasan sebenarnya, bukan sekadar "Disconnected".
+      setUIStatus('error', '❌ ' + (data.error || 'Gagal terhubung ke YouTube.'));
+      btnConnect.style.display = 'inline-flex';
+      btnDisconnect.style.display = 'none';
+      streamInfo.style.display = 'none';
+      break;
+
+    case 'idle':
+    default:
+      setUIStatus('idle', 'Disconnected');
+      btnConnect.style.display = 'inline-flex';
+      btnDisconnect.style.display = 'none';
+      streamInfo.style.display = 'none';
+      break;
+  }
+}
+
 // Poll server status periodically
 async function pollStatus() {
   try {
@@ -935,23 +992,7 @@ async function pollStatus() {
       const currentVerEl = document.getElementById('settings-current-ver');
       if (currentVerEl) currentVerEl.textContent = `v${data.version}`;
     }
-    if (data.status === 'connected') {
-      setUIStatus('connected', `Live: ${data.target}`);
-      btnConnect.style.display = 'none';
-      btnDisconnect.style.display = 'inline-flex';
-      streamInfo.style.display = 'block';
-      if (data.liveId) infoLiveId.textContent = data.liveId;
-      infoMsgCount.textContent = data.messageCount;
-    } else if (data.status === 'reconnecting') {
-      setUIStatus('connecting', '⚠️ Sinyal drop, memulihkan koneksi stream...');
-      btnConnect.style.display = 'none';
-      btnDisconnect.style.display = 'inline-flex';
-      streamInfo.style.display = 'block';
-    } else if (data.status === 'idle') {
-      btnConnect.style.display = 'inline-flex';
-      btnDisconnect.style.display = 'none';
-      streamInfo.style.display = 'none';
-    }
+    applyStreamStatus(data);
   } catch (e) {
     // offline
   }
@@ -1145,23 +1186,7 @@ function setupUpdaterWS() {
           if (progressBar) progressBar.style.width = `${payload.pct}%`;
           if (progressPct) progressPct.textContent = `${payload.pct}%`;
         } else if (payload.type === 'SYSTEM_STATUS') {
-          const s = payload.data;
-          if (s.status === 'connected') {
-            setUIStatus('connected', `Live: ${s.target}`);
-            btnConnect.style.display = 'none';
-            btnDisconnect.style.display = 'inline-flex';
-            streamInfo.style.display = 'block';
-            if (s.liveId) infoLiveId.textContent = s.liveId;
-          } else if (s.status === 'reconnecting') {
-            setUIStatus('connecting', '⚠️ Sinyal drop, memulihkan koneksi...');
-            btnConnect.style.display = 'none';
-            btnDisconnect.style.display = 'inline-flex';
-          } else if (s.status === 'idle') {
-            setUIStatus('idle', 'Disconnected');
-            btnConnect.style.display = 'inline-flex';
-            btnDisconnect.style.display = 'none';
-            streamInfo.style.display = 'none';
-          }
+          applyStreamStatus(payload.data);
         }
       } catch (e) {}
     };

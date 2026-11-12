@@ -16,8 +16,10 @@ async function testAntiRTO() {
   console.log('[PASS] Initial idle status verified');
 
   // 2. Simulate Target Parsing
-  assert.deepStrictEqual(yt.parseTarget('@MilkyPoni'), { handle: '@MilkyPoni' });
-  assert.deepStrictEqual(yt.parseTarget('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), { liveId: 'dQw4w9WgXcQ' });
+  // Kontrak klasifikasi pindah ke youtube_target.js; bentuknya kini punya `kind`.
+  // Yang diuji tetap hal yang sama: handle dan URL video dikenali dengan benar.
+  assert.deepStrictEqual(yt.parseTarget('@MilkyPoni'), { kind: 'handle', handle: '@MilkyPoni', raw: '@MilkyPoni' });
+  assert.deepStrictEqual(yt.parseTarget('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), { kind: 'video', videoId: 'dQw4w9WgXcQ', raw: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' });
   console.log('[PASS] Target parsing verified');
 
   // 3. Simulate Transient Network RTO / Polling Errors
