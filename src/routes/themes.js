@@ -4,8 +4,20 @@
 
 const fs = require('fs');
 const path = require('path');
-const { sendJson, sendError, parseJsonBody } = require('./helpers');
-const { isValidThemeId } = require('../theme_manager');
+const { sendJson, sendError, parseJsonBody, sendBodyError } = require('./helpers');
+const { isValidThemeId, TRUSTED_THEME_HOSTS, TRUSTED_THEME_PATH_PREFIXES } = require('../theme_manager');
+const { validateDownloadUrl } = require('../url_guard');
+
+// Allowlist sumber unduhan tema berasal dari theme_manager (satu sumber
+// kebenaran), sehingga route dan downloader tidak bisa berbeda pendapat.
+function isTrustedThemeDownloadUrl(rawUrl) {
+  const verdict = validateDownloadUrl(rawUrl, {
+    allowedHosts: TRUSTED_THEME_HOSTS,
+    allowedPathPrefixes: TRUSTED_THEME_PATH_PREFIXES,
+    requireHttps: true,
+  });
+  return verdict.ok;
+}
 
 async function handleThemesRoutes(req, res, pathname, ctx) {
   const { themeManager, PACKAGES_DIR } = ctx;
@@ -40,13 +52,23 @@ async function handleThemesRoutes(req, res, pathname, ctx) {
       }
 
       // Check if there is a pre-packaged zip in src/catalog/packages/
+      let source;
       const localPackageZip = path.join(PACKAGES_DIR, `${themeId}.zip`);
-      const source = fs.existsSync(localPackageZip) ? localPackageZip : payload.downloadUrl;
+      if (fs.existsSync(localPackageZip)) {
+        source = localPackageZip;
+      } else if (payload.downloadUrl !== undefined) {
+        // Hanya URL katalog resmi yang diterima (cegah SSRF & salin path lokal).
+        if (!isTrustedThemeDownloadUrl(payload.downloadUrl)) {
+          sendError(res, 400, 'Field "downloadUrl" harus berupa URL https ke katalog tema resmi (Milkyponi/ky-poni-themes).');
+          return true;
+        }
+        source = payload.downloadUrl;
+      }
 
       const installResult = await themeManager.installTheme(themeId, source);
       sendJson(res, 200, installResult);
     } catch (err) {
-      sendError(res, 500, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }
@@ -61,7 +83,7 @@ async function handleThemesRoutes(req, res, pathname, ctx) {
       const deleteResult = themeManager.deleteTheme(payload.themeId);
       sendJson(res, 200, deleteResult);
     } catch (err) {
-      sendError(res, 500, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }

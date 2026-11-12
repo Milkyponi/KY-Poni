@@ -9,11 +9,29 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 const os = require('os');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
+const { extractZipFile } = require('./zip_reader');
+const { validateDownloadUrl } = require('./url_guard');
 const { resolveConfigDir } = require('./config_manager');
 const { legacyIdToCanonical, LEGACY_THEME_ID_ALIASES } = require('./theme_ids');
 
 const REMOTE_CATALOG_URL = 'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/catalog.json';
+
+// ---------------------------------------------------------------------------
+// Allowlist sumber unduhan tema — SATU sumber kebenaran.
+// Dipakai oleh route (/api/themes/install) DAN oleh downloadFile() saat
+// memvalidasi setiap redirect. Kalau daftar ini disalin ke dua tempat, cepat
+// atau lambat keduanya akan berbeda dan allowlist jadi tidak bermakna.
+// ---------------------------------------------------------------------------
+const TRUSTED_THEME_HOSTS = [
+  'raw.githubusercontent.com',
+  'github.com',
+  'objects.githubusercontent.com',
+  'codeload.github.com',
+];
+const TRUSTED_THEME_PATH_PREFIXES = [
+  '/Milkyponi/ky-poni-themes/',
+];
 
 /**
  * Nama tema yang sah: hanya huruf kecil, angka, dan tanda minus; tidak diawali/diakhiri
@@ -389,14 +407,16 @@ class ThemeManager {
   openThemesFolder() {
     this.ensureDirs();
     const dir = this.userThemesDir;
-    const cmd = process.platform === 'win32'
-      ? `explorer "${dir}"`
+    const opener = process.platform === 'win32'
+      ? 'explorer'
       : process.platform === 'darwin'
-        ? `open "${dir}"`
-        : `xdg-open "${dir}"`;
+        ? 'open'
+        : 'xdg-open';
 
+    // execFile + argumen array: tidak ada shell, jadi path tidak pernah di-parse
+    // sebagai perintah meskipun direktori berisi spasi/metacharakter.
     return new Promise((resolve) => {
-      exec(cmd, () => resolve(dir));
+      execFile(opener, [dir], () => resolve(dir));
     });
   }
 
@@ -421,8 +441,34 @@ class ThemeManager {
     throw new Error(`Tema "${themeId}" tidak ditemukan.`);
   }
 
-  downloadFile(url, dest) {
+  /**
+   * Unduh berkas dari URL ke `dest`.
+   *
+   * Redirect divalidasi ULANG terhadap allowlist host katalog. Tanpa ini,
+   * allowlist di route bisa dilewati: server yang "diizinkan" cukup membalas
+   * 302 ke alamat internal (metadata cloud, localhost admin, dsb) dan
+   * implementasi lama akan mengikutinya tanpa bertanya (SSRF via redirect).
+   *
+   * `redirectCount` mencegah loop redirect tak berujung.
+   */
+  downloadFile(url, dest, redirectCount = 0) {
+    const MAX_REDIRECTS = 5;
+
     return new Promise((resolve, reject) => {
+      if (redirectCount > MAX_REDIRECTS) {
+        return reject(new Error('Terlalu banyak redirect saat mengunduh tema.'));
+      }
+
+      // Validasi SETIAP URL yang dikunjungi, termasuk tujuan redirect.
+      const verdict = validateDownloadUrl(url, {
+        allowedHosts: TRUSTED_THEME_HOSTS,
+        allowedPathPrefixes: TRUSTED_THEME_PATH_PREFIXES,
+        requireHttps: true,
+      });
+      if (!verdict.ok) {
+        return reject(new Error(`URL unduhan ditolak: ${verdict.reason}`));
+      }
+
       const client = url.startsWith('https://') ? https : http;
       const file = fs.createWriteStream(dest);
 
@@ -430,7 +476,14 @@ class ThemeManager {
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
           file.close();
           try { fs.unlinkSync(dest); } catch (e) {}
-          return this.downloadFile(response.headers.location, dest).then(resolve).catch(reject);
+          // Resolve relatif terhadap URL saat ini, lalu validasi & lanjutkan.
+          let nextUrl;
+          try {
+            nextUrl = new URL(response.headers.location, url).toString();
+          } catch (e) {
+            return reject(new Error('Redirect tujuan tidak sah.'));
+          }
+          return this.downloadFile(nextUrl, dest, redirectCount + 1).then(resolve).catch(reject);
         }
         if (response.statusCode !== 200) {
           file.close();
@@ -451,21 +504,26 @@ class ThemeManager {
     });
   }
 
+  /**
+   * Ekstrak arsip zip tema.
+   *
+   * Memakai pembaca ZIP murni Node (`zip_reader.js`) — TIDAK memanggil biner
+   * eksternal. Alasan: `unzip` tidak ada di semua distro (Fedora minimal, Arch
+   * base, container) dan `powershell` hanya ada di Windows. Ketergantungan pada
+   * biner eksternal membuat pemasangan tema GAGAL TOTAL di PC orang lain yang
+   * tidak punya biner itu — regresi yang tidak terlihat di mesin developer.
+   * Dengan zlib bawaan Node, perilaku identik di Linux/Windows/macOS.
+   *
+   * Validasi zip-slip dilakukan di dalam zip_reader SEBELUM satu byte pun ditulis.
+   */
   extractZip(zipPath, destDir) {
     return new Promise((resolve, reject) => {
-      let cmd = '';
-      if (process.platform === 'win32') {
-        cmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -Path '${zipPath}' -DestinationPath '${destDir}'"`;
-      } else {
-        cmd = `unzip -o -q "${zipPath}" -d "${destDir}" || tar -xf "${zipPath}" -C "${destDir}"`;
-      }
-
-      exec(cmd, (err) => {
-        if (err) {
-          return reject(new Error(`Gagal mengekstrak berkas zip tema: ${err.message}`));
-        }
+      try {
+        const result = extractZipFile(zipPath, destDir);
         resolve(destDir);
-      });
+      } catch (err) {
+        reject(new Error(`Gagal mengekstrak berkas zip tema: ${err.message}`));
+      }
     });
   }
 }
@@ -484,4 +542,4 @@ function copyRecursiveSync(src, dest) {
   }
 }
 
-module.exports = { ThemeManager, REMOTE_CATALOG_URL, isValidThemeId, isSafeThemeLookupId };
+module.exports = { ThemeManager, REMOTE_CATALOG_URL, isValidThemeId, isSafeThemeLookupId, TRUSTED_THEME_HOSTS, TRUSTED_THEME_PATH_PREFIXES };

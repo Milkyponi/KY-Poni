@@ -2,7 +2,7 @@
  * KY-Poni - Live Ingest & Simulator Routes
  */
 
-const { sendJson, sendError, parseJsonBody } = require('./helpers');
+const { sendJson, sendError, parseJsonBody, sendBodyError } = require('./helpers');
 
 async function handleIngestRoutes(req, res, pathname, ctx) {
   const { youtubeIngest } = ctx;
@@ -27,7 +27,7 @@ async function handleIngestRoutes(req, res, pathname, ctx) {
         status: 'connecting',
       });
     } catch (err) {
-      sendError(res, 400, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }
@@ -44,7 +44,7 @@ async function handleIngestRoutes(req, res, pathname, ctx) {
       const simulated = youtubeIngest.simulateMessage(payload.type || 'chat', payload);
       sendJson(res, 200, { success: true, item: simulated });
     } catch (err) {
-      sendError(res, 400, err.message);
+      sendBodyError(res, err);
     }
     return true;
   }

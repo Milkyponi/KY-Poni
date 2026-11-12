@@ -23,7 +23,18 @@
       const isSuperChat = item.type === 'superchat';
       const isMembership = item.type === 'membership';
 
-      const rawText = (item.message || '').replace(/<[^>]*>/g, '').trim();
+      // Sumber teks: `rawText` (MENTAH), bukan `message`.
+      //
+      // Kontrak lintas renderer: `message` sudah di-escape di batas sistem
+      // (youtube_ingest.simulateMessage) karena p5/classic/overlay menulisnya
+      // lewat innerHTML. Renderer ini meng-escape sendiri di baris pemasangan
+      // (escapeText), jadi kalau memakai `message` yang sudah ber-entitas hasilnya
+      // DOUBLE ESCAPE: "&" tampil sebagai "&amp;" di layar.
+      // `rawText` disediakan justru untuk konsumen seperti ini.
+      const sourceText = item.rawText !== undefined && item.rawText !== null
+        ? String(item.rawText)
+        : String(item.message || '');
+      const rawText = sourceText.replace(/<[^>]*>/g, '').trim();
       const rawLength = rawText.length;
       const newlineCount = (rawText.match(/\n/g) || []).length;
 

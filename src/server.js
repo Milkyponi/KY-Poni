@@ -48,7 +48,8 @@ const wss = new WebSocketServer({
   path: '/ws',
   verifyClient: (info) => isTrustedLocalOrigin(
     info.req.headers.origin,
-    info.req.headers.host
+    info.req.headers.host,
+    info.req.socket && info.req.socket.localPort
   ),
 });
 const connectedClients = new Set();
@@ -118,7 +119,20 @@ if (require.main === module) {
   const gracefulShutdown = () => {
     console.log('Shutting down KY-Poni server...');
     youtubeIngest.disconnect();
-    server.close(() => process.exit(0));
+
+    // Tutup WebSocket dulu, lalu HTTP. Tanpa ini, server.close() menunggu koneksi
+    // WS yang masih terbuka dan proses bisa menggantung sampai dipaksa kill.
+    for (const client of connectedClients) {
+      try { client.terminate(); } catch (e) {}
+    }
+    connectedClients.clear();
+
+    const forceExit = setTimeout(() => process.exit(0), 3000);
+    forceExit.unref();
+
+    wss.close(() => {
+      server.close(() => process.exit(0));
+    });
   };
 
   process.on('SIGTERM', gracefulShutdown);
