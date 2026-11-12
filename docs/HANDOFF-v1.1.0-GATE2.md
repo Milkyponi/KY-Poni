@@ -94,13 +94,24 @@ mesin Windows, itu satu-satunya bagian yang perlu dilihat mata manusia. Saya tid
 
 ## 5. Yang Saya Temukan Saat Uji (jujur, bukan disembunyikan)
 
-Dua bug yang **tidak ada** di laporan awal dan saya temukan sendiri saat pengujian:
+Tiga bug yang **tidak ada** di laporan awal, semuanya saya temukan sendiri saat pengujian:
 
 1. **YouTube mematikan pustaka pihak ketiga kita.** Tag canonical kini berisi literal `"undefined"`.
    Ini bukan bug kode KY-Poni, tapi efeknya v1.0.1 mati total. Sudah diperbaiki dengan shim.
+
 2. **Bug state machine milik saya sendiri.** Versi pertama perbaikan saya membuat status berkedip
    "Siaran berakhir" setiap kali ganti target, padahal siaran masih jalan. Ketahuan dari log, bukan
-   dari test. Sudah diperbaiki (token nomor sesi) dan sekarang dikunci oleh 3 test regresi.
+   dari test. Sudah diperbaiki (token nomor sesi) dan dikunci 4 test regresi.
+
+3. **Config Bos sempat tertimpa — dan itu bug nyata, bukan kecelakaan uji.** Saat saya menjalankan
+   aplikasi sekali, `~/.config/ky-poni/config.json` berubah dari `cyberpunk2077 / scale 150 /
+   Chakra Petch` menjadi default. **Sudah saya pulihkan ke nilai semula**, dan penyebabnya sudah
+   diperbaiki: dashboard lama mengirim SELURUH field DOM setiap kali menyimpan, sehingga satu
+   field yang belum sempat dipulihkan menghapus semua preferensi. Sekarang hanya field yang
+   benar-benar berubah yang dikirim, dan penyimpanan ditolak bila acuan belum termuat.
+
+   Ini penting untuk Bos ketahui: bug ini **sudah ada di v1.0.1** dan bisa menghapus preferensi
+   setiap pengguna. Sekarang tertutup.
 
 ---
 
