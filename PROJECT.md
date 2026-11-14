@@ -9,17 +9,18 @@
 
 ## Handover & Active State
 - **Status:** **DIRILIS v1.2.0** (2026-11-14) — Latest di GitHub Releases, aset terverifikasi byte-identik dengan artefak uji
-- **Branch kerja:** `feat/static-overlay-url` (head `d7c0c76`), checkpoint `checkpoint-v1.1.0-pre-static-url`, cadangan `backup/v1.1.0-stable`. **Belum merge/push/tag.**
+- **Branch:** `feat/static-overlay-url` sudah di-merge ke `main` lalu dihapus. Checkpoint `checkpoint-v1.1.0-pre-static-url` dan cadangan `backup/v1.1.0-stable` tetap disimpan sebagai titik mundur.
 - **Artefak 1.2.0 (terverifikasi sebagai artefak):** `dist/KY-Poni-1.2.0.AppImage` (128.627.864 B, `sha256 8870adc5…`) dan `dist/KY-Poni-1.2.0.exe` (111.720.441 B, `sha256 3d56a741…`). Detail di `QA_REPORT.md` §4A.
 - **Terinstal:** `~/AppImages/kyponi.appimage` (hash identik dengan dist). Backup: `~/AppImages/kyponi.appimage.v1.1.0.bak`.
 - **Gate 1:** LULUS — 214 assertion PASS (source tree) **plus** verifikasi biner: asar 1.2.0, `src/config.json` tidak bocor, server dijalankan dari dalam asar (5/5 endpoint 200), `CONFIG_UPDATED` diterima via WS, `%APPDATA%\KY-Poni` terbentuk di Wine.
 - **Keputusan Bos (2026-11-14):** (1) **config menang** atas URL di instance OBS — URL hanya menang saat `?preview=1`; (2) perbaikan dikerjakan **setelah** Gate 2. Rincian: `01_MEMORY/Decisions/2026-11-14-KY-Poni-Static-Overlay-URL.md`.
 - **Gate 2:** **LULUS** — Bos menyatakan hasil 1.2.0 sesuai di OBS (2026-11-14), tanpa temuan.
-- **Rilis:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.0 — `main` di `fe6261e`, tag `v1.2.0` di `9302185`, aset `state: uploaded` dengan `content-length` 128627864 / 111720441 byte (identik lokal). Changelog → `#project-archive`, QA ringkas → `#status-testing-qa`.
+- **Rilis:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.0 — tag `v1.2.0` menunjuk merge `9302185`; commit dokumen menyusul di atasnya (`fe6261e`, `9ec41bd`, `83d37b4`). Aset `state: uploaded` dengan `content-length` 128.627.864 / 111.720.441 byte (identik lokal). Changelog → `#project-archive`, QA ringkas → `#status-testing-qa`.
 - **Koreksi penting (diukur ulang vs v1.1.0):** tiga hal yang sempat aku sebut cacat **bukan regresi**. `?layout=fullscreen` = dead code sejak v0.4.4 (tidak pernah punya CSS/UI). Ticker horizontal meluber 1 pesan = angka identik v1.1.0. Animasi ulang saat slider = diperbaiki (v1.1.0 justru reload penuh). Bukti 8 kombinasi di `docs/HANDOFF-v1.2.0-GATE2.md` §3A.1.
 - **Hash rilis:** hash di atas **ADALAH** hash rilis final — diverifikasi `git diff be25a84..HEAD` hanya menyentuh `.md`, jadi biner uji = biner rilis. Tidak ada rebuild.
 - **Sisa v1.1.0:** Gerbang 2 versi itu **masih menunggu uji livestream**, padahal v1.1.0 sudah tayang sebagai Latest di GitHub Releases. Perbaikan konektivitas (bila ada) mendarat di `main` terpisah, bukan di branch ini.
 - **Anomali snapshot tag (diketahui, tidak diperbaiki):** tag `v1.2.0` menunjuk `9302185`, sehingga `git show v1.2.0:QA_REPORT.md` masih memuat header lama ("Gerbang 2 menunggu"). Versi benar ada di `main` sejak `fe6261e`. **Tag sengaja tidak dipindah** karena sudah tayang publik dan SOP melarang menimpa rilis tanpa izin Bos. Kode di tag identik dengan `main` (dua commit setelahnya hanya `.md`), dan changelog rilis sudah benar. Bila Bos ingin snapshot tag ikut bersih, perlu aba-aba eksplisit untuk force-move tag.
+- **KEPUTUSAN BOS (2026-11-14, penutup):** v1.2.0 **dipakai apa adanya**. Tidak ada rilis 1.2.1. Kode mati `?layout=fullscreen` **sengaja TIDAK dihapus sekarang** — diselipkan pada rilis **MAJOR/MINOR berikutnya** bersama perubahan lain. Ticker horizontal **dibiarkan** (terbukti bukan cacat; angka identik v1.1.0). Jangan mengerjakan keduanya tanpa aba-aba baru.
 - **Multi-platform parked plan:** `01_MEMORY/Decisions/2026-11-12-KY-Poni-MultiPlatform-Parked-Plan.md`
 
 ### 📚 Dokumentasi Arsitektur Resmi Proyek:
