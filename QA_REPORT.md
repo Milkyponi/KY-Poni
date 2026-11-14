@@ -6,9 +6,11 @@
 > setiap kali mengganti tema atau preferensi. Perubahan kosmetik diterapkan tanpa memuat ulang
 > source; perubahan struktural (tema/layout/posisi) memuat ulang overlay sendiri.
 >
-> **Catatan gate:** Gerbang 1 (verifikasi teknis) **lulus — 214 assertion PASS** plus verifikasi
-> fungsional di Chromium nyata terhadap server lokal. Gerbang 2 (uji pengalaman Bos) berstatus
-> **menunggu**. Push & rilis GitHub belum dilakukan.
+> **Catatan gate:** Gerbang 1 **lulus** — 214 assertion PASS plus verifikasi fungsional di Chromium
+> nyata dan verifikasi biner (asar, hash, WebSocket dari dalam asar).
+> Gerbang 2 **lulus** — Bos menyatakan hasil 1.2.0 sesuai di OBS (2026-11-14), tanpa temuan.
+> **Dirilis:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.0 (Latest, 2026-11-14).
+> Pasangan `main`+tag `v1.2.0` di `9302185`; aset terverifikasi byte-identik dengan artefak yang diuji.
 >
 > Catatan sisa dari 1.1.0: **v1.1.0 sudah tayang sebagai Latest di GitHub Releases, tetapi
 > Gerbang 2 versi tersebut masih menunggu uji livestream Bos.** Ini kontradiksi proses yang
