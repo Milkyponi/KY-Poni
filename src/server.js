@@ -176,7 +176,7 @@ if (require.main === module) {
     console.log(`====================================================`);
     console.log(`  KY-Poni Chat Overlay Studio running on port ${PORT}`);
     console.log(`  Dashboard: http://localhost:${PORT}/`);
-    console.log(`  OBS URL:   http://localhost:${PORT}/overlay?theme=persona5`);
+    console.log(`  OBS URL:   http://localhost:${PORT}/overlay  (statis — tidak berubah saat ganti tema)`);
     console.log(`====================================================`);
     scheduleAutoConnect();
   });

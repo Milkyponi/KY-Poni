@@ -191,7 +191,14 @@ class ConfigManager {
     }
     if ('theme' in updates) {
       const v = str(updates.theme, 64);
-      if (v !== undefined) out.theme = v;
+      // Simpan dalam bentuk KANONIK, bukan bentuk legacy.
+      //
+      // Sebelumnya normalisasi hanya terjadi di jalur BACA (getConfig), sehingga
+      // `cyberpunk-2077` tertulis apa adanya ke config.json dan baru dipetakan ketika
+      // dibaca kembali. Akibatnya ada dua representasi untuk satu tema yang sama:
+      // nilai di disk/payload tulis berbeda dari nilai yang dibaca/dibagikan. Sekarang
+      // satu bentuk saja, jadi disk, GET, dan broadcast selalu sepakat.
+      if (v !== undefined) out.theme = legacyIdToCanonical(v);
     }
     if ('layout' in updates) {
       if (typeof updates.layout === 'string') {

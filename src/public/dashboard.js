@@ -56,6 +56,16 @@ const previewFrame = document.getElementById('preview-frame');
 const previewWrapper = document.getElementById('preview-wrapper');
 const previewResolution = document.getElementById('preview-resolution');
 
+/**
+ * URL OBS statis — satu-satunya string yang perlu ditempel pengguna ke Browser Source,
+ * dan tidak pernah berubah saat tema atau preferensi diganti.
+ *
+ * Diturunkan dari origin halaman ini (bukan hardcode) supaya tetap benar bila port
+ * diubah lewat env PORT. Nilainya stabil untuk satu instalasi, karena port aplikasi
+ * tidak berubah selama masa pakai.
+ */
+const STATIC_OVERLAY_URL = `${window.location.origin}/overlay`;
+
 // Customization Controls
 const inputScale = document.getElementById('input-scale');
 const labelScaleVal = document.getElementById('label-scale-val');
@@ -179,10 +189,14 @@ function updateOverlayParams() {
   const keep = selectKeep ? selectKeep.value : '1';
   const scale = inputScale ? inputScale.value : '100';
   const fsize = inputFsize ? inputFsize.value : '16';
-  const font = selectFont ? selectFont.value : 'Space Grotesk';
+  const font = selectFont ? selectFont.value : 'OptimaNova';
   const color = inputColorHex ? inputColorHex.value.replace('#', '') : 'FFFFFF';
 
+  // Penanda preview: iframe memakai parameter URL sebagai sumber kebenaran supaya
+  // slider terasa instan tanpa menunggu simpan ke disk. Instance di OBS tidak memakai
+  // penanda ini, sehingga ia mengikuti config tersimpan.
   const params = new URLSearchParams({
+    preview: '1',
     theme,
     layout,
     pos: currentPos,
@@ -194,9 +208,12 @@ function updateOverlayParams() {
     keep,
   });
 
-  const url = `${window.location.origin}/overlay?${params.toString()}`;
-  obsUrlInput.value = url;
-  previewFrame.src = url;
+  const previewUrl = `${window.location.origin}/overlay?${params.toString()}`;
+
+  // URL yang disalin ke OBS SELALU statis. Preferensi sudah tinggal di config server,
+  // jadi pengguna tidak perlu lagi memperbarui URL setiap kali mengganti tema.
+  obsUrlInput.value = STATIC_OVERLAY_URL;
+  previewFrame.src = previewUrl;
 
   const obsDimTip = document.getElementById('obs-dim-tip');
   if (previewResolution) {
@@ -276,7 +293,7 @@ async function saveUserConfig(forceFields = null) {
     pos: currentPos,
     scale: inputScale ? parseInt(inputScale.value, 10) : 100,
     fontSize: inputFsize ? parseInt(inputFsize.value, 10) : 16,
-    fontFamily: selectFont ? selectFont.value : 'Space Grotesk',
+    fontFamily: selectFont ? selectFont.value : 'OptimaNova',
     textColor: inputColorHex ? inputColorHex.value : '#FFFFFF',
     fade: inputFade ? parseInt(inputFade.value, 10) : 8,
     keep: selectKeep ? parseInt(selectKeep.value, 10) : 1,
@@ -506,7 +523,7 @@ async function resetAllPreferences() {
   if (labelScaleVal) labelScaleVal.textContent = '100%';
   if (inputFsize) inputFsize.value = 16;
   if (labelFsizeVal) labelFsizeVal.textContent = '16px';
-  if (selectFont) selectFont.value = 'Space Grotesk';
+  if (selectFont) selectFont.value = 'OptimaNova';
   if (inputColor) inputColor.value = '#ffffff';
   if (inputColorHex) inputColorHex.value = '#FFFFFF';
   if (inputFade) inputFade.value = 8;

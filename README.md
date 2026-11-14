@@ -38,9 +38,18 @@ Ambil berkas terbaru dari halaman [Releases](https://github.com/Milkyponi/KY-Pon
 
 1. Buka KY-Poni, isi channel handle YouTube (misalnya `@MilkyPoni`), lalu hubungkan.
 2. Atur tema, sudut layar, ukuran font, dan warna di dashboard.
-3. Salin URL dari kotak OBS Browser Source.
+3. Salin URL dari kotak OBS Browser Source — isinya **selalu** `http://localhost:19840/overlay`.
 4. Di OBS, tambahkan source **Browser**, tempel URL tersebut.
 5. Set ukuran source ke **1000 × 1000 px**. Posisi dan skala diatur lewat OBS seperti source biasa.
+
+**URL itu statis.** Kamu tidak perlu menyalin ulang URL ketika mengganti tema, font, warna, atau
+skala — overlay mengikuti pengaturan yang tersimpan di aplikasi. Perubahan kosmetik (skala, ukuran
+font, jenis font, warna, durasi tampil) langsung terlihat tanpa memuat ulang source. Pergantian
+tema, arah aliran, atau sudut layar akan memuat ulang overlay sendiri dalam sekejap.
+
+Kalau kamu memakai URL versi lama yang masih berisi parameter (misalnya
+`/overlay?theme=persona5`), tidak perlu panik: pengaturan dari aplikasi tetap yang dipakai,
+jadi kamu otomatis menikmati fitur ini tanpa mengubah apa pun di OBS.
 
 Kanvas 1000 × 1000 dipakai supaya teks tidak terpotong di skala maksimal dan tumpukan chat tetap muat di skala minimal.
 

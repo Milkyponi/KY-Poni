@@ -1,6 +1,6 @@
 {
   "name": "ky-poni",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Game-aesthetic livestream chat overlay for OBS Studio",
   "main": "src/electron_main.js",
   "scripts": {
@@ -9,7 +9,9 @@
     "build:linux": "electron-builder --linux AppImage",
     "build:win": "electron-builder --win portable",
     "build:all": "electron-builder --linux AppImage --win portable",
-    "test": "node test/test_server.js && node test/test_anti_rto.js && node test/test_connectivity.js && node test/test_autoconnect.js && node test/test_persistence.js && node test/test_dashboard_boot.js && node test/test_windows_compat.js && node test/test_security_hardening.js && node test/test_security_regression.js",
+    "test": "node test/test_server.js && node test/test_anti_rto.js && node test/test_connectivity.js && node test/test_autoconnect.js && node test/test_persistence.js && node test/test_dashboard_boot.js && node test/test_windows_compat.js && node test/test_security_hardening.js && node test/test_security_regression.js && node test/test_overlay_settings.js && node test/test_config_broadcast.js",
+    "test:overlay": "node test/test_overlay_settings.js",
+    "test:broadcast": "node test/test_config_broadcast.js",
     "test:connectivity": "node test/test_connectivity.js",
     "test:persistence": "node test/test_persistence.js",
     "test:boot": "node test/test_dashboard_boot.js",

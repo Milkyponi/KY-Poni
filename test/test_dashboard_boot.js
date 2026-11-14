@@ -140,6 +140,50 @@ check('Saved-but-unlisted font is preserved as an option', () => {
   assert.ok(/Tersimpan/.test(source), 'missing saved font should be appended instead of dropped');
 });
 
+// ---------------------------------------------------------------------------
+// Kontrak URL statis (v1.2.0)
+//
+// Ini regresi yang paling mungkin terjadi tanpa disadari: seseorang "merapikan"
+// updateOverlayParams() dan mengembalikan URL berparameter ke kotak salin. Akibatnya
+// fitur inti hilang tanpa satu pun tes lama gagal.
+// ---------------------------------------------------------------------------
+
+check('URL OBS yang disalin bersifat statis (tanpa query string)', () => {
+  assert.ok(/STATIC_OVERLAY_URL\s*=/.test(source), 'STATIC_OVERLAY_URL harus dideklarasikan');
+  assert.ok(
+    /const\s+STATIC_OVERLAY_URL\s*=\s*`\$\{window\.location\.origin\}\/overlay`/.test(source),
+    'URL statis harus origin + /overlay, tanpa parameter'
+  );
+});
+
+check('updateOverlayParams() mengisi kotak URL dengan URL statis, bukan URL berparameter', () => {
+  const start = source.indexOf('function updateOverlayParams()');
+  const end = source.indexOf('function scheduleSave()');
+  const body = source.slice(start, end);
+  assert.ok(/obsUrlInput\.value\s*=\s*STATIC_OVERLAY_URL/.test(body), 'kotak URL harus menerima URL statis');
+  assert.ok(!/obsUrlInput\.value\s*=\s*previewUrl/.test(body), 'kotak URL tidak boleh menerima URL preview berparameter');
+});
+
+check('Iframe preview memakai penanda preview=1', () => {
+  const start = source.indexOf('function updateOverlayParams()');
+  const end = source.indexOf('function scheduleSave()');
+  const body = source.slice(start, end);
+  assert.ok(/preview:\s*'1'/.test(body), 'preview harus menandai dirinya ke overlay');
+  assert.ok(/previewFrame\.src\s*=\s*previewUrl/.test(body), 'iframe harus memakai URL berparameter');
+});
+
+check('URL statis tidak mengandung parameter tema', () => {
+  const match = source.match(/const\s+STATIC_OVERLAY_URL\s*=\s*([^;]+);/);
+  assert.ok(match, 'deklarasi STATIC_OVERLAY_URL tidak ditemukan');
+  assert.ok(!/\?/.test(match[1]), 'URL statis tidak boleh punya query string');
+});
+
+check('Reset preferensi memakai font default OptimaNova', () => {
+  const start = source.indexOf('async function resetAllPreferences()');
+  const body = source.slice(start, start + 1200);
+  assert.ok(/selectFont\.value\s*=\s*'OptimaNova'/.test(body), 'reset harus kembali ke font tema default');
+});
+
 const failed = results.filter(r => !r.ok);
 console.log(`\n${'='.repeat(52)}`);
 console.log(`  ${results.length - failed.length}/${results.length} boot-order checks passed`);
