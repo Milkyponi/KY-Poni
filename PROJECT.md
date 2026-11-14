@@ -8,9 +8,14 @@
 **Status:** Released — distribusi publik aktif
 
 ## Handover & Active State
-- **Current Owner:** Bos (Milky Poni) / Fonzy (Standby)
-- **Last Verified Artifact:** `v1.1.0` Connectivity Overhaul + `docs/HANDOFF-v1.1.0-GATE2.md` (Multi-platform parked plan: `01_MEMORY/Decisions/2026-11-12-KY-Poni-MultiPlatform-Parked-Plan.md`)
-- **Next Action / Blocker:** Menunggu uji manual Gate 2 v1.1.0 oleh Bos saat livestream.
+- **Current Owner:** Fonzy (aktif) — menunggu 2 keputusan Bos sebelum Gerbang 2
+- **Branch kerja:** `feat/static-overlay-url` (commit `be25a84`), checkpoint `checkpoint-v1.1.0-pre-static-url`, cadangan `backup/v1.1.0-stable`
+- **Artefak 1.2.0:** `dist/KY-Poni-1.2.0.AppImage` (123 MB) dan `dist/KY-Poni-1.2.0.exe` (107 MB) **sudah dibangun, BELUM diverifikasi sebagai artefak** (belum ekstrak asar, belum cek `/api/version`, belum hash). Belum diinstal ke PC Bos.
+- **Gate 1 source tree:** LULUS — 214 assertion PASS, exit 0. **Tidak mencakup biner.**
+- **Blocker keputusan Bos:** (1) aturan prioritas config-vs-URL; (2) urutan perbaikan `layout=fullscreen` + sweep 4 anchor sebelum Gerbang 2.
+- **Gate 2:** belum dijalankan. Skenario uji siap di `docs/HANDOFF-v1.2.0-GATE2.md`.
+- **Sisa v1.1.0:** Gerbang 2 versi itu **masih menunggu uji livestream**, padahal v1.1.0 sudah tayang sebagai Latest di GitHub Releases. Perbaikan konektivitas (bila ada) mendarat di `main` terpisah, bukan di branch ini.
+- **Multi-platform parked plan:** `01_MEMORY/Decisions/2026-11-12-KY-Poni-MultiPlatform-Parked-Plan.md`
 
 ### 📚 Dokumentasi Arsitektur Resmi Proyek:
 - **[PRD.md](PRD.md):** Product Requirements Document lengkap (visi, pengguna, spesifikasi fungsional & non-fungsional).
