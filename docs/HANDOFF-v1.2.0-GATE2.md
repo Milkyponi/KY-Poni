@@ -91,19 +91,53 @@ dibanding v1.1.0 selain yang disebut di atas.
 
 ---
 
-## 3A. Masalah yang SUDAH diketahui (ditunda — jangan dilaporkan sebagai temuan baru)
+## 3A. Hasil Gate 2 — LULUS
 
-Tiga hal ini sudah ditemukan Fonzy sebelum penyerahan dan **sengaja** dikerjakan setelah Gate 2,
-supaya semua perbaikan mendarat sekali jalan bersama temuan Bos:
+Bos menyatakan hasil 1.2.0 **sesuai** saat diuji di OBS (2026-11-14). Tidak ada temuan.
+Karena itu tidak ada perbaikan yang perlu mendarat sebelum rilis.
 
-| # | Masalah | Gejala yang akan Bos lihat |
-| --- | --- | --- |
-| 1 | `?layout=fullscreen` tidak berfungsi | Resolver menormalkan semua layout ke `vertical`/`horizontal`, jadi varian `fullscreen` tidak pernah tercapai |
-| 2 | Tiga anchor selain `bottom-left` + arah dorong ticker horizontal belum diverifikasi | Belum ada bukti bebas-clipping di `top-left`, `top-right`, `bottom-right`, dan mode ticker |
-| 3 | Semua balon beranimasi ulang saat slider kosmetik digeser | Saat skala/font/warna diubah, chat yang sedang tampil memutar ulang animasi masuk. Kosmetik tetap diterapkan tanpa reload |
+---
 
-Kalau Bos melihat salah satu dari ini, **tetap catat** — tapi tidak perlu dianggap regresi tak
-terduga, karena sudah terdaftar dan sudah dijadwalkan.
+## 3A.1 Tiga hal yang sempat aku laporkan sebagai cacat — TERNYATA BUKAN REGRESI
+
+Tiga hal ini aku sebut "masalah tertunda" sebelum Gate 2. Setelah diukur ulang dengan pembanding
+**v1.1.0** pada 8 kombinasi anchor × layout, ketiganya bukan regresi 1.2.0. Koreksi ini dicatat
+supaya tidak diwariskan sebagai cacat palsu ke sesi berikutnya:
+
+| # | Hal | Hasil ukur | Status sebenarnya |
+| --- | --- | --- | --- |
+| 1 | `?layout=fullscreen` "mati" | `git log --all -S".layout-fullscreen"` **kosong**: class itu tidak pernah punya aturan CSS sejak ditambahkan di v0.4.4, tidak pernah ada di UI (`index.html`/`dashboard.js`), dan tidak ada di PRD | **Dead code lama**, bukan regresi 1.2.0 |
+| 2 | 3 anchor belum disapu | Vertikal 4/4 anchor: 0 luber. Horizontal 4/4: tepat 1 pesan luber ke arah dorong — **angka identik di v1.1.0** | Perilaku ticker lama (memang bisa digeser), **bukan regresi** |
+| 3 | Balon beranimasi ulang saat slider | v1.2.0: bangun ulang DOM, tanpa reload jaringan. v1.1.0: ganti preferensi = URL baru = **iframe reload penuh** | 1.2.0 **lebih baik**, bukan mundur |
+
+Catatan tambahan: `pos=center` juga tidak punya aturan CSS. Hanya empat anchor yang benar-benar
+ditata (`bottom-left`, `bottom-right`, `top-left`, `top-right`).
+
+### Bukti pembanding (200 char chat + 350 char Super Chat)
+
+| Layout | Anchor | v1.1.0 | v1.2.0 |
+| --- | --- | --- | --- |
+| vertical | bottom-left | 0 luber | 0 luber |
+| vertical | bottom-right | 0 luber | 0 luber |
+| vertical | top-left | 0 luber | 0 luber |
+| vertical | top-right | 0 luber | 0 luber |
+| horizontal | bottom-left | 1 luber (kanan) | 1 luber (kanan) |
+| horizontal | bottom-right | 1 luber (kiri) | 1 luber (kiri) |
+| horizontal | top-left | 1 luber (kanan) | 1 luber (kanan) |
+| horizontal | top-right | 1 luber (kiri) | 1 luber (kiri) |
+
+Kesimpulan: **paritas penuh** dengan v1.1.0 di kedelapan kombinasi. Tidak ada yang diperbaiki
+1.2.0, dan tidak ada yang dirusak.
+
+---
+
+## 3A.2 Kandidat perbaikan untuk 1.2.1 (bukan blocker)
+
+Dua hal ini tetap layak dikerjakan, tapi **bukan** syarat rilis karena tidak ada regresi:
+
+1. `?layout=fullscreen` — putuskan: beri CSS nyata, atau hapus cabang mati dari `overlay.js`.
+2. Ticker horizontal yang meluber 1 pesan — perilaku lama; perbaiki hanya bila memang terasa
+   mengganggu saat live.
 
 ---
 

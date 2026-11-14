@@ -8,15 +8,15 @@
 **Status:** Released — distribusi publik aktif
 
 ## Handover & Active State
-- **Current Owner:** Bos (Milky Poni) — uji Gerbang 2 / Fonzy (standby, siap perbaikan pasca-Gate 2)
+- **Status:** **SIAP RILIS** — Gerbang 2 LULUS (Bos, 2026-11-14), tanpa temuan
 - **Branch kerja:** `feat/static-overlay-url` (head `d7c0c76`), checkpoint `checkpoint-v1.1.0-pre-static-url`, cadangan `backup/v1.1.0-stable`. **Belum merge/push/tag.**
 - **Artefak 1.2.0 (terverifikasi sebagai artefak):** `dist/KY-Poni-1.2.0.AppImage` (128.627.864 B, `sha256 8870adc5…`) dan `dist/KY-Poni-1.2.0.exe` (111.720.441 B, `sha256 3d56a741…`). Detail di `QA_REPORT.md` §4A.
 - **Terinstal:** `~/AppImages/kyponi.appimage` (hash identik dengan dist). Backup: `~/AppImages/kyponi.appimage.v1.1.0.bak`.
 - **Gate 1:** LULUS — 214 assertion PASS (source tree) **plus** verifikasi biner: asar 1.2.0, `src/config.json` tidak bocor, server dijalankan dari dalam asar (5/5 endpoint 200), `CONFIG_UPDATED` diterima via WS, `%APPDATA%\KY-Poni` terbentuk di Wine.
 - **Keputusan Bos (2026-11-14):** (1) **config menang** atas URL di instance OBS — URL hanya menang saat `?preview=1`; (2) perbaikan dikerjakan **setelah** Gate 2. Rincian: `01_MEMORY/Decisions/2026-11-14-KY-Poni-Static-Overlay-URL.md`.
-- **Gate 2:** belum dijalankan. Enam skenario + daftar masalah tertunda + template temuan di `docs/HANDOFF-v1.2.0-GATE2.md`.
-- **Ditunda ke pasca-Gate 2:** `?layout=fullscreen` mati; 3 anchor + ticker horizontal belum disapu; balon memutar ulang animasi saat slider kosmetik digeser.
-- **Peringatan rilis:** hash di atas **bukan** hash rilis final — perbaikan pasca-Gate 2 mengubah biner, sehingga rebuild + hash ulang + uji ulang area terdampak wajib sebelum publish.
+- **Gate 2:** **LULUS** — Bos menyatakan hasil 1.2.0 sesuai di OBS (2026-11-14), tanpa temuan.
+- **Koreksi penting (diukur ulang vs v1.1.0):** tiga hal yang sempat aku sebut cacat **bukan regresi**. `?layout=fullscreen` = dead code sejak v0.4.4 (tidak pernah punya CSS/UI). Ticker horizontal meluber 1 pesan = angka identik v1.1.0. Animasi ulang saat slider = diperbaiki (v1.1.0 justru reload penuh). Bukti 8 kombinasi di `docs/HANDOFF-v1.2.0-GATE2.md` §3A.1.
+- **Hash rilis:** hash di atas **ADALAH** hash rilis final — diverifikasi `git diff be25a84..HEAD` hanya menyentuh `.md`, jadi biner uji = biner rilis. Tidak ada rebuild.
 - **Sisa v1.1.0:** Gerbang 2 versi itu **masih menunggu uji livestream**, padahal v1.1.0 sudah tayang sebagai Latest di GitHub Releases. Perbaikan konektivitas (bila ada) mendarat di `main` terpisah, bukan di branch ini.
 - **Multi-platform parked plan:** `01_MEMORY/Decisions/2026-11-12-KY-Poni-MultiPlatform-Parked-Plan.md`
 

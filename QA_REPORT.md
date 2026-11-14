@@ -149,9 +149,11 @@ berasal dari source; tanpa bagian ini, tidak ada bukti apa pun tentang isi paket
 **Terinstal:** `~/AppImages/kyponi.appimage` — hash identik dengan `dist/`
 (`8870adc57f675461…`). Backup versi lama: `~/AppImages/kyponi.appimage.v1.1.0.bak`.
 
-> **Peringatan urutan rilis:** perbaikan (`layout=fullscreen`, 4 anchor, animasi ulang) dikerjakan
-> **setelah** Gerbang 2. Artinya hash di atas hampir pasti **bukan** hash rilis final. Setelah
-> perbaikan, biner dibangun ulang, hash dicatat ulang, dan area yang tersentuh diuji ulang.
+> **Status rilis:** Gerbang 2 **LULUS** (Bos, 2026-11-14) tanpa temuan, sehingga tidak ada
+> perbaikan yang perlu mendarat sebelum rilis. `git diff be25a84..HEAD` hanya menyentuh berkas
+> `.md`, jadi **hash di atas adalah hash rilis final** — tidak ada rebuild. Tiga hal yang sempat
+> dicatat sebagai cacat terbukti bukan regresi setelah diukur terhadap v1.1.0
+> (`docs/HANDOFF-v1.2.0-GATE2.md` §3A.1).
 
 ---
 
