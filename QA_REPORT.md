@@ -119,6 +119,42 @@ Setelah inisialisasi window, Wine menghentikan proses karena tidak ada display s
 
 ---
 
+---
+
+## 4A. Verifikasi Artefak v1.2.0 (Gerbang 1, lapisan biner)
+
+Bagian ini mengukur **biner yang akan dikirim**, bukan source tree. Angka 214 assertion di atas
+berasal dari source; tanpa bagian ini, tidak ada bukti apa pun tentang isi paket.
+
+| Pemeriksaan | AppImage | .exe portable |
+| --- | --- | --- |
+| Versi di `app.asar` | `1.2.0` | `1.2.0` |
+| `src/config.json` bocor ke paket | **tidak ada** | **tidak ada** |
+| `src/public/overlay_settings.js` terpaket | ada, 10.758 byte | ada, 10.758 byte |
+| Urutan script `overlay.html` | resolver sebelum `overlay.js` | idem |
+| Server dijalankan **dari dalam asar** | 5/5 endpoint 200 | — (headless) |
+| `GET /api/version` dari biner | `1.2.0` | — |
+| Profil kosong dari biner | `persona5` / `OptimaNova` / scale 100 | — |
+| `CONFIG_UPDATED` lewat WS dari biner | diterima; `target` dibuang; nilai benar | — |
+| Folder data Windows | — | `%APPDATA%\KY-Poni` terbentuk (kapital) |
+| Eksekusi di Wine | — | berhenti di `nodrv_CreateWindow` (headless), **bukan** cacat aplikasi |
+
+**Hash SHA-256 (artefak yang diuji = artefak yang diunggah nanti):**
+
+| Berkas | Ukuran | SHA-256 |
+| --- | --- | --- |
+| `KY-Poni-1.2.0.AppImage` | 128.627.864 B | `8870adc57f675461203e63d563db1f8cc0bc8560f4b9366b98381b24052a94ce` |
+| `KY-Poni-1.2.0.exe` | 111.720.441 B | `3d56a74195d2729ee98266631f5dde3f36d5b9737dc2c63df277cc8075efb13e` |
+
+**Terinstal:** `~/AppImages/kyponi.appimage` — hash identik dengan `dist/`
+(`8870adc57f675461…`). Backup versi lama: `~/AppImages/kyponi.appimage.v1.1.0.bak`.
+
+> **Peringatan urutan rilis:** perbaikan (`layout=fullscreen`, 4 anchor, animasi ulang) dikerjakan
+> **setelah** Gerbang 2. Artinya hash di atas hampir pasti **bukan** hash rilis final. Setelah
+> perbaikan, biner dibangun ulang, hash dicatat ulang, dan area yang tersentuh diuji ulang.
+
+---
+
 ## 5. Catatan Verifikasi
 
 - Verifikasi `AppImage` difokuskan pada kode yang benar-benar terpaket (`app.asar`) yang dijalankan headless, karena lingkungan audit tidak memiliki X server. Peluncuran langsung tanpa `$DISPLAY` gagal di lapisan Electron/Ozone, bukan di kode aplikasi.

@@ -91,6 +91,48 @@ dibanding v1.1.0 selain yang disebut di atas.
 
 ---
 
+## 3A. Masalah yang SUDAH diketahui (ditunda — jangan dilaporkan sebagai temuan baru)
+
+Tiga hal ini sudah ditemukan Fonzy sebelum penyerahan dan **sengaja** dikerjakan setelah Gate 2,
+supaya semua perbaikan mendarat sekali jalan bersama temuan Bos:
+
+| # | Masalah | Gejala yang akan Bos lihat |
+| --- | --- | --- |
+| 1 | `?layout=fullscreen` tidak berfungsi | Resolver menormalkan semua layout ke `vertical`/`horizontal`, jadi varian `fullscreen` tidak pernah tercapai |
+| 2 | Tiga anchor selain `bottom-left` + arah dorong ticker horizontal belum diverifikasi | Belum ada bukti bebas-clipping di `top-left`, `top-right`, `bottom-right`, dan mode ticker |
+| 3 | Semua balon beranimasi ulang saat slider kosmetik digeser | Saat skala/font/warna diubah, chat yang sedang tampil memutar ulang animasi masuk. Kosmetik tetap diterapkan tanpa reload |
+
+Kalau Bos melihat salah satu dari ini, **tetap catat** — tapi tidak perlu dianggap regresi tak
+terduga, karena sudah terdaftar dan sudah dijadwalkan.
+
+---
+
+## 3B. Template catatan temuan
+
+Isi ini selama uji supaya perbaikan pasca-Gate 2 bisa dikerjakan sekali jalan:
+
+```
+Skenario : Uji 1 / 2 / 3 / 4 / 5 / 6
+Tema     : persona5 | persona3reload | classic | cyberpunk2077
+Yang saya lakukan : ....
+Yang saya lihat   : ....
+Yang saya harapkan : ....
+Tingkat   : mengganggu saat live / kosmetik / tidak masalah
+```
+
+---
+
+## 3C. Catatan Gate 2 v1.1.0 (masih menunggu)
+
+Gerbang 2 versi 1.1.0 (konektivitas YouTube) **belum pernah dijalankan**, padahal v1.1.0 sudah
+tayang sebagai Latest. Satu sesi live bisa menguji keduanya sekaligus:
+
+- **Konektivitas (v1.1.0):** sambung ke kanal, ganti target beruntun, kanal yang sedang offline.
+  Detailnya ada di `docs/HANDOFF-v1.1.0-GATE2.md`.
+- **URL statis (v1.2.0):** enam skenario di atas.
+
+---
+
 ## 4. Catatan teknis untuk Fonzy (bukan untuk Bos)
 
 - Suite: `KY_PONI_CONFIG_HOME=$(mktemp -d) npm test` → 214 PASS, exit 0.
