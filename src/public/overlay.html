@@ -31,6 +31,9 @@
     <div id="chat-flow"></div>
   </div>
 
+  <!-- Resolver setelan WAJIB dimuat sebelum overlay.js: overlay.js membaca window.KYPoniSettings
+       saat inisialisasi dan berhenti bila modul ini tidak ada. -->
+  <script src="/overlay_settings.js"></script>
   <script src="/overlay.js"></script>
 </body>
 </html>

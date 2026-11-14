@@ -1,11 +1,16 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v1.1.0` (Connectivity Overhaul — Parser, Auto-Connect & YouTube Compatibility Fix)  
+**Current Version:** `v1.2.0` (Static Overlay URL — Satu URL OBS, Preferensi Dibaca dari Aplikasi)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  
 **Status:** Released — distribusi publik aktif
+
+## Handover & Active State
+- **Current Owner:** Bos (Milky Poni) / Fonzy (Standby)
+- **Last Verified Artifact:** `v1.1.0` Connectivity Overhaul + `docs/HANDOFF-v1.1.0-GATE2.md` (Multi-platform parked plan: `01_MEMORY/Decisions/2026-11-12-KY-Poni-MultiPlatform-Parked-Plan.md`)
+- **Next Action / Blocker:** Menunggu uji manual Gate 2 v1.1.0 oleh Bos saat livestream.
 
 ### 📚 Dokumentasi Arsitektur Resmi Proyek:
 - **[PRD.md](PRD.md):** Product Requirements Document lengkap (visi, pengguna, spesifikasi fungsional & non-fungsional).

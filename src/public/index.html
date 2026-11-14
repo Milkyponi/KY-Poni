@@ -23,7 +23,7 @@
     <div class="header-obs-wrapper">
       <div class="header-obs-pill">
         <span class="header-obs-icon">🔗</span>
-        <input type="text" id="obs-url" class="header-obs-input" readonly value="http://localhost:19840/overlay?theme=persona5&layout=vertical" title="OBS Browser Source URL">
+        <input type="text" id="obs-url" class="header-obs-input" readonly value="http://localhost:19840/overlay" title="OBS Browser Source URL (statis — tidak perlu diubah saat ganti tema)">
         <button id="btn-copy-url" class="btn-header-copy" title="Salin URL OBS">
           📋 Salin
         </button>
@@ -204,7 +204,7 @@
         <!-- Canvas Viewport -->
         <div class="canvas-viewport">
           <div id="preview-wrapper" class="preview-canvas-wrapper">
-            <iframe id="preview-frame" class="preview-iframe" src="/overlay?theme=persona5&layout=vertical"></iframe>
+            <iframe id="preview-frame" class="preview-iframe" src="/overlay?preview=1&theme=persona5&layout=vertical"></iframe>
           </div>
         </div>
 

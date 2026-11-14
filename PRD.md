@@ -50,7 +50,8 @@ Sebagian besar chat overlay yang beredar di pasar (Streamlabs, StreamElements, S
 
 ### B. OBS Integration & Overlay Engine
 * Melayani kanvas transparan via Browser Source OBS pada port lokal `19840`.
-* URL parameter dinamis: `theme`, `layout`, `pos`, `scale`, `fsize`, `font`, `color`, `fade`, `keep`.
+* **URL OBS statis** (`http://localhost:19840/overlay`): satu URL untuk selamanya, tidak berubah saat tema atau preferensi diganti. Tampilan dibaca dari `config.json` milik server lokal.
+* Parameter URL (`theme`, `layout`, `pos`, `scale`, `fsize`, `font`, `color`, `fade`, `keep`, `max`) tetap didukung sebagai lapisan kompatibilitas. Prioritas: config menang atas URL, kecuali mode preview (`?preview=1`) yang dipakai iframe dashboard agar slider terasa instan.
 * 4 Sudut Layar (*Screen Anchors*): `bottom-left` (default), `bottom-right`, `top-left`, `top-right`.
 * Alur Chat Horizontal Cerdas (*Anchor-Sensitive Directional Flow*):
   * Posisi kiri (`bottom-left` & `top-left`): Chat baru muncul langsung di anchor kiri (`prepend`) dan mendorong pesan lama ke kanan.
