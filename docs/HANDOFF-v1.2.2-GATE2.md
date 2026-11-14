@@ -1,7 +1,7 @@
 # Serah-Terima Uji v1.2.2 — Gerbang 2 (Bos)
 
 > **Status Gerbang 1: LULUS.** 217 assertion PASS (exit code 0), build biner berhasil (.AppImage + .exe), asar bersih (tanpa kebocoran developer config), dan biner terpasang di workstation Bos (`~/AppImages/kyponi.appimage`).
-> **Gerbang 2: Menunggu uji Bos di PC.**
+> **Gerbang 2: LULUS.** Bos menyatakan hasil 1.2.2 mantap dan memberi aba-aba rilis langsung (2026-11-14), tanpa temuan. Status: **DIRILIS v1.2.2**.
 
 ---
 

@@ -4,12 +4,11 @@
 > (foto avatar bulat, nama kanal, handle, dan status siaran real-time) langsung di dashboard.
 > 100% lokal, zero-quota Google Cloud (via InnerTube `/browse`), tanpa OAuth.
 >
-> **Catatan gate:** Gerbang 1 **lulus** — 217 assertion PASS (11 test suites lengkap: server, anti-rto,
-> connectivity, autoconnect, persistence, dashboard boot, windows compat, security hardening,
-> security regression v2, overlay settings, config broadcast).
-> Gerbang 2 — Menunggu verifikasi Bos di PC / OBS.
->
-> Rilis sebelumnya: https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.0 (Latest, 2026-11-14).
+> **Catatan gate:** Gerbang 1 **lulus** — 217 assertion PASS (11 test suites lengkap) plus
+> verifikasi biner (asar 1.2.2 bersih tanpa kebocoran developer config).
+> Gerbang 2 **lulus** — Bos menyatakan mantap dan memberikan aba-aba rilis (2026-11-14).
+> **Dirilis:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.2 (Latest, 2026-11-14).
+> Pasangan `main`+tag `v1.2.2`; aset terverifikasi byte-identik dengan artefak yang diuji.
 
 - **Tanggal**: 2026-11-14
 
@@ -149,6 +148,30 @@ berasal dari source; tanpa bagian ini, tidak ada bukti apa pun tentang isi paket
 > `.md`, jadi **hash di atas adalah hash rilis final** — tidak ada rebuild. Tiga hal yang sempat
 > dicatat sebagai cacat terbukti bukan regresi setelah diukur terhadap v1.1.0
 > (`docs/HANDOFF-v1.2.0-GATE2.md` §3A.1).
+
+---
+
+## 4B. Verifikasi Artefak v1.2.2 (Gerbang 1, lapisan biner)
+
+| Pengujian | Linux (`.AppImage`) | Windows (`.exe` portable) |
+| --- | --- | --- |
+| Versi di `app.asar` | `1.2.2` | `1.2.2` |
+| `src/config.json` bocor ke paket | **tidak ada** | **tidak ada** |
+| `resolveChannelProfile` endpoint | ada, InnerTube /browse | ada |
+| Form dinamis profile card | ada di HTML & dashboard | ada |
+| Server dijalankan **dari dalam asar** | 5/5 endpoint 200 | — (headless) |
+| `GET /api/version` dari biner | `1.2.2` | — |
+| Profil kosong dari biner | `persona5` / `OptimaNova` / scale 100 | — |
+| `channelProfile` disanitasi & di-persist | `%APPDATA%\KY-Poni` & `~/.config/ky-poni` | — |
+
+**Hash SHA-256 (artefak yang diuji = artefak yang diunggah):**
+
+| Berkas | Ukuran | SHA-256 |
+| --- | --- | --- |
+| `KY-Poni-1.2.2.AppImage` | 128.632.034 B | `672e8378e9479507a72d4195305d2b9da7777a2c585db8e2cf69322cebb755bb` |
+| `KY-Poni-1.2.2.exe` | 111.722.838 B | `c01fb352348744c63269c9f20bd109e46b287f5a0b0d1c29e216fc60d42765d0` |
+
+**Terinstal di PC Bos:** `~/AppImages/kyponi.appimage` — hash identik dengan `dist/` (`672e8378e9479507…`). Cadangan versi lama: `~/AppImages/kyponi.appimage.v1.2.0.bak`.
 
 ---
 
