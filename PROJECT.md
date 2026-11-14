@@ -19,6 +19,7 @@
 - **Koreksi penting (diukur ulang vs v1.1.0):** tiga hal yang sempat aku sebut cacat **bukan regresi**. `?layout=fullscreen` = dead code sejak v0.4.4 (tidak pernah punya CSS/UI). Ticker horizontal meluber 1 pesan = angka identik v1.1.0. Animasi ulang saat slider = diperbaiki (v1.1.0 justru reload penuh). Bukti 8 kombinasi di `docs/HANDOFF-v1.2.0-GATE2.md` §3A.1.
 - **Hash rilis:** hash di atas **ADALAH** hash rilis final — diverifikasi `git diff be25a84..HEAD` hanya menyentuh `.md`, jadi biner uji = biner rilis. Tidak ada rebuild.
 - **Sisa v1.1.0:** Gerbang 2 versi itu **masih menunggu uji livestream**, padahal v1.1.0 sudah tayang sebagai Latest di GitHub Releases. Perbaikan konektivitas (bila ada) mendarat di `main` terpisah, bukan di branch ini.
+- **Anomali snapshot tag (diketahui, tidak diperbaiki):** tag `v1.2.0` menunjuk `9302185`, sehingga `git show v1.2.0:QA_REPORT.md` masih memuat header lama ("Gerbang 2 menunggu"). Versi benar ada di `main` sejak `fe6261e`. **Tag sengaja tidak dipindah** karena sudah tayang publik dan SOP melarang menimpa rilis tanpa izin Bos. Kode di tag identik dengan `main` (dua commit setelahnya hanya `.md`), dan changelog rilis sudah benar. Bila Bos ingin snapshot tag ikut bersih, perlu aba-aba eksplisit untuk force-move tag.
 - **Multi-platform parked plan:** `01_MEMORY/Decisions/2026-11-12-KY-Poni-MultiPlatform-Parked-Plan.md`
 
 ### 📚 Dokumentasi Arsitektur Resmi Proyek:
