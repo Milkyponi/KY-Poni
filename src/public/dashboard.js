@@ -84,6 +84,62 @@ const streamInfo = document.getElementById('stream-info');
 const infoLiveId = document.getElementById('info-liveid');
 const infoMsgCount = document.getElementById('info-msgcount');
 
+// Channel Profile UI Elements
+const ytProfileView = document.getElementById('yt-profile-view');
+const ytInputView = document.getElementById('yt-input-view');
+const profileAvatar = document.getElementById('profile-avatar');
+const profileAvatarStatus = document.getElementById('profile-avatar-status');
+const profileTitle = document.getElementById('profile-title');
+const profileHandle = document.getElementById('profile-handle');
+const profileChannelBadge = document.getElementById('profile-channel-badge');
+const btnEditTarget = document.getElementById('btn-edit-target');
+const btnCancelEdit = document.getElementById('btn-cancel-edit');
+
+let currentChannelProfile = null;
+
+// Channel Profile UI Helpers
+function renderChannelProfile(profile, targetFallback = '') {
+  const target = targetFallback || (ytTargetInput ? ytTargetInput.value.trim() : '');
+  const title = (profile && profile.title) || target || 'YouTube Channel';
+  const handle = (profile && profile.handle) || target || '';
+  const avatar = (profile && profile.avatar) || '';
+
+  if (profileTitle) profileTitle.textContent = title;
+  if (profileHandle) profileHandle.textContent = handle;
+  if (profileAvatar) {
+    if (avatar) {
+      profileAvatar.src = avatar;
+    } else {
+      profileAvatar.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 24 24' fill='%23888'><circle cx='12' cy='8' r='4'/><path d='M12 14c-6.1 0-8 4-8 4v2h16v-2s-1.9-4-8-4z'/></svg>";
+    }
+  }
+
+  if (ytProfileView) ytProfileView.style.display = 'block';
+  if (ytInputView) ytInputView.style.display = 'none';
+  if (profileChannelBadge) profileChannelBadge.style.display = 'inline-block';
+}
+
+function showTargetInputForm(allowCancel = true) {
+  if (ytProfileView) ytProfileView.style.display = 'none';
+  if (ytInputView) ytInputView.style.display = 'block';
+  if (btnCancelEdit) btnCancelEdit.style.display = (allowCancel && currentChannelProfile) ? 'inline-flex' : 'none';
+  if (ytTargetInput) ytTargetInput.focus();
+}
+
+if (btnEditTarget) {
+  btnEditTarget.addEventListener('click', () => {
+    showTargetInputForm(true);
+  });
+}
+
+if (btnCancelEdit) {
+  btnCancelEdit.addEventListener('click', () => {
+    if (currentChannelProfile) {
+      renderChannelProfile(currentChannelProfile, ytTargetInput ? ytTargetInput.value.trim() : '');
+    }
+  });
+}
+
 let currentPos = 'bottom-left';
 let saveConfigTimeout = null;
 
@@ -288,6 +344,7 @@ async function saveUserConfig(forceFields = null) {
 
   const current = {
     target: ytTargetInput ? ytTargetInput.value.trim() : '@MilkyPoni',
+    channelProfile: currentChannelProfile,
     theme: selectTheme ? selectTheme.value : 'persona5',
     layout: layoutVal,
     pos: currentPos,
@@ -310,7 +367,13 @@ async function saveUserConfig(forceFields = null) {
   } else if (lastKnownConfig) {
     payload = {};
     for (const key of Object.keys(current)) {
-      if (current[key] !== lastKnownConfig[key]) payload[key] = current[key];
+      if (key === 'channelProfile') {
+        const currStr = JSON.stringify(current[key] || null);
+        const lastStr = JSON.stringify(lastKnownConfig[key] || null);
+        if (currStr !== lastStr) payload[key] = current[key];
+      } else if (current[key] !== lastKnownConfig[key]) {
+        payload[key] = current[key];
+      }
     }
   } else {
     console.warn('[KY-Poni] Simpan dilewati: konfigurasi acuan belum termuat.');
@@ -404,6 +467,15 @@ async function applyConfigToUI(cfg) {
   if (cfg.fade !== undefined && inputFade) inputFade.value = cfg.fade;
   if (cfg.keep !== undefined && selectKeep) selectKeep.value = cfg.keep;
 
+  if (cfg.channelProfile) {
+    currentChannelProfile = cfg.channelProfile;
+    renderChannelProfile(cfg.channelProfile, cfg.target);
+  } else if (cfg.target && cfg.target !== '@MilkyPoni') {
+    renderChannelProfile(null, cfg.target);
+  } else {
+    showTargetInputForm(false);
+  }
+
   updateOverlayParams();
 }
 
@@ -442,6 +514,13 @@ btnConnect.addEventListener('click', async () => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal terhubung');
 
+    if (data.profile) {
+      currentChannelProfile = data.profile;
+      renderChannelProfile(data.profile, target);
+    } else {
+      renderChannelProfile(null, target);
+    }
+
     // Jangan mengklaim "Terhubung" sebelum server melaporkan status sebenarnya.
     // Server bisa langsung 'connected', atau 'waiting' bila kanal belum menyiarkan.
     saveUserConfig();
@@ -451,7 +530,7 @@ btnConnect.addEventListener('click', async () => {
     setUIStatus('error', '❌ ' + err.message);
   } finally {
     btnConnect.disabled = false;
-    btnConnect.innerHTML = '<span>⚡</span> Hubungkan Stream';
+    btnConnect.innerHTML = '<span>⚡</span> Connect';
   }
 });
 
@@ -987,6 +1066,11 @@ async function loadCatalog() {
 function applyStreamStatus(data) {
   if (!data || !data.status) return;
 
+  if (data.profile) {
+    currentChannelProfile = data.profile;
+    renderChannelProfile(data.profile, data.target || (ytTargetInput ? ytTargetInput.value.trim() : ''));
+  }
+
   const showConnected = () => {
     btnConnect.style.display = 'none';
     btnDisconnect.style.display = 'inline-flex';
@@ -999,6 +1083,13 @@ function applyStreamStatus(data) {
       showConnected();
       if (data.liveId) infoLiveId.textContent = data.liveId;
       if (typeof data.messageCount === 'number') infoMsgCount.textContent = data.messageCount;
+      if (profileAvatarStatus) profileAvatarStatus.style.background = '#00ff88';
+      if (profileChannelBadge) {
+        profileChannelBadge.textContent = 'Live';
+        profileChannelBadge.style.color = '#ff4444';
+        profileChannelBadge.style.background = 'rgba(255, 68, 68, 0.15)';
+        profileChannelBadge.style.borderColor = 'rgba(255, 68, 68, 0.3)';
+      }
       break;
 
     case 'waiting':
@@ -1006,16 +1097,25 @@ function applyStreamStatus(data) {
       setUIStatus('connecting', `⏳ Menunggu siaran dimulai...`);
       showConnected();
       infoLiveId.textContent = data.channelId ? `menunggu (${data.channelId})` : 'menunggu siaran';
+      if (profileAvatarStatus) profileAvatarStatus.style.background = '#00f0ff';
+      if (profileChannelBadge) {
+        profileChannelBadge.textContent = 'Standby';
+        profileChannelBadge.style.color = 'var(--accent-cyan)';
+        profileChannelBadge.style.background = 'rgba(0, 240, 255, 0.15)';
+        profileChannelBadge.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+      }
       break;
 
     case 'connecting':
       setUIStatus('connecting', data.liveId ? 'Siaran ditemukan, menyambungkan chat...' : 'Menghubungkan...');
       showConnected();
+      if (profileAvatarStatus) profileAvatarStatus.style.background = '#ffaa00';
       break;
 
     case 'reconnecting':
       setUIStatus('connecting', '⚠️ Sinyal drop, memulihkan koneksi stream...');
       showConnected();
+      if (profileAvatarStatus) profileAvatarStatus.style.background = '#ffaa00';
       break;
 
     case 'error':
@@ -1024,6 +1124,13 @@ function applyStreamStatus(data) {
       btnConnect.style.display = 'inline-flex';
       btnDisconnect.style.display = 'none';
       streamInfo.style.display = 'none';
+      if (profileAvatarStatus) profileAvatarStatus.style.background = '#888888';
+      if (profileChannelBadge) {
+        profileChannelBadge.textContent = 'Error';
+        profileChannelBadge.style.color = 'var(--text-dim)';
+        profileChannelBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+        profileChannelBadge.style.borderColor = 'var(--border-color)';
+      }
       break;
 
     case 'idle':
@@ -1032,6 +1139,13 @@ function applyStreamStatus(data) {
       btnConnect.style.display = 'inline-flex';
       btnDisconnect.style.display = 'none';
       streamInfo.style.display = 'none';
+      if (profileAvatarStatus) profileAvatarStatus.style.background = '#888888';
+      if (profileChannelBadge) {
+        profileChannelBadge.textContent = 'Offline';
+        profileChannelBadge.style.color = 'var(--text-dim)';
+        profileChannelBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+        profileChannelBadge.style.borderColor = 'var(--border-color)';
+      }
       break;
   }
 }

@@ -67,6 +67,7 @@ wss.on('connection', (ws) => {
       target: youtubeIngest.currentTarget,
       liveId: youtubeIngest.activeLiveId,
       channelId: youtubeIngest.activeChannelId,
+      profile: youtubeIngest.channelProfile || null,
       messageCount: youtubeIngest.messageCount,
       version: pkg.version,
     },

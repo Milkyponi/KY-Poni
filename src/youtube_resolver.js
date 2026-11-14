@@ -28,6 +28,7 @@ const axios = require('axios');
 const { classify, buildProbeUrl } = require('./youtube_target');
 
 const RESOLVE_ENDPOINT = 'https://www.youtube.com/youtubei/v1/navigation/resolve_url';
+const BROWSE_ENDPOINT = 'https://www.youtube.com/youtubei/v1/browse';
 const DEFAULT_TIMEOUT_MS = 10000;
 
 // Client context minimum yang diterima endpoint. Nilai ini bagian dari protokol publik
@@ -217,6 +218,130 @@ class YouTubeResolver {
     }
     return { ok: false, reason: probe.reason || 'Kanal tidak dapat diterjemahkan.' };
   }
+
+  /**
+   * Mengambil metadata profil publik sebuah kanal (nama, avatar, handle, channelId)
+   * menggunakan endpoint publik InnerTube /browse (zero-credential, zero-quota).
+   *
+   * @param {string} target handle (@...), channelId (UC...), atau URL YouTube
+   * @returns {Promise<{
+   *   ok: boolean,
+   *   profile?: {
+   *     title: string,
+   *     avatar: string,
+   *     channelId: string|null,
+   *     handle: string,
+   *     raw: string,
+   *   },
+   *   reason?: string
+   * }>}
+   */
+  async resolveChannelProfile(target) {
+    const descriptor = classify(target);
+    if (!descriptor) {
+      return { ok: false, reason: 'Format target tidak dikenali.' };
+    }
+
+    let channelId = null;
+    let fallbackHandle = descriptor.handle || target;
+
+    if (descriptor.kind === 'channelId') {
+      channelId = descriptor.channelId;
+    } else if (descriptor.kind === 'handle' || descriptor.kind === 'remote') {
+      const probeUrl = buildProbeUrl(descriptor);
+      if (!probeUrl) {
+        return { ok: false, reason: 'Target tidak dapat diperiksa.' };
+      }
+      const resolved = await this.postResolve(probeUrl);
+      if (!resolved.ok) {
+        return { ok: false, reason: resolved.reason || 'Kanal tidak dapat ditemukan di YouTube.' };
+      }
+      channelId = resolved.channelId || null;
+      if (!channelId && resolved.videoId) {
+        return {
+          ok: true,
+          profile: {
+            title: `Live Stream (${resolved.videoId})`,
+            avatar: '',
+            channelId: null,
+            handle: resolved.videoId,
+            raw: target,
+          },
+        };
+      }
+    } else if (descriptor.kind === 'video') {
+      return {
+        ok: true,
+        profile: {
+          title: `Video Stream (${descriptor.videoId})`,
+          avatar: '',
+          channelId: null,
+          handle: descriptor.videoId,
+          raw: target,
+        },
+      };
+    }
+
+    if (!channelId) {
+      return { ok: false, reason: 'Kanal tidak ditemukan di YouTube.' };
+    }
+
+    let res;
+    try {
+      res = await this.post(
+        BROWSE_ENDPOINT,
+        { context: WEB_CONTEXT, browseId: channelId },
+        {
+          timeout: this.timeout,
+          validateStatus: () => true,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    } catch (err) {
+      return { ok: false, reason: `Gagal menghubungi YouTube: ${err.message}` };
+    }
+
+    if (res.status === 404) {
+      return { ok: false, reason: 'Kanal tidak ditemukan di YouTube.' };
+    }
+    if (res.status !== 200) {
+      return { ok: false, reason: `YouTube membalas HTTP ${res.status}.` };
+    }
+
+    const metadata = (res.data && res.data.metadata && res.data.metadata.channelMetadataRenderer) || {};
+    const header = (res.data && res.data.header && (res.data.header.c4TabbedHeaderRenderer || res.data.header.pageHeaderRenderer)) || {};
+
+    const title = metadata.title || (header.title && (header.title.simpleText || (header.title.runs && header.title.runs[0] && header.title.runs[0].text))) || fallbackHandle || target;
+
+    let avatar = '';
+    if (metadata.avatar && Array.isArray(metadata.avatar.thumbnails) && metadata.avatar.thumbnails.length > 0) {
+      avatar = metadata.avatar.thumbnails[0].url || '';
+    } else if (header.avatar && Array.isArray(header.avatar.thumbnails) && header.avatar.thumbnails.length > 0) {
+      avatar = header.avatar.thumbnails[0].url || '';
+    }
+
+    if (avatar.startsWith('//')) {
+      avatar = 'https:' + avatar;
+    }
+
+    let handle = fallbackHandle;
+    if (metadata.vanityChannelUrl) {
+      const parts = metadata.vanityChannelUrl.split('/');
+      const last = parts[parts.length - 1];
+      if (last) handle = last.startsWith('@') ? last : `@${last}`;
+    }
+
+    return {
+      ok: true,
+      profile: {
+        title: String(title).trim(),
+        avatar: String(avatar).trim(),
+        channelId: metadata.externalId || channelId,
+        handle: String(handle).trim(),
+        raw: target,
+      },
+    };
+  }
 }
 
-module.exports = { YouTubeResolver, RESOLVE_ENDPOINT, WEB_CONTEXT };
+module.exports = { YouTubeResolver, RESOLVE_ENDPOINT, BROWSE_ENDPOINT, WEB_CONTEXT };

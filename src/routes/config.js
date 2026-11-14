@@ -60,6 +60,7 @@ function broadcastConfigUpdate(config, broadcast) {
 
   const safeConfig = { ...config };
   delete safeConfig.target; // tidak relevan bagi overlay
+  delete safeConfig.channelProfile; // tidak relevan bagi overlay
 
   const payload = { type: 'CONFIG_UPDATED', config: safeConfig };
   broadcast(payload);

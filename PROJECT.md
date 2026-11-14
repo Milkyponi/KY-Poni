@@ -1,21 +1,21 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v1.2.0` (Static Overlay URL — Satu URL OBS, Preferensi Dibaca dari Aplikasi)  
+**Current Version:** `v1.2.2` (Local Channel Profile & Connected Card — Zero-Quota YouTube Profile)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  
-**Status:** Released — distribusi publik aktif
+**Status:** In Development / Ready for QA
 
 ## Handover & Active State
-- **Status:** **DIRILIS v1.2.0** (2026-11-14) — Latest di GitHub Releases, aset terverifikasi byte-identik dengan artefak uji
-- **Branch:** `feat/static-overlay-url` sudah di-merge ke `main` lalu dihapus. Checkpoint `checkpoint-v1.1.0-pre-static-url` dan cadangan `backup/v1.1.0-stable` tetap disimpan sebagai titik mundur.
-- **Artefak 1.2.0 (terverifikasi sebagai artefak):** `dist/KY-Poni-1.2.0.AppImage` (128.627.864 B, `sha256 8870adc5…`) dan `dist/KY-Poni-1.2.0.exe` (111.720.441 B, `sha256 3d56a741…`). Detail di `QA_REPORT.md` §4A.
-- **Terinstal:** `~/AppImages/kyponi.appimage` (hash identik dengan dist). Backup: `~/AppImages/kyponi.appimage.v1.1.0.bak`.
-- **Gate 1:** LULUS — 214 assertion PASS (source tree) **plus** verifikasi biner: asar 1.2.0, `src/config.json` tidak bocor, server dijalankan dari dalam asar (5/5 endpoint 200), `CONFIG_UPDATED` diterima via WS, `%APPDATA%\KY-Poni` terbentuk di Wine.
-- **Keputusan Bos (2026-11-14):** (1) **config menang** atas URL di instance OBS — URL hanya menang saat `?preview=1`; (2) perbaikan dikerjakan **setelah** Gate 2. Rincian: `01_MEMORY/Decisions/2026-11-14-KY-Poni-Static-Overlay-URL.md`.
-- **Gate 2:** **LULUS** — Bos menyatakan hasil 1.2.0 sesuai di OBS (2026-11-14), tanpa temuan.
-- **Rilis:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.0 — tag `v1.2.0` menunjuk merge `9302185`; commit dokumen menyusul di atasnya (`fe6261e`, `9ec41bd`, `83d37b4`). Aset `state: uploaded` dengan `content-length` 128.627.864 / 111.720.441 byte (identik lokal). Changelog → `#project-archive`, QA ringkas → `#status-testing-qa`.
+- **Status:** **SIAP UJI v1.2.2** (2026-11-14) — Fitur Local Channel Profile & Connected Card selesai diimplementasikan dan diverifikasi
+- **Branch:** `main`
+- **Fitur v1.2.2:** Kartu profil kanal YouTube resmi (avatar bulat, nama tampilan, handle, status badge Live/Standby/Offline) langsung di dashboard. 100% lokal, zero-quota Google Cloud (via InnerTube `/browse`), tanpa OAuth.
+- **Artefak 1.2.2 (terverifikasi sebagai artefak):** `dist/KY-Poni-1.2.2.AppImage` (128.632.034 B, `sha256 672e8378…`) dan `dist/KY-Poni-1.2.2.exe` (111.722.838 B, `sha256 c01fb352…`).
+- **Terinstal di Workstation:** `~/AppImages/kyponi.appimage` (hash identik dengan AppImage dist). Cadangan versi sebelumnya: `~/AppImages/kyponi.appimage.v1.2.0.bak`.
+- **Gate 1:** LULUS — 217 assertion PASS (11 test suites lengkap: server, anti-rto, connectivity, autoconnect, persistence, dashboard boot, windows compat, security hardening, security regression v2, overlay settings, config broadcast) **plus** verifikasi biner (asar 1.2.2 bersih, tanpa kebocoran developer config).
+- **Gate 2:** Menunggu verifikasi Bos di PC / OBS (`docs/HANDOFF-v1.2.2-GATE2.md`).
+- **Rilis Sebelumnya:** v1.2.0 (Static Overlay URL) https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.0
 - **Koreksi penting (diukur ulang vs v1.1.0):** tiga hal yang sempat aku sebut cacat **bukan regresi**. `?layout=fullscreen` = dead code sejak v0.4.4 (tidak pernah punya CSS/UI). Ticker horizontal meluber 1 pesan = angka identik v1.1.0. Animasi ulang saat slider = diperbaiki (v1.1.0 justru reload penuh). Bukti 8 kombinasi di `docs/HANDOFF-v1.2.0-GATE2.md` §3A.1.
 - **Hash rilis:** hash di atas **ADALAH** hash rilis final — diverifikasi `git diff be25a84..HEAD` hanya menyentuh `.md`, jadi biner uji = biner rilis. Tidak ada rebuild.
 - **Sisa v1.1.0:** Gerbang 2 versi itu **masih menunggu uji livestream**, padahal v1.1.0 sudah tayang sebagai Latest di GitHub Releases. Perbaikan konektivitas (bila ada) mendarat di `main` terpisah, bukan di branch ini.

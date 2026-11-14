@@ -13,6 +13,7 @@ function handleStatusRoutes(req, res, pathname, ctx) {
       target: youtubeIngest.currentTarget,
       liveId: youtubeIngest.activeLiveId,
       channelId: youtubeIngest.activeChannelId,
+      profile: youtubeIngest.channelProfile || null,
       messageCount: youtubeIngest.messageCount,
       version: pkg.version,
     });

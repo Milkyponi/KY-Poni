@@ -44,7 +44,39 @@ async function handleIngestRoutes(req, res, pathname, ctx) {
         status: youtubeIngest.status,
         liveId: youtubeIngest.activeLiveId,
         channelId: youtubeIngest.activeChannelId,
+        profile: youtubeIngest.channelProfile,
       });
+    } catch (err) {
+      sendBodyError(res, err);
+    }
+    return true;
+  }
+
+  if (pathname === '/api/channel/profile' && req.method === 'POST') {
+    try {
+      const payload = await parseJsonBody(req);
+      if (!payload.target) {
+        sendError(res, 400, 'Field "target" wajib diisi');
+        return true;
+      }
+
+      const target = String(payload.target).trim();
+      if (!youtubeIngest.parseTarget(target)) {
+        sendError(
+          res,
+          400,
+          `Format target tidak dikenali: "${target}". ` +
+          'Gunakan @handle, Channel ID (UC...), URL kanal, atau URL live/video YouTube.'
+        );
+        return true;
+      }
+
+      const resProf = await youtubeIngest.resolver.resolveChannelProfile(target);
+      if (resProf && resProf.ok) {
+        sendJson(res, 200, { success: true, profile: resProf.profile });
+      } else {
+        sendError(res, 404, (resProf && resProf.reason) || 'Kanal tidak ditemukan di YouTube.');
+      }
     } catch (err) {
       sendBodyError(res, err);
     }

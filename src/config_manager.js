@@ -19,6 +19,7 @@ const { legacyIdToCanonical, isLegacyThemeId } = require('./theme_ids');
 
 const DEFAULT_CONFIG = {
   target: '@MilkyPoni',
+  channelProfile: null,
   theme: 'persona5',
   layout: 'vertical',
   pos: 'bottom-left',
@@ -188,6 +189,24 @@ class ConfigManager {
     if ('target' in updates) {
       const v = str(updates.target, 256);
       if (v !== undefined) out.target = v.replace(/[\x00-\x1f\x7f]/g, '');
+    }
+    if ('channelProfile' in updates) {
+      const p = updates.channelProfile;
+      if (p === null) {
+        out.channelProfile = null;
+      } else if (p && typeof p === 'object') {
+        const title = str(p.title, 128);
+        const avatar = str(p.avatar, 1024);
+        const channelId = str(p.channelId, 64);
+        const handle = str(p.handle, 128);
+        out.channelProfile = {
+          title: title !== undefined ? title.replace(/[\x00-\x1f\x7f]/g, '') : '',
+          avatar: avatar && /^https?:\/\//i.test(avatar) ? avatar.replace(/[\x00-\x1f\x7f]/g, '') : '',
+          channelId: channelId !== undefined ? channelId.replace(/[\x00-\x1f\x7f]/g, '') : '',
+          handle: handle !== undefined ? handle.replace(/[\x00-\x1f\x7f]/g, '') : '',
+          updatedAt: typeof p.updatedAt === 'number' && Number.isFinite(p.updatedAt) ? p.updatedAt : Date.now(),
+        };
+      }
     }
     if ('theme' in updates) {
       const v = str(updates.theme, 64);

@@ -29,6 +29,7 @@ class YouTubeChatIngest extends EventEmitter {
     this.currentTarget = null;
     this.activeLiveId = null;
     this.activeChannelId = null;
+    this.channelProfile = null;
     this.messageCount = 0;
     this.consecutiveErrors = 0;
     this.reconnectAttempts = 0;
@@ -50,6 +51,23 @@ class YouTubeChatIngest extends EventEmitter {
     return classify(input);
   }
 
+
+  async fetchChannelProfile(target) {
+    if (!this.resolver || typeof this.resolver.resolveChannelProfile !== 'function') return null;
+    try {
+      const res = await this.resolver.resolveChannelProfile(target);
+      if (res && res.ok && res.profile) {
+        this.channelProfile = res.profile;
+        if (res.profile.channelId && !this.activeChannelId) {
+          this.activeChannelId = res.profile.channelId;
+        }
+        return res.profile;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
 
   async connect(rawTarget) {
     this.isManuallyStopped = false;
@@ -90,7 +108,20 @@ class YouTubeChatIngest extends EventEmitter {
 
     this.status = 'connecting';
     this.currentTarget = rawTarget;
-    this.emit('status_change', { status: this.status, target: this.currentTarget });
+    this.emit('status_change', { status: this.status, target: this.currentTarget, profile: this.channelProfile });
+
+    // Asynchronously resolve profile metadata without blocking chat connection
+    this.fetchChannelProfile(rawTarget).then((prof) => {
+      if (prof && this.currentTarget === rawTarget) {
+        this.emit('status_change', {
+          status: this.status,
+          target: this.currentTarget,
+          channelId: this.activeChannelId,
+          liveId: this.activeLiveId,
+          profile: this.channelProfile,
+        });
+      }
+    }).catch(() => {});
 
     // Bentuk legacy (/c/Nama, /user/Nama) harus diterjemahkan dulu ke identitas kanal.
     let resolvedDescriptor = descriptor;
@@ -300,6 +331,8 @@ class YouTubeChatIngest extends EventEmitter {
         status: this.status,
         target: this.currentTarget,
         liveId: this.activeLiveId,
+        channelId: this.activeChannelId,
+        profile: this.channelProfile,
       });
     });
 

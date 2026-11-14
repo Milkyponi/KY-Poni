@@ -197,6 +197,29 @@ function themeFixture(dir, id = 'sample') {
     fs.rmSync(homeDir, { recursive: true, force: true });
   });
 
+  check('channelProfile survives restart and sanitises malicious avatar scheme', () => {
+    const homeDir = makeTempHome('profile');
+    const cm = new ConfigManager(null, { platform: 'linux', env: {}, homeDir });
+    cm.updateConfig({
+      target: '@MilkyPoni',
+      channelProfile: {
+        title: 'Milky Poni',
+        avatar: 'javascript:alert(1)',
+        channelId: 'UCbtU1G3peng0-uLPHnJdNNQ',
+        handle: '@MilkyPoni',
+      },
+    });
+
+    const second = new ConfigManager(null, { platform: 'linux', env: {}, homeDir });
+    const cfg = second.getConfig();
+    assert.ok(cfg.channelProfile, 'channelProfile must persist');
+    assert.strictEqual(cfg.channelProfile.title, 'Milky Poni');
+    assert.strictEqual(cfg.channelProfile.handle, '@MilkyPoni');
+    assert.strictEqual(cfg.channelProfile.avatar, '', 'javascript: scheme must be sanitized to empty string');
+    assert.strictEqual(cfg.channelProfile.channelId, 'UCbtU1G3peng0-uLPHnJdNNQ');
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
   check('Corrupt config.json falls back to defaults instead of crashing', () => {
     const homeDir = makeTempHome('corrupt');
     const cm = new ConfigManager(null, { platform: 'linux', env: {}, homeDir });

@@ -402,6 +402,46 @@ async function runNetworkTests() {
     assert.strictEqual(p.state, 'unknown', 'video tidak boleh diklaim live tanpa verifikasi');
   });
 
+  await checkAsync('resolver: resolveChannelProfile sukses mengambil metadata kanal', async () => {
+    const profResolver = new YouTubeResolver({
+      post: async (url) => {
+        if (url.includes('resolve_url')) {
+          return { status: 200, data: { endpoint: { browseEndpoint: { browseId: CH } } } };
+        }
+        if (url.includes('browse')) {
+          return {
+            status: 200,
+            data: {
+              metadata: {
+                channelMetadataRenderer: {
+                  title: 'Test Channel',
+                  vanityChannelUrl: 'http://www.youtube.com/@testchannel',
+                  externalId: CH,
+                  avatar: { thumbnails: [{ url: 'https://example.com/avatar.jpg' }] },
+                },
+              },
+            },
+          };
+        }
+        return { status: 404, data: {} };
+      },
+    });
+
+    const res = await profResolver.resolveChannelProfile('@testchannel');
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(res.profile.title, 'Test Channel');
+    assert.strictEqual(res.profile.handle, '@testchannel');
+    assert.strictEqual(res.profile.channelId, CH);
+    assert.strictEqual(res.profile.avatar, 'https://example.com/avatar.jpg');
+  });
+
+  await checkAsync('resolver: resolveChannelProfile fallback aman pada video target', async () => {
+    const res = await resolver.resolveChannelProfile(`https://youtu.be/${VID}`);
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(res.profile.handle, VID);
+    assert(res.profile.title.includes('Video Stream'));
+  });
+
   // ── Regresi YouTube Nov 2026: tag canonical berisi "undefined" ────────────────
   await checkAsync('shim: fetchLivePage menerima objek {channelId} dari pustaka', async () => {
     const { resolveDescriptor } = require('../src/innertube_live_source');
