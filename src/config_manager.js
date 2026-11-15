@@ -29,7 +29,16 @@ const DEFAULT_CONFIG = {
   textColor: '#FFFFFF',
   fade: 8,
   keep: 1,
+  // v1.3.0 - animasi MASUK chat. Wajib sinkron dengan DEFAULTS.transition di
+  // src/public/overlay_settings.js dan overlay_transitions.js DEFAULT_ID.
+  transition: 'pop',
 };
+
+/**
+ * Daftar tertutup transisi masuk yang dikenali aplikasi.
+ * Dipakai sanitizer di bawah; HARUS sama dengan TRANSITION_IDS di overlay_settings.js.
+ */
+const TRANSITION_IDS = ['pop', 'slide-x', 'slide-y', 'zoom', 'fade'];
 
 /**
  * Resolves the per-platform configuration directory.
@@ -252,6 +261,14 @@ class ConfigManager {
       const v = num(updates.keep, 0, 200);
       if (v !== undefined) out.keep = v;
     }
+    if ('transition' in updates) {
+      // Daftar tertutup, bukan string bebas: nilai ini berakhir sebagai atribut
+      // `data-transition` di halaman overlay.
+      const v = typeof updates.transition === 'string'
+        ? updates.transition.trim().toLowerCase()
+        : undefined;
+      if (v !== undefined && TRANSITION_IDS.includes(v)) out.transition = v;
+    }
 
     return out;
   }
@@ -283,4 +300,4 @@ class ConfigManager {
   }
 }
 
-module.exports = { ConfigManager, DEFAULT_CONFIG, resolveConfigDir };
+module.exports = { ConfigManager, DEFAULT_CONFIG, TRANSITION_IDS, resolveConfigDir };

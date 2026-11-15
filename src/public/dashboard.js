@@ -50,6 +50,7 @@ const selectTheme = document.getElementById('select-theme');
 const selectLayout = document.getElementById('select-layout');
 const inputFade = document.getElementById('input-fade');
 const selectKeep = document.getElementById('select-keep');
+const selectTransition = document.getElementById('select-transition');
 const obsUrlInput = document.getElementById('obs-url');
 const btnCopyUrl = document.getElementById('btn-copy-url');
 const previewFrame = document.getElementById('preview-frame');
@@ -243,6 +244,7 @@ function updateOverlayParams() {
   }
   const fade = inputFade ? inputFade.value : '8';
   const keep = selectKeep ? selectKeep.value : '1';
+  const trans = selectTransition ? selectTransition.value : 'pop';
   const scale = inputScale ? inputScale.value : '100';
   const fsize = inputFsize ? inputFsize.value : '16';
   const font = selectFont ? selectFont.value : 'OptimaNova';
@@ -262,6 +264,7 @@ function updateOverlayParams() {
     color,
     fade,
     keep,
+    trans,
   });
 
   const previewUrl = `${window.location.origin}/overlay?${params.toString()}`;
@@ -309,6 +312,7 @@ selectTheme.addEventListener('change', () => {
 selectLayout.addEventListener('change', updateOverlayParams);
 if (inputFade) inputFade.addEventListener('input', updateOverlayParams);
 if (selectKeep) selectKeep.addEventListener('change', updateOverlayParams);
+if (selectTransition) selectTransition.addEventListener('change', updateOverlayParams);
 // The channel handle used to be persisted only as a side effect of touching another control.
 // Give it its own (debounced) save so typing a handle alone survives a restart.
 if (ytTargetInput) {
@@ -354,6 +358,7 @@ async function saveUserConfig(forceFields = null) {
     textColor: inputColorHex ? inputColorHex.value : '#FFFFFF',
     fade: inputFade ? parseInt(inputFade.value, 10) : 8,
     keep: selectKeep ? parseInt(selectKeep.value, 10) : 1,
+    transition: selectTransition ? selectTransition.value : 'pop',
   };
 
   // Kirim hanya yang berubah dibanding snapshot server. Tanpa snapshot (boot gagal),
@@ -466,6 +471,13 @@ async function applyConfigToUI(cfg) {
   }
   if (cfg.fade !== undefined && inputFade) inputFade.value = cfg.fade;
   if (cfg.keep !== undefined && selectKeep) selectKeep.value = cfg.keep;
+  if (cfg.transition && selectTransition) {
+    // Hanya dipasang bila opsinya benar-benar ada, supaya config dari versi lebih
+    // baru (transisi yang belum dikenal build ini) tidak mengosongkan dropdown.
+    if (Array.from(selectTransition.options).some(o => o.value === cfg.transition)) {
+      selectTransition.value = cfg.transition;
+    }
+  }
 
   if (cfg.channelProfile) {
     currentChannelProfile = cfg.channelProfile;
@@ -607,6 +619,7 @@ async function resetAllPreferences() {
   if (inputColorHex) inputColorHex.value = '#FFFFFF';
   if (inputFade) inputFade.value = 8;
   if (selectKeep) selectKeep.value = '1';
+  if (selectTransition) selectTransition.value = 'pop';
 
   currentPos = 'bottom-left';
   document.querySelectorAll('#position-selector .btn-pos').forEach(b => {

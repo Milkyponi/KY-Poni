@@ -89,6 +89,10 @@ window.KYPoniTheme = {
    *   @param {number} context.fsize - Ukuran font custom (0 jika default)
    *   @param {string} context.font - Nama font keluarga aktif
    *   @param {string} context.color - Hex warna teks custom
+   *   @param {string} context.transition - id transisi MASUK aktif ('pop'|'slide-x'|'slide-y'|'zoom'|'fade')
+   *     Mulai v1.3.0 animasi MASUK chat adalah kustomisasi pengguna, BUKAN milik tema.
+   *     Tema TIDAK BOLEH mendeklarasikan `animation` pada `.chat-entry`; animasi masuk
+   *     datang dari /overlay_transitions.css. Animasi KELUAR (`.is-exiting`) tetap milik tema.
    * 
    * @returns {HTMLElement} Elemen DOM .chat-entry yang sudah siap di-mount ke kanvas
    */

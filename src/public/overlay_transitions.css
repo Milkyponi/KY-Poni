@@ -1,0 +1,151 @@
+/**
+ * KY-Poni - Chat Entry Transition Layer (v1.3.0)
+ *
+ * Sejak v1.3.0 animasi MASUK chat adalah kustomisasi pengguna, BUKAN identitas tema.
+ * Tema tidak lagi mendeklarasikan `animation` pada `.chat-entry` (lihat catatan
+ * penghapusan di setiap style.css tema). Satu-satunya sumber animasi masuk ada di
+ * berkas ini, sehingga tidak mungkin ada dua aturan CSS yang saling menimpa.
+ *
+ * Kontrak dengan core (overlay.js):
+ *   - Kanvas membawa atribut  data-transition="pop|slide-x|slide-y|zoom|fade"
+ *   - Elemen pesan BARU membawa kelas `kyp-entering`; elemen hasil rebuild TIDAK.
+ *     Inilah yang mencegah seluruh tumpukan chat ikut beranimasi ulang saat
+ *     streamer menggeser slider skala atau mengganti warna teks di tengah siaran.
+ *   - Nilai gerak dibaca dari CSS variable yang dipasang overlay_transitions.js:
+ *       --kyp-enter-x / -y / -scale / -rotate / -origin
+ *
+ * Animasi KELUAR (auto-hide, kelas `.is-exiting`) tetap milik tema dan tidak
+ * disentuh oleh berkas ini.
+ *
+ * Semua animasi hanya memakai `opacity` dan `transform` supaya tetap
+ * GPU-composited 60 FPS di Browser Source OBS.
+ */
+
+/* ========================================================
+   Dasar: titik tumpu & durasi per jenis transisi
+   ======================================================== */
+
+#chat-canvas[data-transition] .chat-entry.kyp-entering {
+  transform-origin: var(--kyp-enter-origin, bottom left);
+  animation-fill-mode: forwards;
+  animation-play-state: running;
+  will-change: transform, opacity;
+}
+
+/* --- Pop Up: meniru slam-in Persona 5 (default aplikasi) --- */
+#chat-canvas[data-transition="pop"] .chat-entry.kyp-entering {
+  animation-name: kyp-enter-pop;
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.18, 0.89, 0.32, 1.25);
+}
+
+/* --- Slide Menyamping: dari tepi kiri/kanan kanvas --- */
+#chat-canvas[data-transition="slide-x"] .chat-entry.kyp-entering {
+  animation-name: kyp-enter-slide;
+  animation-duration: 0.32s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Slide Vertikal: dari tepi atas/bawah kanvas --- */
+#chat-canvas[data-transition="slide-y"] .chat-entry.kyp-entering {
+  animation-name: kyp-enter-slide;
+  animation-duration: 0.32s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Zoom In: tumbuh dari titik tumpu anchor --- */
+#chat-canvas[data-transition="zoom"] .chat-entry.kyp-entering {
+  animation-name: kyp-enter-zoom;
+  animation-duration: 0.26s;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+/* --- Fade In: hanya opacity, tanpa gerak --- */
+#chat-canvas[data-transition="fade"] .chat-entry.kyp-entering {
+  animation-name: kyp-enter-fade;
+  animation-duration: 0.3s;
+  animation-timing-function: ease-out;
+}
+
+/* ========================================================
+   Keyframes
+   ======================================================== */
+
+/* Slide memakai satu keyframe untuk kedua sumbu; arahnya datang dari variable,
+   sehingga slide-x dan slide-y tidak menduplikasi aturan. */
+@keyframes kyp-enter-slide {
+  0% {
+    opacity: 0;
+    transform: translate(var(--kyp-enter-x, -108%), var(--kyp-enter-y, 0px)) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes kyp-enter-zoom {
+  0% {
+    opacity: 0;
+    transform: scale(var(--kyp-enter-scale, 0.35));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes kyp-enter-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Pop: overshoot di 70% memberi kesan "menampar" khas tema Persona 5, tanpa
+   memaksa tema lain ikut bergaya komik. Rotasi di titik overshoot sengaja
+   dinolkan: nilainya kosmetik, dan menghindari calc() atas nilai sudut variable. */
+@keyframes kyp-enter-pop {
+  0% {
+    opacity: 0;
+    transform: scale(var(--kyp-enter-scale, 0.7)) rotate(var(--kyp-enter-rotate, 6deg))
+      translateY(var(--kyp-enter-y, 24px));
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.04) rotate(0deg) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg) translateY(0);
+  }
+}
+
+/* ========================================================
+   Penjaga: mode rebuild tidak boleh beranimasi
+   ======================================================== */
+
+/*
+ * Kelas ini dipasang core pada elemen yang dibangun ulang karena perubahan
+ * kosmetik (skala, ukuran font, warna). Tanpa penjaga ini, satu geseran slider
+ * membuat SELURUH tumpukan chat terbang masuk serentak di tengah siaran.
+ *
+ * JEBAKAN YANG SUDAH TERBUKTI: selektor ini TIDAK BOLEH ikut berlaku pada elemen
+ * yang sedang keluar (`.is-exiting`). Spesifisitasnya (id + atribut + 2 kelas dengan
+ * `!important`) mengalahkan `.chat-entry.is-exiting` milik tema yang hanya dua kelas,
+ * sehingga animasi auto-hide mati total: balon menghilang mendadak tanpa fade.
+ * Gejalanya cuma muncul pada pesan yang kebetulan sedang tampil ketika streamer
+ * menggeser slider — yaitu persis saat live. Karena itu `:not(.is-exiting)` wajib.
+ */
+#chat-canvas[data-transition] .chat-entry.kyp-static:not(.is-exiting) {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+
+/* Hormati preferensi sistem untuk gerak minimal (mis. OBS di mesin yang
+   mengaktifkan reduced motion). Transisi diganti fade datar. */
+@media (prefers-reduced-motion: reduce) {
+  #chat-canvas[data-transition] .chat-entry.kyp-entering {
+    animation-name: kyp-enter-fade !important;
+    animation-duration: 0.2s !important;
+  }
+}

@@ -47,12 +47,22 @@
     textColor: '#FFFFFF',
     fade: 8,
     keep: 1,
+    // v1.3.0 - animasi MASUK chat. 'pop' dipilih karena meniru gerak balon tema
+    // bawaan (Persona 5), sehingga instalasi lama tidak terasa berubah saat fitur ini
+    // masuk. Harus sinkron dengan DEFAULT_ID di overlay_transitions.js.
+    transition: 'pop',
   };
 
   /** `max` tidak pernah menjadi bagian dari config pengguna; ia tetap parameter URL. */
   var DEFAULT_MAX = 8;
 
   var POS_VALUES = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'];
+
+  /**
+   * Daftar tertutup transisi masuk. HARUS sinkron dengan IDS di overlay_transitions.js
+   * dan dengan opsi <select id="select-transition"> di dashboard.
+   */
+  var TRANSITION_IDS = ['pop', 'slide-x', 'slide-y', 'zoom', 'fade'];
 
   /** Parameter URL -> key config kanonik. Nama berbeda karena URL lebih ringkas. */
   var URL_TO_CONFIG = {
@@ -65,6 +75,7 @@
     color: 'textColor',
     fade: 'fade',
     keep: 'keep',
+    trans: 'transition',
   };
 
   /** Perubahan pada key ini tidak bisa diterapkan tanpa membangun ulang kanvas. */
@@ -120,6 +131,19 @@
     return /^[A-Za-z0-9_-]{1,64}$/.test(s) ? s : undefined;
   }
 
+  /**
+   * Transisi masuk divalidasi terhadap daftar tertutup, BUKAN diteruskan apa adanya.
+   * Nilai ini berakhir sebagai atribut `data-transition` pada elemen kanvas, sehingga
+   * string sembarang dari config/URL tidak boleh ikut masuk ke DOM.
+   *
+   * Daftar harus sinkron dengan IDS di overlay_transitions.js.
+   */
+  function normTransition(value) {
+    if (typeof value !== 'string') return undefined;
+    var s = value.trim().toLowerCase();
+    return TRANSITION_IDS.indexOf(s) !== -1 ? s : undefined;
+  }
+
   function normFont(value) {
     if (typeof value !== 'string') return undefined;
     var s = value.trim().replace(/^['"]+|['"]+$/g, '');
@@ -136,9 +160,10 @@
     textColor: normHex,
     fade: function (v) { return normNum(v, 0, 600); },
     keep: function (v) { return normNum(v, 0, 200); },
+    transition: normTransition,
   };
 
-  var CONFIG_KEYS = ['theme', 'layout', 'pos', 'scale', 'fontSize', 'fontFamily', 'textColor', 'fade', 'keep'];
+  var CONFIG_KEYS = ['theme', 'layout', 'pos', 'scale', 'fontSize', 'fontFamily', 'textColor', 'fade', 'keep', 'transition'];
 
   /**
    * Saring objek config (dari server, cache, atau berkas) menjadi hanya key berskema
@@ -185,7 +210,7 @@
    * @param {object}  options.config  Config dari server / cache / null
    * @param {boolean} options.preview True bila dipanggil dari iframe dashboard (preview=1)
    * @returns {object} setelan tervalidasi: theme, layout, pos, scale, fontSize,
-   *                   fontFamily, textColor, fade, keep, max
+   *                   fontFamily, textColor, fade, keep, transition, max
    */
   function resolveSettings(options) {
     var opts = options || {};
@@ -203,6 +228,7 @@
       textColor: DEFAULTS.textColor,
       fade: DEFAULTS.fade,
       keep: DEFAULTS.keep,
+      transition: DEFAULTS.transition,
     };
 
     // Lapis config SELALU diterapkan lebih dulu. Di mode normal ia adalah lapisan
@@ -284,6 +310,7 @@
     DEFAULTS: DEFAULTS,
     DEFAULT_MAX: DEFAULT_MAX,
     STRUCTURAL_KEYS: STRUCTURAL_KEYS,
+    TRANSITION_IDS: TRANSITION_IDS,
     URL_TO_CONFIG: URL_TO_CONFIG,
     normalizeConfig: normalizeConfig,
     normalizeUrlParams: normalizeUrlParams,

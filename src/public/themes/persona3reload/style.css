@@ -175,7 +175,9 @@ body {
   width: fit-content;
   min-width: 440px;
   max-width: 680px;
-  animation: p3r-slide-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* v1.3.0: animasi MASUK bukan lagi milik tema. Animasi masuk sekarang
+     kustomisasi pengguna dan hidup di /overlay_transitions.css. Deklarasi di
+     sini sengaja dihapus, bukan ditimpa, agar tidak ada dua sumber kebenaran. */
   flex-shrink: 0;
   margin-bottom: 4px;
 }
@@ -186,17 +188,9 @@ body {
 .chat-entry.tier-3 { width: 600px; max-width: 640px; }
 .chat-entry.tier-4 { width: 660px; max-width: 680px; }
 
-/* Entry Animation: Slick Persona 3 Glide & Settle */
-@keyframes p3r-slide-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-24px) scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-}
+/* v1.3.0: keyframe masuk (`p3r-slide-in`) dipindahkan ke /overlay_transitions.css
+   sebagai transisi yang bisa dipilih pengguna. Tema ini tidak lagi mendeklarasikan
+   animasi MASUK; hanya gaya visual balon yang tersisa di sini. */
 
 /* --- Dialogue Bubble Container --- */
 .p3r-dialogue-bubble {

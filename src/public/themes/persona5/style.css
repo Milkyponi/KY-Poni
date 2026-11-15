@@ -175,7 +175,9 @@ body {
   width: fit-content;
   min-width: 440px;
   max-width: 680px;
-  animation: p5-slam-in 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
+  /* v1.3.0: animasi MASUK bukan lagi milik tema. Animasi masuk sekarang
+     kustomisasi pengguna dan hidup di /overlay_transitions.css. Deklarasi di
+     sini sengaja dihapus, bukan ditimpa, agar tidak ada dua sumber kebenaran. */
   flex-shrink: 0;
   margin-bottom: 2px;
 }
@@ -379,44 +381,14 @@ body {
   transform-origin: bottom right;
 }
 
-#chat-canvas.pos-top-left .chat-entry,
-#chat-canvas.pos-top-right .chat-entry {
-  animation: p5-slam-down 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
-}
-
 /* ========================================================
-   Keyframe Animations (Slam-in & Drop-out)
+   Keyframe Animations (Drop-out saja)
+   --------------------------------------------------------
+   v1.3.0: keyframe masuk (`p5-slam-in`, `p5-slam-down`) sudah dipindahkan ke
+   /overlay_transitions.css sebagai transisi "Pop Up" yang bisa dipilih pengguna.
+   Tema ini hanya memegang animasi KELUAR (auto-hide), sesuai keputusan Bos:
+   transisi masuk = kustomisasi, transisi keluar = identitas tema.
    ======================================================== */
-
-@keyframes p5-slam-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.7) rotate(-6deg) translateY(24px);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1.04) rotate(-0.5deg) translateY(-2px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg) translateY(0);
-  }
-}
-
-@keyframes p5-slam-down {
-  0% {
-    opacity: 0;
-    transform: scale(0.7) rotate(6deg) translateY(-24px);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1.04) rotate(0.5deg) translateY(2px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg) translateY(0);
-  }
-}
 
 /* Exit Animations (Auto-Hide) */
 .chat-entry.is-exiting {

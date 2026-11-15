@@ -14,6 +14,14 @@
  * Perubahan preferensi dari dashboard diterima lewat WebSocket (CONFIG_UPDATED):
  *   - perubahan kosmetik   -> diterapkan langsung tanpa reload, tanpa kedipan
  *   - perubahan struktural -> halaman memuat ulang dirinya sendiri
+ *
+ * v1.3.0 - Animasi MASUK chat dipindahkan dari tema ke kustomisasi pengguna.
+ * Modul overlay_transitions.js memutuskan arah gerak (ikut anchor), dan berkas
+ * overlay_transitions.css memegang keyframe-nya. Core hanya menandai elemen:
+ *   - pesan BARU          -> kelas `kyp-entering` (ikut beranimasi)
+ *   - elemen hasil rebuild-> kelas `kyp-static`   (TIDAK beranimasi)
+ * Pemisahan itu wajib: tanpa penanda, satu geseran slider skala di dashboard
+ * membuat seluruh tumpukan chat terbang masuk lagi di tengah siaran.
  */
 
 (function () {
@@ -23,6 +31,13 @@
   if (!Settings) {
     console.error('[KY-Poni Core Overlay] overlay_settings.js tidak termuat. Overlay tidak dapat berjalan.');
     return;
+  }
+
+  // Resolver arah transisi. Bila gagal termuat, overlay tetap HARUS jalan:
+  // tanpa modul ini semua pesan dirender tanpa animasi masuk, bukan layar kosong.
+  var Transitions = window.KYPoniTransitions || null;
+  if (!Transitions) {
+    console.warn('[KY-Poni Core Overlay] overlay_transitions.js tidak termuat. Animasi masuk dinonaktifkan.');
   }
 
   var urlParams = new URLSearchParams(window.location.search);
@@ -89,6 +104,7 @@
         textColor: config.textColor,
         fade: config.fade,
         keep: config.keep,
+        transition: config.transition,
       }));
     } catch (e) {
       // localStorage penuh/diblokir: overlay tetap jalan dengan config server.
@@ -133,6 +149,19 @@
 
   // ---------------------------------------------------------------- penerapan setelan
 
+  /**
+   * Pasang parameter transisi masuk ke kanvas.
+   *
+   * Sengaja TIDAK memicu rebuild DOM: mengganti transisi hanya mengubah arah
+   * animasi pesan berikutnya. Membangun ulang di sini akan memutar ulang animasi
+   * seluruh balon yang sedang tampil, terlihat sebagai kedipan di siaran.
+   */
+  function applyTransitionSettings() {
+    if (!Transitions) return;
+    var resolution = Transitions.resolve(settings.transition, settings.pos);
+    Transitions.applyToCanvas(canvas, resolution, document.documentElement);
+  }
+
   function applyCssVariables() {
     var root = document.documentElement;
 
@@ -162,6 +191,7 @@
     context.fade = settings.fade;
     context.keep = settings.keep;
     context.max = settings.max;
+    context.transition = settings.transition;
     context.isHorizontal = settings.layout === 'horizontal';
     context.isRightPos = settings.pos.indexOf('-right') !== -1;
     context.isTopPos = settings.pos.indexOf('top-') === 0;
@@ -257,6 +287,42 @@
    * tampil — khususnya persona3reload, yang menulis `context.color` langsung ke style
    * elemen (persona3reload/renderer.js:111-113).
    */
+  /**
+   * Tandai elemen sebagai hasil rebuild: tidak boleh beranimasi masuk.
+   * Kelas `kyp-entering` dari pemakaian sebelumnya juga dibuang, kalau tidak
+   * elemen baru akan tetap beranimasi karena atribut kanvas masih terpasang.
+   */
+  function markStatic(el) {
+    if (!el || !el.classList) return;
+    el.classList.remove('kyp-entering');
+    el.classList.add('kyp-static');
+  }
+
+  /**
+   * Tandai elemen sebagai pesan BARU sehingga lapisan transisi memutar animasi masuk.
+   * Kelas dilepas setelah animasi selesai supaya `will-change` tidak menumpuk pada
+   * tumpukan chat yang panjang (biaya memori compositor di Browser Source OBS).
+   */
+  function markEntering(el) {
+    if (!el || !el.classList) return;
+    el.classList.remove('kyp-static');
+    if (!Transitions) return;
+
+    el.classList.add('kyp-entering');
+
+    var cleared = false;
+    var clear = function () {
+      if (cleared) return;
+      cleared = true;
+      el.classList.remove('kyp-entering');
+    };
+
+    el.addEventListener('animationend', clear);
+    // Jaring pengaman: bila `animationend` tidak pernah datang (animasi dibatalkan
+    // karena halaman tidak dirender, durasi 0, dsb), kelas tetap dibersihkan.
+    setTimeout(clear, 1200);
+  }
+
   function rebuildDom() {
     flow.textContent = '';
     for (var i = 0; i < visible.length; i++) {
@@ -264,6 +330,13 @@
       var el = buildEntry(entry.item);
       entry.el = el;
       if (!el) continue;
+
+      // Penanda WAJIB: elemen ini lahir dari perubahan kosmetik (skala, font,
+      // warna), bukan dari pesan baru. Tanpa `kyp-static` seluruh tumpukan chat
+      // memutar ulang animasi masuk secara serentak — terlihat seperti semua
+      // balon terbang masuk lagi di tengah siaran.
+      markStatic(el);
+
       if (isPrependFlow()) {
         flow.prepend(el);
       } else {
@@ -306,15 +379,23 @@
     syncContext();
     applyCssVariables();
     applyCanvasClasses();
+    applyTransitionSettings();
 
     if (structural) {
       loadThemePlugin(settings.theme, function () {
         rebuildDom();
       });
     } else if (changed.length > 0) {
-      // Kosmetik: rebuild DOM agar inline style tiap pesan ikut berubah.
-      // Tidak ada reload, tidak ada kedipan, chat tetap di tempatnya.
-      rebuildDom();
+      // Perubahan yang hanya menyangkut transisi masuk tidak butuh rebuild sama
+      // sekali: tidak ada inline style per pesan yang bergantung padanya. Rebuild
+      // di sini justru akan menghapus animasi balon yang sedang berjalan.
+      var cosmetic = changed.filter(function (key) { return key !== 'transition'; });
+
+      if (cosmetic.length > 0) {
+        // Kosmetik: rebuild DOM agar inline style tiap pesan ikut berubah.
+        // Tidak ada reload, tidak ada kedipan, chat tetap di tempatnya.
+        rebuildDom();
+      }
       console.log('[KY-Poni Core] Preferensi tampilan diperbarui tanpa reload:', changed.join(', '));
     }
   }
@@ -367,6 +448,11 @@
 
     var el = buildEntry(item);
     if (!el) return;
+
+    // Ditandai SEBELUM masuk DOM supaya animasi mulai dari frame pertama elemen
+    // itu terlihat. Menandainya sesudah append membuat satu frame pertama tampil
+    // pada posisi akhir, lalu melompat ke titik awal — terlihat sebagai kedip.
+    markEntering(el);
 
     if (isPrependFlow()) {
       flow.prepend(el);
