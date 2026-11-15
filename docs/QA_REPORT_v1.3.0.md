@@ -6,12 +6,14 @@
 >
 > **Catatan gate:** Gerbang 1 **LULUS** — 262 assertion PASS dari satu perintah, plus verifikasi
 > biner (asar AppImage & payload NSIS Windows sama-sama v1.3.0, server dijalankan dari hasil
-> ekstraksi). **Gerbang 2 MENUNGGU uji Bos.** Belum ada tag, belum ada GitHub Release.
+> ekstraksi). Gerbang 2 **LULUS** — Bos menyatakan lolos tanpa temuan (2026-11-15).
+> **Dirilis:** v1.3.0. Aset yang diunggah **adalah** artefak uji (tanpa rebuild), dibuktikan
+> `git diff 9d0b461..HEAD -- src/ package.json test/` kosong — hanya `.md` yang berubah.
 
 - **Tanggal**: 2026-11-15
 - **Lead Tester**: Fonzy (Divisi Software Development)
 - **Lingkup**: fitur baru (transisi masuk) + dua cacat yang ditemukan sendiri saat implementasi
-- **Status**: **Lulus Gerbang 1** — 262/262 assertion; 2 cacat ditemukan & diperbaiki; 1 cacat lama dicatat (tidak diperbaiki, di luar scope)
+- **Status**: **Lulus Gerbang 1 & Gerbang 2** — 262/262 assertion; 2 cacat ditemukan & diperbaiki; 1 cacat lama dicatat (tidak diperbaiki, di luar scope)
 
 ---
 
@@ -192,8 +194,9 @@ di 45% durasi animasi) dan `test_previews/transitions-v1.3.0/startpos/` (5 gamba
 | Gerbang | Status |
 | --- | --- |
 | **Gerbang 1 (Fonzy)** | **LULUS** — 262/262 assertion, biner diverifikasi dua platform, dua cacat diperbaiki, satu cacat lama dicatat |
-| **Gerbang 2 (Bos)** | **MENUNGGU** — instal artefak uji, jalankan daftar uji singkat, nyatakan lolos/tidak |
+| **Gerbang 2 (Bos)** | **LULUS** — Bos menyatakan lolos tanpa temuan (2026-11-15) |
 
-Artefak yang tercatat di sini adalah **artefak UJI, bukan rilis final**. Sesuai SOP, publish
-hanya setelah Bos menyatakan lolos; bila ada perbaikan susulan, hash berubah dan area yang
-disentuh wajib diuji ulang.
+Artefak yang tercatat di sini **adalah artefak rilis**: Bos lolos tanpa temuan, sehingga tidak
+ada perbaikan susulan dan **tidak ada rebuild**. Hash tetap `48b11a93…` (AppImage) dan
+`980ed6d0…` (exe). Bila di kemudian hari ada perbaikan, hash akan berubah dan area yang disentuh
+wajib diuji ulang.
