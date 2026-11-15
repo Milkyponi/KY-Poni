@@ -17,7 +17,9 @@
 - **Gate 2 v1.3.0: LULUS** — Bos menyatakan lolos tanpa temuan (2026-11-15).
 - **Penimpaan instalasi:** `~/AppImages/kyponi.appimage` = v1.3.0, `sha256 48b11a93…` (identik `dist/`). Cadangan: `~/AppImages/kyponi.appimage.v1.2.2.bak`. **Profil asli Bos tidak disentuh** — `~/.config/ky-poni/config.json` masih tanpa field `transition`, sehingga aplikasi memakai bawaan `pop` (tampilan tidak berubah sampai Bos memilih sendiri).
 - **Hash rilis = hash uji:** dibuktikan `git diff 9d0b461..HEAD -- src/ package.json test/` **kosong** (hanya `.md` berubah). Tidak ada rebuild, jadi biner yang diuji adalah biner yang dirilis.
-- **Sudah dikirim:** `#project-archive` (changelog v1.3.0) dan `#status-testing-qa` (QA report v1.3.0).
+- **Sudah dikirim:** `#project-archive` (changelog + pengumuman rilis v1.3.0) dan `#status-testing-qa` (QA report v1.3.0).
+- **Rilis:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.3.0 — **Latest**, tag `v1.3.0` = commit `45547c5`. Kedua aset `state: uploaded` dengan digest sisi-server **identik** hash lokal. Snapshot tag bersih (dicek via `git show v1.3.0:docs/QA_REPORT_v1.3.0.md`), tidak ada anomali seperti v1.0.0.
+- **Rilis Sebelumnya:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.2
 - **Cacat lama yang DICATAT, bukan diperbaiki:** tema `persona3reload` tidak punya animasi keluar (`.is-exiting`) sejak sebelum v1.3.0. Di luar scope "entry saja dulu" yang dikunci Bos.
 - **Fitur v1.2.2:** Kartu profil kanal YouTube resmi (avatar bulat, nama tampilan, handle, status badge Live/Standby/Offline) langsung di dashboard. 100% lokal, zero-quota Google Cloud (via InnerTube `/browse`), tanpa OAuth.
 - **Artefak 1.2.2 (terverifikasi sebagai artefak):** `dist/KY-Poni-1.2.2.AppImage` (128.632.034 B, `sha256 672e8378…`) dan `dist/KY-Poni-1.2.2.exe` (111.722.838 B, `sha256 c01fb352…`).
