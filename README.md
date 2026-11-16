@@ -73,8 +73,6 @@ Tema disimpan di folder data pengguna, jadi tetap ada setelah aplikasi diperbaru
 - Linux: `~/.config/ky-poni/themes/`
 - Windows: `%APPDATA%\KY-Poni\themes\`
 
-Ingin membuat tema sendiri? Kontraknya ada di [THEME_SPEC.md](THEME_SPEC.md) — cukup `theme.json`, `style.css`, dan `renderer.js`.
-
 ## Pengembangan
 
 ```bash
@@ -86,8 +84,6 @@ npm test         # suite otomatis
 npm run build:linux
 npm run build:win
 ```
-
-Arsitektur dan keputusan teknis dijelaskan di [PROJECT.md](PROJECT.md), rencana fitur di [ROADMAP.md](ROADMAP.md).
 
 ## Dukung Pengembang
 
