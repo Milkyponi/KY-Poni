@@ -36,7 +36,18 @@ Ambil berkas terbaru dari halaman [Releases](https://github.com/Milkyponi/KY-Pon
 
 ## Pasang di OBS
 
-1. Buka KY-Poni, isi channel handle YouTube (misalnya `@MilkyPoni`), lalu hubungkan.
+1. Buka KY-Poni, isi target kanal YouTube lalu hubungkan:
+   - **Format input yang didukung:**
+     * **Channel Handle / ID:** `@MilkyPoni` (atau tanpa @: `MilkyPoni`)
+     * **URL Lengkap Kanal:** `https://www.youtube.com/@MilkyPoni` atau `https://www.youtube.com/channel/UC...`
+     * **Link Video Livestream Langsung:** `https://www.youtube.com/watch?v=...` atau `https://youtu.be/...`
+
+> [!TIP]
+> **Kanal Tidak Terdeteksi Menggunakan Handle / Channel ID? Gunakan URL Lengkap!**
+> Jika kamu memasukkan Channel ID / Handle (misal `@NamaChannel`) namun aplikasi memunculkan status *"Kanal tidak ditemukan"* atau gagal terhubung, ini umumnya kendala dari sistem internal YouTube (misal akun/handle baru dibuat, index query handle di server YouTube sedang lambat/tertunda, atau handle mengalami desync sehingga tidak bisa di-tag).
+> 
+> **Solusinya sangat mudah:** Salin dan tempel **Link / URL Lengkap Kanal** kamu langsung dari browser bar (contoh: `https://www.youtube.com/@NamaChannel` atau `https://www.youtube.com/channel/UCxxxxxxxx`). Aplikasi akan langsung membedah halaman kanal dan menemukan siaran langsung kamu secara akurat!
+
 2. Atur tema, sudut layar, ukuran font, dan warna di dashboard.
 3. Salin URL dari kotak OBS Browser Source — isinya **selalu** `http://localhost:19840/overlay`.
 4. Di OBS, tambahkan source **Browser**, tempel URL tersebut.
