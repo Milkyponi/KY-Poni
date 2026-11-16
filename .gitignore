@@ -11,3 +11,7 @@ INVESTIGATION_*.md
 preview_p5_widget.html
 squashfs-root/
 assets-export/
+
+# Milky Brain Internal & Blueprint
+_internal/
+PROJECT.md
