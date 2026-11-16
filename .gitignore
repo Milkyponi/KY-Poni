@@ -9,3 +9,5 @@ changelogs/
 test_previews/
 INVESTIGATION_*.md
 preview_p5_widget.html
+squashfs-root/
+assets-export/

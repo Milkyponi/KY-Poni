@@ -1,25 +1,23 @@
 # Project: KY-Poni
 
 **Directory:** `/home/milkyponi/Documents/Milky Brain/07_PROJECTS/KY-Poni/`  
-**Current Version:** `v1.3.0` (Chat Entry Transitions — kustomisasi animasi masuk, 5 pilihan)  
+**Current Version:** `v1.3.1` (Bug Fix: Connected Profile Card UI Edit Lock)  
 **Lead:** Fonzy (Software Development & Architecture)  
 **Stakeholder / Product Owner:** Milky Poni (Bos)  
 **Target Output:** Portable Native Binaries (`.exe` Windows & `.AppImage` Linux via Gear Lever)  
-**Status:** Released — distribusi publik aktif
+**Status:** DIRILIS v1.3.1 (2026-11-16)
 
 ## Handover & Active State
-- **Status:** **DIRILIS v1.3.0** (2026-11-15) — Gate 1 & Gate 2 LULUS tanpa temuan; aset yang diunggah ADALAH artefak uji (tanpa rebuild).
+- **Status:** **DIRILIS v1.3.1** (2026-11-16) — Bug fix tombol "Ganti" bandel teratasi; artefak v1.3.1 dirilis ke GitHub Releases; biner lokal workstation `~/AppImages/kyponi.appimage` sudah diperbarui.
 - **Branch:** `main`
-- **Fitur v1.3.0:** Animasi **masuk** chat bukan lagi milik tema — kini kustomisasi pengguna dengan 5 pilihan (Pop Up [bawaan], Slide Menyamping, Slide Vertikal, Zoom In, Fade In). Arah gerak mengikuti Sudut Layar (anchor kiri → dari kiri, kanan → dari kanan, atas → dari atas, bawah → dari bawah). Animasi **keluar** tetap milik tema.
-- **Artefak 1.3.0 (artefak RILIS):** `dist/KY-Poni-1.3.0.AppImage` (128.652.384 B, `sha256 48b11a93…`) dan `dist/KY-Poni-1.3.0.exe` (111.729.181 B, `sha256 980ed6d0…`).
-- **Gate 1 v1.3.0: LULUS** — **262 assertion PASS** dari satu perintah `npm test` (12 suite, termasuk `test_transitions.js` 45 assertion baru) + verifikasi biner: asar AppImage & payload NSIS Windows sama-sama v1.3.0, tanpa kebocoran `src/config.json`/`test/`, dan **server dijalankan dari hasil ekstraksi** (`/api/version` = 1.3.0, animasi `kyp-enter-pop` benar-benar berjalan di browser).
-- **Paritas Windows v1.3.0:** 14/14 simulasi win32 tetap hijau; `resolveConfigDir(win32)` = `...\Roaming/KY-Poni` (kapitalisasi benar); config lama tanpa field `transition` termigrasi ke `pop`; payload Windows berjalan fungsional di port uji (POST transisi `zoom` tersimpan); nilai di luar skema ditolak.
-- **Gate 2 v1.3.0: LULUS** — Bos menyatakan lolos tanpa temuan (2026-11-15).
-- **Penimpaan instalasi:** `~/AppImages/kyponi.appimage` = v1.3.0, `sha256 48b11a93…` (identik `dist/`). Cadangan: `~/AppImages/kyponi.appimage.v1.2.2.bak`. **Profil asli Bos tidak disentuh** — `~/.config/ky-poni/config.json` masih tanpa field `transition`, sehingga aplikasi memakai bawaan `pop` (tampilan tidak berubah sampai Bos memilih sendiri).
-- **Hash rilis = hash uji:** dibuktikan `git diff 9d0b461..HEAD -- src/ package.json test/` **kosong** (hanya `.md` berubah). Tidak ada rebuild, jadi biner yang diuji adalah biner yang dirilis.
-- **Sudah dikirim:** `#project-archive` (changelog + pengumuman rilis v1.3.0) dan `#status-testing-qa` (QA report v1.3.0).
-- **Rilis:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.3.0 — **Latest**, tag `v1.3.0` = commit `45547c5`. Kedua aset `state: uploaded` dengan digest sisi-server **identik** hash lokal. Snapshot tag bersih (dicek via `git show v1.3.0:docs/QA_REPORT_v1.3.0.md`), tidak ada anomali seperti v1.0.0.
-- **Rilis Sebelumnya:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.2.2
+- **Fitur/Fix v1.3.1:** UI Edit Lock (`isEditingTarget`) pada `dashboard.js` untuk mencegah form input target YouTube tertimpa atau ditutup paksa oleh background status heartbeat (polling 5s & WebSocket `SYSTEM_STATUS`).
+- **Artefak 1.3.1:** `dist/KY-Poni-1.3.1.AppImage` dan `dist/KY-Poni-1.3.1.exe`.
+- **Gate 1 v1.3.1: LULUS** — **286 assertion PASS** dari `npm test` (13 test suites lengkap, termasuk `test_dashboard_profile_ui.js` 19 assertion baru).
+- **Paritas Windows v1.3.1:** 14/14 simulasi win32 tetap hijau; biner portable Windows `.exe` ter-build bersih.
+- **Penimpaan instalasi lokal:** `~/AppImages/kyponi.appimage` = v1.3.1. Cadangan: `~/AppImages/kyponi.appimage.v1.3.0.bak`. **Profil asli Bos tidak disentuh**.
+- **Status Publik:** **DIRILIS KE GITHUB** (https://github.com/Milkyponi/KY-Poni/releases/tag/v1.3.1)
+- **Rilis Publik Terakhir:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.3.1
+- **Rilis Sebelumnya:** https://github.com/Milkyponi/KY-Poni/releases/tag/v1.3.0
 - **Cacat lama yang DICATAT, bukan diperbaiki:** tema `persona3reload` tidak punya animasi keluar (`.is-exiting`) sejak sebelum v1.3.0. Di luar scope "entry saja dulu" yang dikunci Bos.
 - **Fitur v1.2.2:** Kartu profil kanal YouTube resmi (avatar bulat, nama tampilan, handle, status badge Live/Standby/Offline) langsung di dashboard. 100% lokal, zero-quota Google Cloud (via InnerTube `/browse`), tanpa OAuth.
 - **Artefak 1.2.2 (terverifikasi sebagai artefak):** `dist/KY-Poni-1.2.2.AppImage` (128.632.034 B, `sha256 672e8378…`) dan `dist/KY-Poni-1.2.2.exe` (111.722.838 B, `sha256 c01fb352…`).

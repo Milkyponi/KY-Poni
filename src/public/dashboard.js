@@ -98,8 +98,19 @@ const btnCancelEdit = document.getElementById('btn-cancel-edit');
 
 let currentChannelProfile = null;
 
+// UI edit lock.
+//
+// Background heartbeats (`pollStatus()` every 5s and the SYSTEM_STATUS WebSocket message)
+// both call applyStreamStatus(), which re-renders the channel profile card. Without a lock
+// that re-render fires 1-5s after the user clicks "Ganti" and force-closes the input form,
+// throwing away whatever they were typing. While this flag is true the background status
+// feed may still update badges/dots/liveId, but it must not touch the profile/input layout.
+let isEditingTarget = false;
+
 // Channel Profile UI Helpers
 function renderChannelProfile(profile, targetFallback = '') {
+  // Rendering the card is the deliberate end of edit mode (boot, connect, cancel).
+  isEditingTarget = false;
   const target = targetFallback || (ytTargetInput ? ytTargetInput.value.trim() : '');
   const title = (profile && profile.title) || target || 'YouTube Channel';
   const handle = (profile && profile.handle) || target || '';
@@ -120,7 +131,18 @@ function renderChannelProfile(profile, targetFallback = '') {
   if (profileChannelBadge) profileChannelBadge.style.display = 'inline-block';
 }
 
-function showTargetInputForm(allowCancel = true) {
+/**
+ * Shows the handle input form.
+ *
+ * @param {boolean} allowCancel  whether the "Batal" button is offered
+ * @param {boolean} markEditing  raise the edit lock so the background status feed cannot
+ *                               steal the form back. Boot passes false: an empty form is
+ *                               just the resting state there, and a later autoconnect
+ *                               SYSTEM_STATUS must still be allowed to paint the card.
+ */
+function showTargetInputForm(allowCancel = true, markEditing = true) {
+  // Kunci dulu sebelum menyentuh DOM: heartbeat bisa mendarat di antara dua baris ini.
+  if (markEditing) isEditingTarget = true;
   if (ytProfileView) ytProfileView.style.display = 'none';
   if (ytInputView) ytInputView.style.display = 'block';
   if (btnCancelEdit) btnCancelEdit.style.display = (allowCancel && currentChannelProfile) ? 'inline-flex' : 'none';
@@ -135,8 +157,12 @@ if (btnEditTarget) {
 
 if (btnCancelEdit) {
   btnCancelEdit.addEventListener('click', () => {
+    isEditingTarget = false;
     if (currentChannelProfile) {
       renderChannelProfile(currentChannelProfile, ytTargetInput ? ytTargetInput.value.trim() : '');
+    } else {
+      // Tidak ada profil tersimpan: keluar dari mode edit tanpa mengklaim ada kartu profil.
+      renderChannelProfile(null, ytTargetInput ? ytTargetInput.value.trim() : '');
     }
   });
 }
@@ -485,7 +511,9 @@ async function applyConfigToUI(cfg) {
   } else if (cfg.target && cfg.target !== '@MilkyPoni') {
     renderChannelProfile(null, cfg.target);
   } else {
-    showTargetInputForm(false);
+    // Belum ada target tersimpan: form kosong adalah keadaan diam, bukan sesi edit.
+    // Jangan pasang kunci supaya autoconnect tetap boleh menggambar kartu profil.
+    showTargetInputForm(false, false);
   }
 
   updateOverlayParams();
@@ -526,6 +554,9 @@ btnConnect.addEventListener('click', async () => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal terhubung');
 
+    // Koneksi berhasil = niat mengedit sudah selesai. Lepas kunci sebelum render supaya
+    // kartu profil tidak bisa tertahan di form input bila render melempar error.
+    isEditingTarget = false;
     if (data.profile) {
       currentChannelProfile = data.profile;
       renderChannelProfile(data.profile, target);
@@ -538,6 +569,8 @@ btnConnect.addEventListener('click', async () => {
     saveUserConfig();
     await pollStatus();
   } catch (err) {
+    // Gagal terhubung berarti pengguna MASIH mengedit: biarkan kunci terpasang agar
+    // heartbeat tidak menutup form sebelum ia memperbaiki target atau menekan Cancel.
     alert(`Error koneksi: ${err.message}`);
     setUIStatus('error', '❌ ' + err.message);
   } finally {
@@ -1079,7 +1112,11 @@ async function loadCatalog() {
 function applyStreamStatus(data) {
   if (!data || !data.status) return;
 
-  if (data.profile) {
+  // Layout kartu profil HANYA boleh ditimpa saat pengguna tidak sedang mengedit target.
+  // Tanpa penjaga ini, heartbeat (poll 5s / WS) menutup form input beberapa detik setelah
+  // "Ganti" ditekan dan mengembalikan profil lama dari server.
+  // Badge, dot avatar, dan liveId di bawah tetap diperbarui walau sedang mengedit.
+  if (data.profile && !isEditingTarget) {
     currentChannelProfile = data.profile;
     renderChannelProfile(data.profile, data.target || (ytTargetInput ? ytTargetInput.value.trim() : ''));
   }
