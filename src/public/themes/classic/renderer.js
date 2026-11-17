@@ -57,6 +57,15 @@
 
       const msgSpan = document.createElement('div');
       msgSpan.className = 'message-text';
+      if (context && context.fsize && Number(context.fsize) > 0) {
+        msgSpan.style.fontSize = `${Number(context.fsize)}px`;
+      }
+      if (context && context.font) {
+        msgSpan.style.fontFamily = `'${context.font}', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+      }
+      if (context && context.color) {
+        msgSpan.style.color = context.color;
+      }
       msgSpan.innerHTML = item.message;
       bubbleBody.appendChild(msgSpan);
 

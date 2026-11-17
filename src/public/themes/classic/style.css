@@ -1,9 +1,36 @@
 /* KY-Poni - Classic Clean Theme */
+@font-face {
+  font-family: 'OptimaNova';
+  src: url('/themes/persona5/assets/fonts/OptimaNovaLT-Black.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Agane';
+  src: url('/themes/persona3reload/assets/fonts/Agane-Roman.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Agane';
+  src: url('/themes/persona3reload/assets/fonts/Agane-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg-bubble: rgba(18, 24, 38, 0.85);
   --border-bubble: rgba(255, 255, 255, 0.12);
   --text-main: #F3F4F6;
   --text-author: #93C5FD;
+  --msg-font-size: 16px;
+  --msg-font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --msg-font-color: #F3F4F6;
 }
 
 body {
@@ -136,10 +163,19 @@ body {
   border: 1px solid var(--border-bubble);
   border-radius: 12px;
   padding: 10px 14px;
-  font-size: 0.95rem;
+  font-family: var(--msg-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  font-size: var(--msg-font-size, 16px);
+  color: var(--msg-font-color, var(--text-main));
   line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.message-text {
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .chat-emote {
@@ -157,14 +193,19 @@ body {
 .badge-member { background: #10B981; color: #FFF; }
 
 .chat-entry.is-superchat .bubble-body {
-  border: 1px solid #F59E0B;
-  background: rgba(245, 158, 11, 0.2);
+  border: 1.5px solid #F59E0B;
+  background: rgba(32, 22, 8, 0.90);
 }
 
 .superchat-amount-banner {
-  color: #FCD34D;
+  display: inline-block;
+  background: #F59E0B;
+  color: #111827;
+  font-size: 0.78rem;
   font-weight: 800;
-  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
 }
 
 #cutin-overlay { display: none; }

@@ -1,12 +1,12 @@
 /**
- * KY-Poni - Persona 5 Theme Renderer Plugin (Origami-Anchored Hybrid Stretch)
+ * KY-Poni - Persona 5 Theme Renderer Plugin (9-Slice PhotoCraft PNG Original)
  * Implements Standard Theme Plugin Contract (THEME_SPEC.md).
- * 
+ *
  * Features:
- * - 3-Piece Hybrid Sliced Asset Skin with Fixed Width Caps (155px)
- * - Origami-Anchored Nameplate (Fixed physical positioning on white ribbon)
- * - Centered Vertical Anchor & Snug-Fit 4-Tier Progression
- * - Auto-Fit Font Scaling for long messages (Zero-Clipping up to 250+ chars)
+ * - 100% Original PNG Assets (3-piece compact <=128px + 9-slice PhotoCraft >=148px)
+ * - Left zig-zag ornament & right white wedge locked 1:1 (zero stretching/distortion)
+ * - Origami-Anchored Nameplate locked on white ribbon across all tiers
+ * - Font-size-aware tiering & ResizeObserver auto-expansion (zero clipping)
  */
 
 (function () {
@@ -26,23 +26,31 @@
       const rawLength = rawText.length;
       const newlineCount = (rawText.match(/\n/g) || []).length;
 
-      // 4-Tier Dynamic Classification based on content volume
+      const fsize = (context && Number(context.fsize) > 0) ? Number(context.fsize) : 16;
+      const fontFactor = Math.max(1, fsize / 16);
+      const badgeBonus = (isSuperChat ? 24 : 0) + (isMembership ? 22 : 0);
+      const effectiveLength = Math.round(rawLength * fontFactor) + badgeBonus;
+
+      // 4-Tier Dynamic Width Classification (font-size-aware)
       let tierClass = 'tier-1';
-      if (rawLength > 175 || newlineCount >= 3) {
+      if (effectiveLength > 175 || newlineCount >= 3) {
         tierClass = 'tier-4';
-      } else if (rawLength > 115 || newlineCount >= 2) {
+      } else if (effectiveLength > 115 || newlineCount >= 2) {
         tierClass = 'tier-3';
-      } else if (rawLength > 55 || newlineCount >= 1 || isSuperChat || isMembership) {
+      } else if (effectiveLength > 55 || newlineCount >= 1 || isSuperChat || isMembership) {
         tierClass = 'tier-2';
       }
+
+      const isHorizontal = context && context.layout === 'horizontal';
+      const startTall = tierClass !== 'tier-1' || (fsize >= 18 && rawLength > 24) || (isHorizontal && rawLength > 24);
 
       entry.className = `chat-entry ${tierClass} ${isSuperChat ? 'is-superchat' : ''} ${isMembership ? 'is-membership' : ''}`;
       entry.id = `msg-${item.id}`;
 
       const bubble = document.createElement('div');
-      bubble.className = `p5-dialogue-bubble ${tierClass} ${tierClass !== 'tier-1' ? 'multiline' : ''}`;
+      bubble.className = `p5-dialogue-bubble ${tierClass} ${tierClass !== 'tier-1' ? 'multiline' : ''} ${startTall ? 'is-tall' : ''}`.trim();
 
-      // A. 3-Piece Background Skin
+      // A1. 3-Piece Original PNG Skin (compact <= 128px)
       const skin = document.createElement('div');
       skin.className = 'p5-skin';
       skin.innerHTML = `
@@ -51,6 +59,28 @@
         <div class="p5-skin-right"></div>
       `;
       bubble.appendChild(skin);
+
+      // A2. 9-Slice PhotoCraft PNG Skin (tall >= 148px, left zig-zag & right wedge locked 1:1)
+      const skin9 = document.createElement('div');
+      skin9.className = 'p5-skin-9slice';
+      skin9.innerHTML = `
+        <div class="p5-9-col-left">
+          <div class="p5-9-tl"></div>
+          <div class="p5-9-ml"></div>
+          <div class="p5-9-bl"></div>
+        </div>
+        <div class="p5-9-col-mid">
+          <div class="p5-9-tm"></div>
+          <div class="p5-9-mc"></div>
+          <div class="p5-9-bm"></div>
+        </div>
+        <div class="p5-9-col-right">
+          <div class="p5-9-tr"></div>
+          <div class="p5-9-mr"></div>
+          <div class="p5-9-br"></div>
+        </div>
+      `;
+      bubble.appendChild(skin9);
 
       // B. Nameplate with Ransom-Note Letter Styling
       const nameplate = document.createElement('div');
@@ -63,7 +93,6 @@
         nameplate.style.fontSize = '12px';
       }
 
-      // Pick one letter for the red ransom box (deterministic hash or index 1)
       let redIdx = 1;
       if (rawName.length > 3) {
         const hash = rawName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -102,43 +131,32 @@
 
       const messageText = document.createElement('div');
       messageText.className = 'p5-message-text';
-
-      // Auto-fit font scaling so text remains 100% enclosed without border breaches
-      const fsize = context && context.fsize;
-      if (fsize && fsize > 0) {
-        const userScale = Number(fsize) / 16;
-        if (tierClass === 'tier-4') {
-          messageText.style.fontSize = `${0.86 * userScale}rem`;
-        } else if (tierClass === 'tier-3') {
-          messageText.style.fontSize = `${0.94 * userScale}rem`;
-        } else if (tierClass === 'tier-2') {
-          messageText.style.fontSize = `${1.04 * userScale}rem`;
-        } else {
-          messageText.style.fontSize = `${1.15 * userScale}rem`;
-        }
-      } else {
-        if (tierClass === 'tier-4') {
-          messageText.style.fontSize = '0.86rem';
-        } else if (tierClass === 'tier-3') {
-          messageText.style.fontSize = '0.94rem';
-        } else if (tierClass === 'tier-2') {
-          messageText.style.fontSize = '1.04rem';
-        } else {
-          messageText.style.fontSize = '1.15rem';
-        }
-      }
+      messageText.style.fontSize = `${fsize}px`;
 
       messageText.innerHTML = prefixHtml + item.message;
       messageBox.appendChild(messageText);
-
       bubble.appendChild(messageBox);
       entry.appendChild(bubble);
+
+      // Auto-promote to 9-slice tall skin if rendered text wraps beyond 128px
+      const promoteIfTall = () => {
+        if (!bubble.classList.contains('is-tall') && bubble.offsetHeight > 130) {
+          bubble.classList.add('is-tall');
+        }
+      };
+      if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(promoteIfTall);
+        ro.observe(messageBox);
+      }
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(promoteIfTall);
+      }
 
       return entry;
     },
 
     onLoad(context) {
-      console.log(`[Persona 5 Theme] Theme initialized with Origami-Anchored Hybrid Stretch. Layout: ${context.layout}`);
+      console.log(`[Persona 5 Theme] Theme initialized with 9-Slice PhotoCraft PNG Original. Layout: ${context.layout}`);
     }
   };
 })();

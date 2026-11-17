@@ -38,13 +38,18 @@
       const rawLength = rawText.length;
       const newlineCount = (rawText.match(/\n/g) || []).length;
 
-      // 4-Tier Dynamic Classification based on content volume
+      const fsize = (context && Number(context.fsize) > 0) ? Number(context.fsize) : 16;
+      const fontFactor = Math.max(1, fsize / 16);
+      const badgeBonus = (isSuperChat ? 24 : 0) + (isMembership ? 22 : 0);
+      const effectiveLength = Math.round(rawLength * fontFactor) + badgeBonus;
+
+      // 4-Tier Dynamic Width Classification (font-size-aware)
       let tierClass = 'tier-1';
-      if (rawLength > 175 || newlineCount >= 3) {
+      if (effectiveLength > 175 || newlineCount >= 3) {
         tierClass = 'tier-4';
-      } else if (rawLength > 115 || newlineCount >= 2) {
+      } else if (effectiveLength > 115 || newlineCount >= 2) {
         tierClass = 'tier-3';
-      } else if (rawLength > 55 || newlineCount >= 1 || isSuperChat || isMembership) {
+      } else if (effectiveLength > 55 || newlineCount >= 1 || isSuperChat || isMembership) {
         tierClass = 'tier-2';
       }
 
@@ -54,19 +59,32 @@
       const bubble = document.createElement('div');
       bubble.className = `p3r-dialogue-bubble ${tierClass} ${tierClass !== 'tier-1' ? 'multiline' : ''}`;
 
-      // A. 3-Piece Background Skin
+      // A. 9-Slice PhotoCraft PNG Original Skin (Fixed 127px / 124px caps)
       const skin = document.createElement('div');
-      skin.className = 'p3r-skin';
+      skin.className = 'p3r-skin-9slice';
       skin.innerHTML = `
-        <div class="p3r-skin-left"></div>
-        <div class="p3r-skin-mid"></div>
-        <div class="p3r-skin-right"></div>
+        <div class="p3r-9-col-left">
+          <div class="p3r-9-tl"></div>
+          <div class="p3r-9-ml"></div>
+          <div class="p3r-9-bl"></div>
+        </div>
+        <div class="p3r-9-col-mid">
+          <div class="p3r-9-tm"></div>
+          <div class="p3r-9-mc"></div>
+          <div class="p3r-9-bm"></div>
+        </div>
+        <div class="p3r-9-col-right">
+          <div class="p3r-9-tr"></div>
+          <div class="p3r-9-mr"></div>
+          <div class="p3r-9-br"></div>
+        </div>
       `;
       bubble.appendChild(skin);
 
-      // B. Header / Meta Information (Username + Status Badge)
+      // B. Header / Meta Information (Username #FBE837 + Status Badge)
       const meta = document.createElement('div');
-      meta.className = 'p3r-meta';
+      const isInlineBadge = isSuperChat || isMembership;
+      meta.className = `p3r-meta ${isInlineBadge ? 'is-inline-badge' : ''}`.trim();
 
       const username = document.createElement('span');
       username.className = 'p3r-username';
@@ -88,26 +106,14 @@
       meta.appendChild(badge);
       bubble.appendChild(meta);
 
-      // C. Message Content Overlay
+      // C. Message Content Overlay (Normal Flow, Zero Clipping)
       const messageBox = document.createElement('div');
       messageBox.className = 'p3r-message-box';
 
       const messageText = document.createElement('div');
       messageText.className = 'p3r-message-text';
+      messageText.style.fontSize = `${fsize}px`;
 
-      // Custom font-size / font-color overrides from overlay context if provided
-      if (context && context.fsize && Number(context.fsize) > 0) {
-        const userScale = Number(context.fsize) / 16;
-        if (tierClass === 'tier-4') {
-          messageText.style.fontSize = `${0.86 * userScale}rem`;
-        } else if (tierClass === 'tier-3') {
-          messageText.style.fontSize = `${0.93 * userScale}rem`;
-        } else if (tierClass === 'tier-2') {
-          messageText.style.fontSize = `${1.02 * userScale}rem`;
-        } else {
-          messageText.style.fontSize = `${1.10 * userScale}rem`;
-        }
-      }
       if (context && context.color) {
         messageText.style.color = context.color;
       }

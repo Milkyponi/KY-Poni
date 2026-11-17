@@ -192,21 +192,23 @@
           </div>
 
           <!-- Typography & Scaling -->
-          <div class="form-row-2col" style="margin-top: 4px;">
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
-                <label for="input-scale">Skala</label>
-                <span id="label-scale-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">100%</span>
-              </div>
-              <input type="range" id="input-scale" min="25" max="150" step="5" value="100">
+          <div class="form-group" style="margin-top: 4px;">
+            <div style="display: flex; justify-content: space-between;">
+              <label for="input-scale">Skala</label>
+              <span id="label-scale-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">100%</span>
             </div>
+            <input type="range" id="input-scale" min="25" max="150" step="5" value="100">
+          </div>
 
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between;">
-                <label for="input-fsize">Ukuran Teks</label>
-                <span id="label-fsize-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">16px</span>
-              </div>
-              <input type="range" id="input-fsize" min="12" max="26" step="1" value="16">
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between;">
+              <label>Ukuran Teks</label>
+              <span id="label-fsize-val" style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700;">Medium (16px)</span>
+            </div>
+            <div class="fsize-grid" id="fsize-selector">
+              <button type="button" class="btn-fsize" data-fsize="14">Small</button>
+              <button type="button" class="btn-fsize active" data-fsize="16">Medium</button>
+              <button type="button" class="btn-fsize" data-fsize="20">Large</button>
             </div>
           </div>
 

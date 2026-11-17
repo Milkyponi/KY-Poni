@@ -70,11 +70,29 @@ const STATIC_OVERLAY_URL = `${window.location.origin}/overlay`;
 // Customization Controls
 const inputScale = document.getElementById('input-scale');
 const labelScaleVal = document.getElementById('label-scale-val');
-const inputFsize = document.getElementById('input-fsize');
 const labelFsizeVal = document.getElementById('label-fsize-val');
 const selectFont = document.getElementById('select-font');
 const inputColor = document.getElementById('input-color');
 const inputColorHex = document.getElementById('input-color-hex');
+
+const FONT_SIZE_PRESETS = [
+  { value: 14, label: 'Small' },
+  { value: 16, label: 'Medium' },
+  { value: 20, label: 'Large' },
+];
+
+function snapFontSizePreset(rawSize) {
+  const n = Number(rawSize);
+  if (!Number.isFinite(n) || n <= 0) return 16;
+  if (n <= 14) return 14;
+  if (n <= 17) return 16;
+  return 20;
+}
+
+function fontSizePresetLabel(px) {
+  const found = FONT_SIZE_PRESETS.find(p => p.value === px);
+  return found ? `${found.label} (${found.value}px)` : `${px}px`;
+}
 
 const ytTargetInput = document.getElementById('yt-target');
 const btnConnect = document.getElementById('btn-connect');
@@ -168,7 +186,16 @@ if (btnCancelEdit) {
 }
 
 let currentPos = 'bottom-left';
+let currentFontSize = 16;
 let saveConfigTimeout = null;
+
+function setFontSizeUI(rawSize) {
+  currentFontSize = snapFontSizePreset(rawSize);
+  if (labelFsizeVal) labelFsizeVal.textContent = fontSizePresetLabel(currentFontSize);
+  document.querySelectorAll('#fsize-selector .btn-fsize').forEach(b => {
+    b.classList.toggle('active', Number(b.getAttribute('data-fsize')) === currentFontSize);
+  });
+}
 
 // Boot guard: never persist during initial load. Only real user interaction may write.
 let isBootstrapping = true;
@@ -183,17 +210,18 @@ document.querySelectorAll('#position-selector .btn-pos').forEach(btn => {
   });
 });
 
+// Handle Font Size Preset Buttons (Small / Medium / Large)
+document.querySelectorAll('#fsize-selector .btn-fsize').forEach(btn => {
+  btn.addEventListener('click', () => {
+    setFontSizeUI(btn.getAttribute('data-fsize'));
+    updateOverlayParams();
+  });
+});
+
 // Sync Range Sliders & Value Labels
 if (inputScale) {
   inputScale.addEventListener('input', () => {
     if (labelScaleVal) labelScaleVal.textContent = `${inputScale.value}%`;
-    updateOverlayParams();
-  });
-}
-
-if (inputFsize) {
-  inputFsize.addEventListener('input', () => {
-    if (labelFsizeVal) labelFsizeVal.textContent = `${inputFsize.value}px`;
     updateOverlayParams();
   });
 }
@@ -272,7 +300,7 @@ function updateOverlayParams() {
   const keep = selectKeep ? selectKeep.value : '1';
   const trans = selectTransition ? selectTransition.value : 'pop';
   const scale = inputScale ? inputScale.value : '100';
-  const fsize = inputFsize ? inputFsize.value : '16';
+  const fsize = String(currentFontSize || 16);
   const font = selectFont ? selectFont.value : 'OptimaNova';
   const color = inputColorHex ? inputColorHex.value.replace('#', '') : 'FFFFFF';
 
@@ -379,7 +407,7 @@ async function saveUserConfig(forceFields = null) {
     layout: layoutVal,
     pos: currentPos,
     scale: inputScale ? parseInt(inputScale.value, 10) : 100,
-    fontSize: inputFsize ? parseInt(inputFsize.value, 10) : 16,
+    fontSize: currentFontSize || 16,
     fontFamily: selectFont ? selectFont.value : 'OptimaNova',
     textColor: inputColorHex ? inputColorHex.value : '#FFFFFF',
     fade: inputFade ? parseInt(inputFade.value, 10) : 8,
@@ -475,9 +503,8 @@ async function applyConfigToUI(cfg) {
     inputScale.value = cfg.scale;
     if (labelScaleVal) labelScaleVal.textContent = `${cfg.scale}%`;
   }
-  if (cfg.fontSize && inputFsize) {
-    inputFsize.value = cfg.fontSize;
-    if (labelFsizeVal) labelFsizeVal.textContent = `${cfg.fontSize}px`;
+  if (cfg.fontSize) {
+    setFontSizeUI(cfg.fontSize);
   }
   if (cfg.fontFamily && selectFont) {
     // If the saved font is not offered by any installed theme (e.g. a theme was removed
@@ -645,8 +672,7 @@ async function resetAllPreferences() {
 
   if (inputScale) inputScale.value = 100;
   if (labelScaleVal) labelScaleVal.textContent = '100%';
-  if (inputFsize) inputFsize.value = 16;
-  if (labelFsizeVal) labelFsizeVal.textContent = '16px';
+  setFontSizeUI(16);
   if (selectFont) selectFont.value = 'OptimaNova';
   if (inputColor) inputColor.value = '#ffffff';
   if (inputColorHex) inputColorHex.value = '#FFFFFF';
@@ -752,9 +778,8 @@ function applyThemePresets(themeId) {
   if (p.fontFamily && selectFont) {
     selectFont.value = p.fontFamily;
   }
-  if (p.fontSize && inputFsize && labelFsizeVal) {
-    inputFsize.value = p.fontSize;
-    labelFsizeVal.textContent = `${p.fontSize}px`;
+  if (p.fontSize) {
+    setFontSizeUI(p.fontSize);
   }
   if (p.textColor && inputColor && inputColorHex) {
     inputColor.value = p.textColor;
