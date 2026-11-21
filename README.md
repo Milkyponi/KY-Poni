@@ -2,6 +2,8 @@
 
 Overlay chat livestream bergaya antarmuka video game untuk OBS Studio. Berjalan lokal di komputer kamu, tanpa login, tanpa API key, tanpa langganan.
 
+![Studio KY-Poni](docs/screenshots/studio.png)
+
 ![Katalog tema KY-Poni](docs/screenshots/catalog.png)
 
 ## Kenapa KY-Poni

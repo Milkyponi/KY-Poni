@@ -96,6 +96,9 @@ function fontSizePresetLabel(px) {
 
 const ytTargetInput = document.getElementById('yt-target');
 const btnConnect = document.getElementById('btn-connect');
+// Markup asli tombol Connect (SVG + label) disimpan sekali supaya status sementara
+// ("Menghubungkan...") bisa dipulihkan tanpa menduplikasi markup di dua tempat.
+const CONNECT_DEFAULT_HTML = btnConnect ? btnConnect.innerHTML : '';
 const btnDisconnect = document.getElementById('btn-disconnect');
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
@@ -286,6 +289,215 @@ if (viewportEl && window.ResizeObserver) {
 }
 window.addEventListener('resize', updatePreviewZoom);
 
+// ===========================================================================
+// Opsi A — Studio Interaction Layer (presentational only)
+// ===========================================================================
+//
+// Seluruh helper di blok ini SENGAJA tidak melakukan fetch/POST dan tidak pernah
+// memanggil saveUserConfig(): mereka hanya membaca nilai kontrol yang sudah ada
+// lalu menuliskannya ke elemen tampilan (kartu tema, toggle arah, badge anchor,
+// kotak ringkasan). Persistensi tetap satu pintu lewat scheduleSave().
+
+const POSITION_LABELS = {
+  'top-left': 'Kiri Atas',
+  'top-right': 'Kanan Atas',
+  'bottom-left': 'Kiri Bawah',
+  'bottom-right': 'Kanan Bawah',
+};
+
+const THEME_SHORT_CODES = {
+  persona5: 'P5',
+  persona3reload: 'P3R',
+  classic: 'CL',
+  undertale: 'UT',
+  cyberpunk2077: 'CP',
+};
+
+const THEME_BANNER_CLASSES = {
+  persona5: 'theme-banner-p5',
+  persona3reload: 'theme-banner-p3r',
+  classic: 'theme-banner-classic',
+  undertale: 'theme-banner-undertale',
+  cyberpunk2077: 'theme-banner-cyberpunk',
+};
+
+function positionLabel(pos) {
+  return POSITION_LABELS[pos] || POSITION_LABELS['bottom-left'];
+}
+
+function themeShortCode(themeId) {
+  const id = String(themeId || '');
+  if (THEME_SHORT_CODES[id]) return THEME_SHORT_CODES[id];
+  const fallback = id.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase();
+  return fallback || 'TH';
+}
+
+/** Nama tema terpilih, tanpa penanda "(Kustom)" milik loadThemes(). */
+function selectedThemeName() {
+  if (!selectTheme) return '';
+  const options = Array.from(selectTheme.options || []);
+  const found = options.find(o => o && o.value === selectTheme.value);
+  const raw = found ? (found.textContent || found.value || '') : '';
+  const cleaned = String(raw).replace(/\(Kustom\)/i, '').replace(/\s+/g, ' ').trim();
+  if (cleaned) return cleaned;
+  return String(selectTheme.value || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
+}
+
+/** Label pendek font aktif: "Optima Nova (Official Persona 5)" -> "Optima Nova". */
+function selectedFontShortName() {
+  if (!selectFont) return '';
+  const options = Array.from(selectFont.options || []);
+  const found = options.find(o => o && o.value === selectFont.value);
+  const raw = found ? String(found.textContent || '') : '';
+  const stripped = raw.split('(')[0].replace(/\s+/g, ' ').trim();
+  if (stripped) return stripped;
+  return String(selectFont.value || '').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+}
+
+function fadeSummaryLabel() {
+  const raw = inputFade ? String(inputFade.value).trim() : '8';
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return 'Auto-Hide Off';
+  return `Auto-Hide ${n} dtk`;
+}
+
+function currentLayoutValue() {
+  const raw = selectLayout ? String(selectLayout.value || '') : '';
+  return raw.startsWith('horizontal') ? 'horizontal' : 'vertical';
+}
+
+/**
+ * Menyegarkan seluruh cermin visual dari kontrol tersembunyi.
+ * Dipanggil dari updateOverlayParams(), applyConfigToUI(), dan loadThemes().
+ */
+function syncStudioVisualControls() {
+  try {
+    // 1) Kartu pemilih tema (kode + nama).
+    const pickerName = document.getElementById('theme-picker-name');
+    if (pickerName) pickerName.textContent = selectedThemeName();
+    const pickerCode = document.getElementById('theme-picker-code');
+    if (pickerCode) pickerCode.textContent = themeShortCode(selectTheme ? selectTheme.value : '');
+
+    // 2) Toggle arah aliran.
+    const layout = currentLayoutValue();
+    document.querySelectorAll('.btn-flow').forEach(btn => {
+      if (!btn || !btn.classList) return;
+      btn.classList.toggle('active', btn.getAttribute('data-layout') === layout);
+    });
+
+    // 3) Sudut overlay: label + badge di kanvas preview.
+    const posLabel = positionLabel(currentPos);
+    const labelPosVal = document.getElementById('label-pos-val');
+    if (labelPosVal) labelPosVal.textContent = posLabel;
+    const anchorBadge = document.getElementById('preview-anchor-badge');
+    if (anchorBadge) anchorBadge.textContent = `Anchor: ${posLabel}`;
+
+    // 4) Swatch warna aktif mengikuti hex yang sedang dipakai.
+    const hex = String(inputColorHex && inputColorHex.value ? inputColorHex.value : '').trim().toUpperCase();
+    document.querySelectorAll('.btn-swatch').forEach(swatch => {
+      if (!swatch || !swatch.classList) return;
+      const swatchColor = String(swatch.getAttribute('data-color') || '').trim().toUpperCase();
+      swatch.classList.toggle('active', !!swatchColor && swatchColor === hex);
+    });
+
+    // 5) Kotak ringkasan di kedua sub-tab.
+    const scaleVal = inputScale ? inputScale.value : '100';
+    const summaryCustom = document.getElementById('summary-custom-text');
+    if (summaryCustom) {
+      summaryCustom.textContent = `${fontSizePresetLabel(currentFontSize)} · ${selectedFontShortName()} · ${fadeSummaryLabel()}`;
+    }
+    const summaryLayout = document.getElementById('summary-layout-text');
+    if (summaryLayout) {
+      const layoutText = layout === 'horizontal' ? 'Horizontal' : 'Vertikal';
+      summaryLayout.textContent = `${selectedThemeName()} · ${layoutText} · ${posLabel} · ${scaleVal}%`;
+    }
+
+    // 6) Isi track slider skala (CSS memakai variabel --range-pct).
+    if (inputScale && inputScale.style && typeof inputScale.style.setProperty === 'function') {
+      const min = Number(inputScale.min || 25);
+      const max = Number(inputScale.max || 150);
+      const value = Number(scaleVal);
+      if (Number.isFinite(value) && max > min) {
+        const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+        inputScale.style.setProperty('--range-pct', `${pct.toFixed(1)}%`);
+      }
+    }
+  } catch (e) {
+    console.warn('[KY-Poni] Gagal menyinkronkan panel Studio:', e);
+  }
+}
+
+// --- Sub-tab Studio (Theme & Layout / Customization) -----------------------
+function switchStudioSubtab(subtabId) {
+  if (!subtabId) return;
+
+  document.querySelectorAll('#studio-subtabs .subtab-btn').forEach(btn => {
+    if (!btn || !btn.classList) return;
+    const isTarget = btn.getAttribute('data-subtab') === subtabId;
+    btn.classList.toggle('active', isTarget);
+    if (btn.setAttribute) btn.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+  });
+
+  document.querySelectorAll('.subtab-pane').forEach(pane => {
+    if (!pane || !pane.classList) return;
+    pane.classList.toggle('active', pane.id === subtabId);
+  });
+}
+
+document.querySelectorAll('#studio-subtabs .subtab-btn').forEach(btn => {
+  if (!btn || !btn.addEventListener) return;
+  btn.addEventListener('click', () => {
+    const target = (btn.dataset && btn.dataset.subtab) || btn.getAttribute('data-subtab');
+    if (target) switchStudioSubtab(target);
+  });
+});
+
+// --- Toggle arah aliran (Vertikal / Horizontal) ---------------------------
+document.querySelectorAll('.btn-flow').forEach(btn => {
+  if (!btn || !btn.addEventListener) return;
+  btn.addEventListener('click', () => {
+    const target = String(btn.getAttribute('data-layout') || 'vertical');
+    if (selectLayout) {
+      selectLayout.value = target.startsWith('horizontal') ? 'horizontal' : 'vertical';
+    }
+    syncStudioVisualControls();
+    updateOverlayParams();
+  });
+});
+
+// --- Reset preset resmi tema aktif ---------------------------------------
+const btnResetThemePreset = document.getElementById('btn-reset-theme-preset');
+if (btnResetThemePreset && btnResetThemePreset.addEventListener) {
+  btnResetThemePreset.addEventListener('click', () => {
+    const themeId = selectTheme ? selectTheme.value : '';
+    if (themeId) resetThemePresets(themeId);
+  });
+}
+
+// --- Toggle latar preview (murni state UI lokal, tidak disimpan) ---------
+const PREVIEW_BG_MODES = ['game', 'transparent'];
+
+function applyPreviewBackground(mode) {
+  const target = PREVIEW_BG_MODES.indexOf(mode) !== -1 ? mode : 'game';
+
+  if (previewWrapper && previewWrapper.classList) {
+    previewWrapper.classList.toggle('bg-game', target === 'game');
+    previewWrapper.classList.toggle('bg-transparent', target === 'transparent');
+  }
+
+  document.querySelectorAll('#preview-bg-toggle .btn-bg-mode').forEach(btn => {
+    if (!btn || !btn.classList) return;
+    btn.classList.toggle('active', btn.getAttribute('data-bg') === target);
+  });
+}
+
+document.querySelectorAll('#preview-bg-toggle .btn-bg-mode').forEach(btn => {
+  if (!btn || !btn.addEventListener) return;
+  btn.addEventListener('click', () => {
+    applyPreviewBackground(String(btn.getAttribute('data-bg') || 'game'));
+  });
+});
+
 // Update OBS URL & Live Preview Frame
 // NOTE: this function renders state. Persisting is a separate concern — see scheduleSave().
 function updateOverlayParams() {
@@ -334,10 +546,14 @@ function updateOverlayParams() {
     previewResolution.textContent = `1000 x 1000 px (${layoutLabel}) [${currentPos.toUpperCase()}]`;
   }
   if (obsDimTip) {
-    obsDimTip.textContent = `💡 Browser Source OBS: Width 1000 x Height 1000 px`;
+    obsDimTip.textContent = `Browser Source OBS: Width 1000 x Height 1000 px`;
   }
 
   updatePreviewZoom();
+
+  // Cermin visual panel Studio (kartu tema, toggle arah, badge anchor, ringkasan).
+  // Murni render — persistensi tetap di scheduleSave() di bawah.
+  syncStudioVisualControls();
 
   // Auto-Save User Preferences (debounced 500ms) — skipped while bootstrapping
   scheduleSave();
@@ -543,16 +759,26 @@ async function applyConfigToUI(cfg) {
     showTargetInputForm(false, false);
   }
 
+  syncStudioVisualControls();
   updateOverlayParams();
 }
+
+const COPY_URL_DEFAULT_HTML = btnCopyUrl ? btnCopyUrl.innerHTML : '';
 
 // Copy URL
 btnCopyUrl.addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(obsUrlInput.value);
-    const orig = btnCopyUrl.innerHTML;
-    btnCopyUrl.innerHTML = '✅ Tersalin!';
-    setTimeout(() => { btnCopyUrl.innerHTML = orig; }, 1800);
+    if (btnCopyUrl) {
+      btnCopyUrl.classList.add('is-copied');
+      btnCopyUrl.innerHTML = 'Tersalin!';
+    }
+    setTimeout(() => {
+      if (btnCopyUrl) {
+        btnCopyUrl.classList.remove('is-copied');
+        if (COPY_URL_DEFAULT_HTML) btnCopyUrl.innerHTML = COPY_URL_DEFAULT_HTML;
+      }
+    }, 1800);
   } catch (e) {
     obsUrlInput.select();
     document.execCommand('copy');
@@ -569,7 +795,7 @@ btnConnect.addEventListener('click', async () => {
   }
 
   btnConnect.disabled = true;
-  btnConnect.innerHTML = '<span>⏳</span> Menghubungkan...';
+  btnConnect.innerHTML = 'Menghubungkan...';
   setUIStatus('connecting', `Menghubungkan ke ${target}...`);
 
   try {
@@ -599,10 +825,10 @@ btnConnect.addEventListener('click', async () => {
     // Gagal terhubung berarti pengguna MASIH mengedit: biarkan kunci terpasang agar
     // heartbeat tidak menutup form sebelum ia memperbaiki target atau menekan Cancel.
     alert(`Error koneksi: ${err.message}`);
-    setUIStatus('error', '❌ ' + err.message);
+    setUIStatus('error', err.message);
   } finally {
     btnConnect.disabled = false;
-    btnConnect.innerHTML = '<span>⚡</span> Connect';
+    btnConnect.innerHTML = CONNECT_DEFAULT_HTML || 'Connect';
   }
 });
 
@@ -687,7 +913,7 @@ async function resetAllPreferences() {
 
   updateOverlayParams();
   await saveUserConfig();
-  alert('✅ Preferensi tampilan berhasil dikembalikan ke default pabrik!');
+  alert('Preferensi tampilan berhasil dikembalikan ke default pabrik.');
 }
 
 // Simulator Trigger
@@ -857,6 +1083,8 @@ async function loadThemes(preferredTheme = null) {
     `).join('');
 
     selectTheme.value = resolved;
+    // Dropdown dibangun ulang → cermin visual (kartu tema + ringkasan) harus ikut segar.
+    syncStudioVisualControls();
     return resolved;
   } catch (e) {
     console.error('Failed to load themes:', e);
@@ -866,7 +1094,7 @@ async function loadThemes(preferredTheme = null) {
 async function installTheme(themeId, downloadUrl, btn) {
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '⏳ Mengunduh & Memasang...';
+    btn.innerHTML = 'Mengunduh &amp; Memasang...';
   }
 
   try {
@@ -889,12 +1117,12 @@ async function installTheme(themeId, downloadUrl, btn) {
     await saveUserConfig();
     await loadCatalog();
     switchTab('tab-studio');
-    alert(`🎉 Tema "${themeId}" berhasil dipasang dan langsung diaktifkan dengan preset resminya!`);
+    alert(`Tema "${themeId}" berhasil dipasang dan langsung diaktifkan dengan preset resminya.`);
   } catch (err) {
     alert(`Error pemasangan tema: ${err.message}`);
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '⚡ Instal & Pasang';
+      btn.innerHTML = 'Unduh &amp; Pasang';
     }
   }
 }
@@ -903,7 +1131,7 @@ async function deleteTheme(themeId, btn) {
   if (!confirm(`Hapus tema "${themeId}" beserta seluruh preset dan font bawaannya?`)) return;
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '⏳ Menghapus...';
+    btn.innerHTML = 'Menghapus...';
   }
 
   try {
@@ -931,7 +1159,7 @@ async function deleteTheme(themeId, btn) {
     alert(`Error: ${e.message}`);
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🗑️ Hapus';
+      btn.innerHTML = 'Hapus';
     }
   }
 }
@@ -940,188 +1168,272 @@ async function openThemesFolder() {
   console.log('Themes are managed dynamically via In-App Catalog.');
 }
 
-// Fetch Catalog and render showcase grid in Tab 2
-async function loadCatalog() {
-  const container = document.getElementById('catalog-showcase-grid');
-  if (!container) return;
+// ===========================================================================
+// Tab Katalog (Opsi A): filter instan dari cache + kartu tanpa emoji
+// ===========================================================================
+//
+// `currentCatalogFilter` dan `cachedCatalogThemes` sengaja disimpan di level modul
+// supaya klik filter tidak memicu request baru: server hanya dipanggil sekali per
+// loadCatalog()/refresh, sisanya render ulang dari memori.
 
-  try {
-    const res = await fetch('/api/catalog');
-    const data = await res.json();
-    if (!data.themes) return;
+let currentCatalogFilter = 'all';
+let cachedCatalogThemes = [];
 
-    const currentActiveTheme = selectTheme ? selectTheme.value : 'persona5';
+const CATALOG_FILTERS = ['all', 'installed', 'online'];
 
-    const themeCardsHtml = data.themes.map(t => {
-      const isCurrentlyActive = t.id === currentActiveTheme;
-      const isInstalled = !!t.installed;
-      const isBuiltIn = !!t.isBuiltIn;
+/** Satu-satunya definisi "terpasang" — katalog mengirim `installed`, API lain `isInstalled`. */
+function isCatalogThemeInstalled(theme) {
+  return !!(theme && (theme.isInstalled === true || theme.installed === true));
+}
 
-      let bannerVisual = '';
-      if (t.id === 'persona5') {
-        bannerVisual = `
-          <div class="theme-banner-preview theme-banner-p5" style="background: radial-gradient(circle at center, #2A1015 0%, #100608 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
-            <div style="position: relative; width: 330px; height: 105px; filter: drop-shadow(3px 3px 0px rgba(0,0,0,0.95)); flex-shrink: 0;">
-              <!-- 3-Piece Sliced Skin -->
-              <div style="position: absolute; inset: 0; display: flex; flex-direction: row; pointer-events: none;">
-                <div style="width: 34.3%; height: 100%; background: url('/themes/persona5/assets/bubble_left.png') no-repeat left top; background-size: 100% 100%; flex-shrink: 0;"></div>
-                <div style="flex: 1; height: 100%; background: url('/themes/persona5/assets/bubble_mid.png') no-repeat center top; background-size: 100% 100%; margin-left: -1px; margin-right: -1px;"></div>
-                <div style="width: 34.6%; height: 100%; background: url('/themes/persona5/assets/bubble_right.png') no-repeat right top; background-size: 100% 100%; flex-shrink: 0;"></div>
-              </div>
-              <!-- Ransom Nameplate -->
-              <div style="position: absolute; top: 15px; left: 17%; width: 22%; height: 18px; display: flex; align-items: center; justify-content: center; z-index: 5; font-family: 'P5Hatty', sans-serif; font-size: 11px; font-weight: 900; transform: skewX(-14deg); pointer-events: none; letter-spacing: 0.8px;">
-                <span style="color:#000;">R</span>
-                <span style="background:#D03D3D; color:#FFF; padding:0 2.5px; margin:0 1px; border:1px solid #000; box-shadow:1px 1px 0 #000; transform:rotate(-2deg);">Y</span>
-                <span style="color:#000;">U</span>
-                <span style="color:#000;">J</span>
-                <span style="color:#000;">I</span>
-              </div>
-              <!-- Message Content -->
-              <div style="position: absolute; top: 38px; bottom: 12px; left: 18%; right: 17%; z-index: 5; display: flex; align-items: center; justify-content: flex-start;">
-                <div style="color: #FFFFFF; font-family: 'OptimaNova', 'Space Grotesk', sans-serif; font-size: 0.86rem; font-weight: 900; line-height: 1.22; word-break: break-word;">
-                  For real?! Lookin' cool, Joker!
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      } else if (t.id === 'persona3reload') {
-        bannerVisual = `
-          <div class="theme-banner-preview" style="background: radial-gradient(circle at center, #0F2042 0%, #060E21 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
-            <div style="position: relative; width: 330px; height: 105px; filter: drop-shadow(0px 6px 12px rgba(0, 10, 30, 0.7)); flex-shrink: 0;">
-              <!-- 3-Piece Sliced Skin -->
-              <div style="position: absolute; inset: 0; display: flex; flex-direction: row; pointer-events: none;">
-                <div style="width: 32.6%; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_left.png') no-repeat left top; background-size: 100% 100%; flex-shrink: 0;"></div>
-                <div style="flex: 1; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_mid.png') no-repeat center top; background-size: 100% 100%; margin-left: -1px; margin-right: -1px;"></div>
-                <div style="width: 31.9%; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_right.png') no-repeat right top; background-size: 100% 100%; flex-shrink: 0;"></div>
-              </div>
-              <!-- Meta (Username & Badge TALK) -->
-              <div style="position: absolute; top: 22px; left: 52px; display: flex; align-items: baseline; gap: 6px; z-index: 5;">
-                <span style="color: #FFFFFF; font-family: 'Agane', sans-serif; font-size: 12px; font-weight: 700;">Makoto Yuki</span>
-                <span style="color: #00D2FF; font-family: 'Agane', sans-serif; font-size: 8px; font-weight: 800; letter-spacing: 1.2px;">TALK</span>
-              </div>
-              <!-- Message Content -->
-              <div style="position: absolute; top: 40px; bottom: 12px; left: 52px; right: 35px; z-index: 5; display: flex; align-items: center; justify-content: flex-start;">
-                <div style="color: #FFFFFF; font-family: 'Agane', sans-serif; font-size: 0.88rem; font-weight: 400; line-height: 1.25; word-break: break-word;">
-                  I will burn my dread and face tomorrow.
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      } else if (t.id === 'undertale') {
-        bannerVisual = `
-          <div class="theme-banner-preview" style="background: #000000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
-            <div style="background: #000; border: 3px solid #FFF; box-shadow: inset 0 0 0 1px #000; padding: 8px 14px; width: 300px; display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 2px;">
-                <span style="width: 10px; height: 10px; background: #FF0000; clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 50% 75%, 18% 100%, 0% 35%);"></span>
-                <span style="color: #FFFF00; font-family: 'VT323', monospace; font-size: 1.1rem; font-weight: 700; text-transform: uppercase;">FRISK</span>
-              </div>
-              <div style="color: #FFFFFF; font-family: 'VT323', monospace; font-size: 1.25rem; letter-spacing: 0.5px;">
-                * You feel your DETERMINATION.
-              </div>
-            </div>
-          </div>
-        `;
-      } else if (t.id === 'cyberpunk2077') {
-        bannerVisual = `
-          <div class="theme-banner-preview" style="background: radial-gradient(circle at center, #1B212D 0%, #0B0E14 100%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
-            <div style="background: rgba(18, 24, 36, 0.95); border: 1.5px solid #FFE600; box-shadow: 0 0 14px rgba(255, 230, 0, 0.3); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); padding: 8px 14px; width: 310px; display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,230,0,0.3); padding-bottom: 2px;">
-                <span style="color: #00F0FF; font-family: monospace; font-size: 0.65rem;">// COMMS //</span>
-                <span style="color: #FFF; font-family: 'Chakra Petch', sans-serif; font-size: 0.82rem; font-weight: 800;">NETRUNNER</span>
-              </div>
-              <div style="color: #FFE600; font-family: 'Chakra Petch', sans-serif; font-size: 0.92rem; font-weight: 700;">
-                Wake up Samurai, we have a city to burn.
-              </div>
-            </div>
-          </div>
-        `;
-      } else {
-        bannerVisual = `
-          <div class="theme-banner-preview theme-banner-classic">
-            <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); display: flex; align-items: center; gap: 12px;">
-              <div style="width: 28px; height: 28px; border-radius: 50%; background: #2563EB; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #FFF;">
-                ✨
-              </div>
-              <div>
-                <div style="color: #60A5FA; font-weight: 700; font-size: 0.75rem;">MilkyViewer</div>
-                <div style="color: #F3F4F6; font-size: 0.85rem;">Clean minimalist translucent style...</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
+function catalogStatusBadge(theme, installed) {
+  const activeId = selectTheme ? selectTheme.value : '';
+  if (theme && theme.id === activeId) return '<span class="theme-status-badge is-active">Aktif</span>';
+  if (installed) return '<span class="theme-status-badge is-installed">Terpasang</span>';
+  return '<span class="theme-status-badge is-online">Online</span>';
+}
 
-      let statusBadge = '';
-      if (isCurrentlyActive) {
-        statusBadge = `<span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: var(--primary); color: #FFF; border: 1px solid var(--primary);">★ AKTIF DIGUNAKAN</span>`;
-      } else if (isInstalled) {
-        statusBadge = `<span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: var(--bg-input); color: #FFF; border: 1px solid var(--border-subtle);">TERPASANG</span>`;
-      } else {
-        statusBadge = `<span style="font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: rgba(0, 240, 255, 0.1); color: var(--accent-cyan); border: 1px solid rgba(0, 240, 255, 0.3);">TERSEDIA DI CLOUD</span>`;
-      }
+function catalogSourceMeta(theme, installed) {
+  if (!installed) return 'Gratis · Unduh otomatis';
+  if (theme && theme.isBuiltIn === true) return 'Bawaan aplikasi';
+  return 'Terpasang lokal';
+}
 
-      let actionButtons = '';
-      if (isInstalled) {
-        if (isCurrentlyActive) {
-          actionButtons = `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 14px; opacity: 0.7; cursor: default;" disabled>✓ Sedang Digunakan</button>`;
-          actionButtons += `<button class="btn btn-secondary" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px;" onclick="resetThemePresets('${escapeJsAttr(t.id)}')" title="Kembalikan font, ukuran & warna teks ke preset resmi tema ini">↺ Preset Tema</button>`;
-        } else {
-          actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px;" onclick="selectThemeFromCatalog('${escapeJsAttr(t.id)}')">⚡ Gunakan Tema Ini</button>`;
-          if (!isBuiltIn) {
-            actionButtons += `<button class="btn btn-danger" style="font-size: 0.76rem; padding: 6px 12px; margin-left: 8px; background: rgba(220, 38, 38, 0.2); border: 1px solid #DC2626; color: #FCA5A5; border-radius: 4px; cursor: pointer;" onclick="deleteTheme('${escapeJsAttr(t.id)}', this)" title="Hapus tema beserta font bawaannya">🗑️ Hapus</button>`;
-          }
-        }
-      } else {
-        actionButtons = `<button class="btn btn-primary" style="font-size: 0.76rem; padding: 6px 16px; background: var(--accent-cyan); color: #000; font-weight: 800; border: none; border-radius: 4px; cursor: pointer;" onclick="installTheme('${escapeJsAttr(t.id)}', '${escapeJsAttr(t.downloadUrl)}', this)">⚡ Instal & Pasang</button>`;
-      }
+// Ikon stroke kecil (seragam dengan index.html) menggantikan emoji.
+const ICON_TRASH = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>';
+const ICON_RESET = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>';
+const ICON_DOWNLOAD = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+const ICON_CLOCK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>';
 
-      return `
-        <div class="theme-card-large ${isCurrentlyActive ? 'active-theme' : ''}">
-          ${bannerVisual}
-          <div class="theme-body">
-            <div class="theme-name-row">
-              <div class="theme-name">${escapeHtml(t.name)}</div>
-              ${statusBadge}
-            </div>
-
-            <div class="theme-tag-row">
-              ${(t.tags || []).map(tag => `<span class="theme-tag">${escapeHtml(tag)}</span>`).join('')}
-            </div>
-          </div>
-
-          <div class="theme-card-footer" style="justify-content: flex-end;">
-            ${actionButtons}
-          </div>
+/**
+ * Mockup mini di dalam banner kartu. Hanya memakai kelas banner dari dashboard.css
+ * (theme-banner-p5/p3r/classic/undertale/cyberpunk) — tidak ada teks dinamis di sini,
+ * jadi tidak ada permukaan XSS tambahan.
+ */
+function themeBannerVisual(themeId) {
+  if (themeId === 'persona5') {
+    return `
+      <div style="position: relative; width: 92%; height: 104px; filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.92));">
+        <div style="position: absolute; inset: 0; display: flex; flex-direction: row; pointer-events: none;">
+          <div style="width: 34.3%; height: 100%; background: url('/themes/persona5/assets/bubble_left.png') no-repeat left top; background-size: 100% 100%; flex-shrink: 0;"></div>
+          <div style="flex: 1; height: 100%; background: url('/themes/persona5/assets/bubble_mid.png') no-repeat center top; background-size: 100% 100%; margin: 0 -1px;"></div>
+          <div style="width: 34.6%; height: 100%; background: url('/themes/persona5/assets/bubble_right.png') no-repeat right top; background-size: 100% 100%; flex-shrink: 0;"></div>
         </div>
-      `;
-    }).join('');
-
-    // Upcoming Themes Card
-    const upcomingCardHtml = `
-      <div class="theme-card-large" style="border: 1px dashed var(--border-highlight); background: rgba(21, 25, 34, 0.4);">
-        <div class="theme-banner-preview" style="background: radial-gradient(circle at center, #1B1A2E 0%, #0C0B17 100%); flex-direction: column; gap: 8px;">
-          <div style="font-size: 2rem;">🚀</div>
-          <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); letter-spacing: 0.5px;">KOLEKSI GAME BERIKUTNYA</div>
+        <div style="position: absolute; top: 15px; left: 17%; display: flex; align-items: center; z-index: 5; font-family: 'P5Hatty', sans-serif; font-size: 11px; font-weight: 900; letter-spacing: 0.8px; transform: skewX(-14deg);">
+          <span style="color: #000;">R</span>
+          <span style="background: #D03D3D; color: #FFF; padding: 0 3px; margin: 0 1px; border: 1px solid #000; box-shadow: 1px 1px 0 #000; transform: rotate(-2deg);">Y</span>
+          <span style="color: #000;">U</span>
+          <span style="color: #000;">J</span>
+          <span style="color: #000;">I</span>
         </div>
-        <div class="theme-body">
-          <div class="theme-name" style="color: var(--text-muted);">Persona 4 Golden</div>
-          <div class="theme-tag-row">
-            <span class="theme-tag">Segera Hadir</span>
-            <span class="theme-tag">Midnight Channel</span>
-            <span class="theme-tag">Yellow</span>
-          </div>
-        </div>
-        <div class="theme-card-footer" style="justify-content: flex-end;">
-          <span style="font-size: 0.76rem; color: var(--accent-cyan); font-weight: 700; border: 1px solid rgba(0, 240, 255, 0.3); padding: 4px 10px; border-radius: 4px;">
-            🚀 Segera Hadir
-          </span>
+        <div style="position: absolute; top: 38px; bottom: 12px; left: 18%; right: 17%; z-index: 5; display: flex; align-items: center;">
+          <div style="color: #FFFFFF; font-family: 'OptimaNova', 'Space Grotesk', sans-serif; font-size: 0.8rem; font-weight: 900; line-height: 1.22; word-break: break-word;">For real?! Lookin' cool, Joker!</div>
         </div>
       </div>
     `;
+  }
 
-    container.innerHTML = themeCardsHtml + upcomingCardHtml;
+  if (themeId === 'persona3reload') {
+    return `
+      <div style="position: relative; width: 92%; height: 104px; filter: drop-shadow(0 6px 12px rgba(0, 10, 30, 0.7));">
+        <div style="position: absolute; inset: 0; display: flex; flex-direction: row; pointer-events: none;">
+          <div style="width: 32.6%; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_left.png') no-repeat left top; background-size: 100% 100%; flex-shrink: 0;"></div>
+          <div style="flex: 1; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_mid.png') no-repeat center top; background-size: 100% 100%; margin: 0 -1px;"></div>
+          <div style="width: 31.9%; height: 100%; background: url('/themes/persona3reload/assets/slices/bubble_right.png') no-repeat right top; background-size: 100% 100%; flex-shrink: 0;"></div>
+        </div>
+        <div style="position: absolute; top: 20px; left: 15%; display: flex; align-items: baseline; gap: 6px; z-index: 5;">
+          <span style="color: #FFFFFF; font-family: 'Agane', sans-serif; font-size: 11.5px; font-weight: 700;">Makoto Yuki</span>
+          <span style="color: #00D2FF; font-family: 'Agane', sans-serif; font-size: 8px; font-weight: 800; letter-spacing: 1.2px;">TALK</span>
+        </div>
+        <div style="position: absolute; top: 38px; bottom: 12px; left: 15%; right: 14%; z-index: 5; display: flex; align-items: center;">
+          <div style="color: #FFFFFF; font-family: 'Agane', sans-serif; font-size: 0.8rem; font-weight: 400; line-height: 1.25; word-break: break-word;">I will burn my dread and face tomorrow.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (themeId === 'undertale') {
+    return `
+      <div style="background: #000; border: 3px solid #FFF; padding: 7px 12px; width: 82%; margin-top: 18px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box;">
+        <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 3px;">
+          <span style="width: 10px; height: 10px; background: #FF0000; clip-path: polygon(50% 0%, 100% 35%, 82% 100%, 50% 75%, 18% 100%, 0% 35%);"></span>
+          <span style="color: #FFFF00; font-family: 'VT323', monospace; font-size: 1rem; font-weight: 700; text-transform: uppercase;">FRISK</span>
+        </div>
+        <div style="color: #FFFFFF; font-family: 'VT323', monospace; font-size: 1.05rem; letter-spacing: 0.5px; line-height: 1.25;">* You feel your DETERMINATION.</div>
+      </div>
+    `;
+  }
+
+  if (themeId === 'cyberpunk2077') {
+    return `
+      <div style="background: rgba(18, 24, 36, 0.95); border: 1.5px solid #FFE600; box-shadow: 0 0 14px rgba(255, 230, 0, 0.3); clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); padding: 7px 12px; width: 82%; margin-top: 16px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,230,0,0.3); padding-bottom: 3px;">
+          <span style="color: #00F0FF; font-family: monospace; font-size: 0.62rem;">// COMMS //</span>
+          <span style="color: #FFF; font-family: 'Chakra Petch', sans-serif; font-size: 0.78rem; font-weight: 800;">NETRUNNER</span>
+        </div>
+        <div style="color: #FFE600; font-family: 'Chakra Petch', sans-serif; font-size: 0.85rem; font-weight: 700; line-height: 1.3;">Wake up Samurai, we have a city to burn.</div>
+      </div>
+    `;
+  }
+
+  // classic + tema kustom apa pun
+  return `
+    <div style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16); backdrop-filter: blur(8px); padding: 10px 16px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); display: flex; align-items: center; gap: 11px; width: 86%; box-sizing: border-box;">
+      <div style="width: 26px; height: 26px; border-radius: 50%; background: #2563EB; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+      </div>
+      <div style="min-width: 0;">
+        <div style="color: #60A5FA; font-weight: 700; font-size: 0.72rem;">MilkyViewer</div>
+        <div style="color: #F3F4F6; font-size: 0.8rem; line-height: 1.3;">Clean minimalist translucent style...</div>
+      </div>
+    </div>
+  `;
+}
+
+/** Kartu satu tema. Semua data katalog di-escape sebelum masuk template. */
+function catalogCardHtml(t) {
+  const activeId = selectTheme ? selectTheme.value : '';
+  const installed = isCatalogThemeInstalled(t);
+  const isActive = !!t && t.id === activeId;
+  const bannerClass = THEME_BANNER_CLASSES[t.id] || 'theme-banner-classic';
+  const tags = (t.tags || []).map(tag => `<span class="theme-tag">${escapeHtml(tag)}</span>`).join('');
+
+  let actions = '';
+  if (isActive) {
+    // Tema aktif: tidak ada aksi "pakai" lagi, hanya reset preset resmi.
+    actions = `<button type="button" class="btn btn-secondary" onclick="resetThemePresets('${escapeJsAttr(t.id)}')" title="Kembalikan font, ukuran &amp; warna teks ke preset resmi tema ini">${ICON_RESET}<span>Reset Preset</span></button>`
+      + '<button type="button" class="btn btn-theme-used" disabled>Dipakai</button>';
+  } else if (installed) {
+    if (t.isBuiltIn !== true) {
+      actions += `<button type="button" class="btn btn-danger-soft" onclick="deleteTheme('${escapeJsAttr(t.id)}', this)" title="Hapus tema beserta font bawaannya">${ICON_TRASH}<span>Hapus</span></button>`;
+    }
+    actions += `<button type="button" class="btn btn-primary" onclick="selectThemeFromCatalog('${escapeJsAttr(t.id)}')"><span>Gunakan Tema</span></button>`;
+  } else {
+    actions = `<button type="button" class="btn btn-primary" onclick="installTheme('${escapeJsAttr(t.id)}', '${escapeJsAttr(t.downloadUrl)}', this)">${ICON_DOWNLOAD}<span>Unduh &amp; Pasang</span></button>`;
+  }
+
+  return `
+    <div class="theme-card-large ${isActive ? 'active-theme' : ''}">
+      <div class="theme-banner-preview ${bannerClass}">
+        ${themeBannerVisual(t.id)}
+        ${catalogStatusBadge(t, installed)}
+      </div>
+      <div class="theme-body">
+        <div class="theme-name-row">
+          <div class="theme-name">${escapeHtml(t.name)}</div>
+        </div>
+        <div class="theme-tag-row">
+          ${tags}
+        </div>
+      </div>
+      <div class="theme-card-footer">
+        <span class="theme-source-meta">${catalogSourceMeta(t, installed)}</span>
+        <div class="theme-card-actions">
+          ${actions}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/** Kartu teaser; hanya tampil pada filter "Semua" dan tidak dihitung sebagai tema. */
+function upcomingCatalogCardHtml() {
+  return `
+    <div class="theme-card-large is-upcoming">
+      <div class="theme-banner-preview theme-banner-upcoming">
+        <div class="upcoming-icon-circle">${ICON_CLOCK}</div>
+        <div class="upcoming-banner-label">Koleksi game berikutnya</div>
+        <span class="theme-status-badge is-upcoming">Segera Hadir</span>
+      </div>
+      <div class="theme-body">
+        <div class="theme-name-row">
+          <div class="theme-name">Persona 4 Golden</div>
+        </div>
+        <div class="theme-tag-row">
+          <span class="theme-tag">Midnight Channel</span>
+          <span class="theme-tag">Yellow</span>
+        </div>
+      </div>
+      <div class="theme-card-footer">
+        <span class="theme-source-meta">Belum tersedia</span>
+        <div class="theme-card-actions">
+          <button type="button" class="btn-theme-upcoming" disabled>Segera Hadir</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/** Counter di bar filter. Tema upcoming sengaja TIDAK ikut dihitung. */
+function updateCatalogCounters() {
+  const total = cachedCatalogThemes.length;
+  const installed = cachedCatalogThemes.filter(isCatalogThemeInstalled).length;
+  const counts = {
+    'count-all': total,
+    'count-installed': installed,
+    'count-online': total - installed,
+  };
+  Object.keys(counts).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(counts[id]);
+  });
+}
+
+/** Render ulang grid dari cache (instan, tanpa request). */
+function renderCatalogGrid() {
+  const container = document.getElementById('catalog-showcase-grid');
+  if (!container) return;
+
+  let list = cachedCatalogThemes;
+  if (currentCatalogFilter === 'installed') {
+    list = cachedCatalogThemes.filter(isCatalogThemeInstalled);
+  } else if (currentCatalogFilter === 'online') {
+    list = cachedCatalogThemes.filter(theme => !isCatalogThemeInstalled(theme));
+  }
+
+  const cards = list.map(theme => catalogCardHtml(theme)).join('');
+  const upcoming = currentCatalogFilter === 'all' ? upcomingCatalogCardHtml() : '';
+
+  if (!cards && !upcoming) {
+    // Kelas CSS-nya belum ada di stylesheet, jadi gaya dasar diberikan inline
+    // supaya kondisi kosong tetap rapi tanpa mengubah dashboard.css.
+    container.innerHTML = '<div class="catalog-empty-note" style="grid-column: 1 / -1; padding: 40px 0; text-align: center; font-size: 13px; color: var(--text-muted);">Belum ada tema pada filter ini.</div>';
+    return;
+  }
+  container.innerHTML = cards + upcoming;
+}
+
+document.querySelectorAll('.btn-catalog-filter').forEach(btn => {
+  if (!btn || !btn.addEventListener) return;
+  btn.addEventListener('click', () => {
+    const wanted = String(btn.getAttribute('data-filter') || 'all');
+    currentCatalogFilter = CATALOG_FILTERS.indexOf(wanted) !== -1 ? wanted : 'all';
+    document.querySelectorAll('.btn-catalog-filter').forEach(other => {
+      if (!other || !other.classList) return;
+      other.classList.toggle('active', other === btn);
+    });
+    renderCatalogGrid();
+  });
+});
+
+const btnRefreshCatalog = document.getElementById('btn-refresh-catalog');
+if (btnRefreshCatalog && btnRefreshCatalog.addEventListener) {
+  btnRefreshCatalog.addEventListener('click', () => {
+    loadCatalog();
+  });
+}
+
+// Fetch Catalog and render showcase grid in Tab 2
+async function loadCatalog() {
+  try {
+    const res = await fetch('/api/catalog');
+    const data = await res.json();
+    if (!data || !Array.isArray(data.themes)) return;
+
+    // Cache dipakai ulang oleh klik filter; hanya request ini yang boleh menulisnya.
+    cachedCatalogThemes = data.themes;
+    updateCatalogCounters();
+    renderCatalogGrid();
   } catch (e) {
     console.error('Failed to load catalog:', e);
   }
@@ -1169,7 +1481,7 @@ function applyStreamStatus(data) {
 
     case 'waiting':
       // Kanal dikenali, siaran belum dimulai. Bukan error: aplikasi akan menyambung sendiri.
-      setUIStatus('connecting', `⏳ Menunggu siaran dimulai...`);
+      setUIStatus('connecting', 'Menunggu siaran dimulai...');
       showConnected();
       infoLiveId.textContent = data.channelId ? `menunggu (${data.channelId})` : 'menunggu siaran';
       if (profileAvatarStatus) profileAvatarStatus.style.background = '#00f0ff';
@@ -1188,14 +1500,14 @@ function applyStreamStatus(data) {
       break;
 
     case 'reconnecting':
-      setUIStatus('connecting', '⚠️ Sinyal drop, memulihkan koneksi stream...');
+      setUIStatus('connecting', 'Sinyal drop, memulihkan koneksi stream...');
       showConnected();
       if (profileAvatarStatus) profileAvatarStatus.style.background = '#ffaa00';
       break;
 
     case 'error':
       // Tampilkan alasan sebenarnya, bukan sekadar "Disconnected".
-      setUIStatus('error', '❌ ' + (data.error || 'Gagal terhubung ke YouTube.'));
+      setUIStatus('error', data.error || 'Gagal terhubung ke YouTube.');
       btnConnect.style.display = 'inline-flex';
       btnDisconnect.style.display = 'none';
       streamInfo.style.display = 'none';
@@ -1225,17 +1537,35 @@ function applyStreamStatus(data) {
   }
 }
 
+// Badge versi tersebar di tiga tempat (header, kartu Pengaturan, modal update).
+// Satu helper supaya ketiganya tidak pernah menampilkan versi berbeda.
+function applyVersionLabels(version) {
+  if (!version) return;
+  const label = `v${version}`;
+  ['header-version-badge', 'settings-current-ver', 'modal-current-version'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
+}
+
+/** Sumber versi otoritatif saat boot: /api/version (bukan versi yang di-hardcode di HTML). */
+async function loadVersionInfo() {
+  try {
+    const res = await fetch('/api/version');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.version) applyVersionLabels(data.version);
+  } catch (e) {
+    // Versi bukan hal kritis: biarkan badge memakai nilai dari HTML.
+  }
+}
+
 // Poll server status periodically
 async function pollStatus() {
   try {
     const res = await fetch('/api/status');
     const data = await res.json();
-    if (data.version) {
-      const headerVerEl = document.getElementById('header-version-badge');
-      if (headerVerEl) headerVerEl.textContent = `v${data.version}`;
-      const currentVerEl = document.getElementById('settings-current-ver');
-      if (currentVerEl) currentVerEl.textContent = `v${data.version}`;
-    }
+    if (data.version) applyVersionLabels(data.version);
     applyStreamStatus(data);
   } catch (e) {
     // offline
@@ -1244,6 +1574,39 @@ async function pollStatus() {
 
 // In-App Auto-Updater Logic
 let currentUpdateInfo = null;
+// Info update terakhir yang diketahui (walau modalnya sudah di-dismiss user), supaya
+// tombol "Lihat Update" di tab Pengaturan selalu bisa membuka ulang modalnya.
+let latestUpdateInfo = null;
+
+/**
+ * Menyalakan penanda pembaruan di seluruh UI: titik di tab Pengaturan, badge
+ * "Tersedia vX", dan tombol buka modal. Dipanggil baik oleh cek otomatis maupun manual.
+ */
+function syncUpdateAvailabilityUI(info) {
+  if (!info || !info.updateAvailable) return;
+  latestUpdateInfo = info;
+  const ver = info.latestVersion || '';
+
+  const navDot = document.getElementById('nav-update-dot');
+  if (navDot) navDot.hidden = false;
+
+  const settingsBadge = document.getElementById('settings-update-badge');
+  if (settingsBadge) {
+    settingsBadge.style.display = 'inline-flex';
+    settingsBadge.textContent = ver ? `Tersedia v${ver}` : 'Tersedia';
+  }
+
+  const openBtn = document.getElementById('btn-open-update-modal');
+  if (openBtn) openBtn.style.display = 'inline-flex';
+}
+
+const btnOpenUpdateModal = document.getElementById('btn-open-update-modal');
+if (btnOpenUpdateModal && btnOpenUpdateModal.addEventListener) {
+  btnOpenUpdateModal.addEventListener('click', () => {
+    const info = currentUpdateInfo || latestUpdateInfo;
+    if (info) showUpdateModal(info);
+  });
+}
 
 async function checkUpdateAuto() {
   try {
@@ -1251,18 +1614,14 @@ async function checkUpdateAuto() {
     if (!res.ok) return;
     const data = await res.json();
 
-    // Dynamically sync version in Settings tab
-    const currentVerEl = document.getElementById('settings-current-ver');
-    if (currentVerEl && data.currentVersion) {
-      currentVerEl.textContent = `v${data.currentVersion}`;
-    }
-    const headerVerEl = document.getElementById('header-version-badge');
-    if (headerVerEl && data.currentVersion) {
-      headerVerEl.textContent = `v${data.currentVersion}`;
-    }
+    applyVersionLabels(data.currentVersion);
 
-    // Only show modal if an update is genuinely newer AND not previously dismissed by user
     if (data.updateAvailable) {
+      // Penanda UI dinyalakan SEBELUM cek dismiss: user yang pernah menutup modal
+      // tetap harus punya jalan membuka update-nya lagi.
+      syncUpdateAvailabilityUI(data);
+
+      // Modal otomatis hanya muncul bila versi ini belum pernah di-dismiss.
       const dismissedVer = localStorage.getItem('ky_dismissed_update_version');
       if (dismissedVer === data.latestVersion) {
         console.log(`[KY-Poni Updater] Update v${data.latestVersion} was previously dismissed by user.`);
@@ -1281,7 +1640,7 @@ async function checkUpdateManual() {
   const origText = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '⏳ Mengecek...';
+    btn.innerHTML = 'Mengecek...';
   }
 
   try {
@@ -1289,20 +1648,14 @@ async function checkUpdateManual() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Gagal mengecek update');
 
-    const currentVerEl = document.getElementById('settings-current-ver');
-    if (currentVerEl && data.currentVersion) {
-      currentVerEl.textContent = `v${data.currentVersion}`;
-    }
-    const headerVerEl = document.getElementById('header-version-badge');
-    if (headerVerEl && data.currentVersion) {
-      headerVerEl.textContent = `v${data.currentVersion}`;
-    }
+    applyVersionLabels(data.currentVersion);
 
     if (data.updateAvailable) {
+      syncUpdateAvailabilityUI(data);
       currentUpdateInfo = data;
       showUpdateModal(data);
     } else {
-      alert(`✅ Anda sudah menggunakan versi terbaru (v${data.currentVersion})!\nTidak ada pembaruan baru di GitHub.`);
+      alert(`Anda sudah menggunakan versi terbaru (v${data.currentVersion}).\nTidak ada pembaruan baru di GitHub.`);
     }
   } catch (err) {
     alert(`Gagal mengecek pembaruan: ${err.message}`);
@@ -1352,6 +1705,15 @@ async function startInAppUpdate() {
   if (btnContainer) btnContainer.style.display = 'none';
   if (progressContainer) progressContainer.style.display = 'flex';
 
+  // Tombol "Update Sekarang" hidup di dalam modal; beri umpan balik langsung dan
+  // pulihkan bila unduhan gagal supaya user bisa mencoba lagi tanpa menutup modal.
+  const btnDoUpdate = document.getElementById('btn-do-update');
+  const btnDoUpdateHtml = btnDoUpdate ? btnDoUpdate.innerHTML : '';
+  if (btnDoUpdate) {
+    btnDoUpdate.disabled = true;
+    btnDoUpdate.textContent = 'Mengunduh...';
+  }
+
   try {
     const res = await fetch('/api/updater/download', {
       method: 'POST',
@@ -1366,12 +1728,12 @@ async function startInAppUpdate() {
 
     if (progressBar) progressBar.style.width = '100%';
     if (progressPct) progressPct.textContent = '100%';
-    if (progressStatus) progressStatus.innerHTML = `✅ Berhasil diunduh: <b>${data.fileName}</b>`;
+    if (progressStatus) progressStatus.textContent = `Berhasil diunduh: ${data.fileName || ''}`;
 
     if (btnContainer) {
       btnContainer.innerHTML = `
         <button type="button" class="btn btn-secondary" onclick="dismissUpdateModal()">Tutup</button>
-        <button type="button" class="btn btn-primary" style="background: linear-gradient(135deg, #10B981, #059669); border-color: #059669;" onclick="installAndRestart('${data.filePath.replace(/\\/g, '\\\\')}')">⚡ Pasang & Mulai Ulang</button>
+        <button type="button" class="btn btn-primary" style="background: linear-gradient(135deg, #10B981, #059669); border-color: #059669;" onclick="installAndRestart('${escapeJsAttr(data.filePath)}')"><span>Pasang &amp; Mulai Ulang</span></button>
       `;
       btnContainer.style.display = 'flex';
     }
@@ -1379,6 +1741,11 @@ async function startInAppUpdate() {
     alert(`Error unduhan: ${err.message}`);
     if (btnContainer) btnContainer.style.display = 'flex';
     if (progressContainer) progressContainer.style.display = 'none';
+    if (btnDoUpdate) {
+      btnDoUpdate.disabled = false;
+      if (btnDoUpdateHtml) btnDoUpdate.innerHTML = btnDoUpdateHtml;
+      else btnDoUpdate.textContent = 'Update Sekarang';
+    }
   }
 }
 
@@ -1387,7 +1754,7 @@ async function installAndRestart(filePath) {
   const progressStatus = document.getElementById('update-progress-status');
   
   if (btnContainer) btnContainer.style.display = 'none';
-  if (progressStatus) progressStatus.innerHTML = `⏳ <b>Memasang pembaruan & memuat ulang aplikasi...</b>`;
+  if (progressStatus) progressStatus.textContent = 'Memasang pembaruan & memuat ulang aplikasi...';
 
   try {
     const res = await fetch('/api/updater/restart', {
@@ -1465,6 +1832,7 @@ function setupUpdaterWS() {
   }
 
   setupUpdaterWS();
+  loadVersionInfo();
   checkUpdateAuto();
   setInterval(pollStatus, 5000);
 })();
