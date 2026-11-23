@@ -16,6 +16,7 @@ const MIME_TYPES = {
   '.gif': 'image/gif',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
   '.ico': 'image/x-icon',
 };
 

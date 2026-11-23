@@ -1667,6 +1667,22 @@ select:focus {
   gap: 10px;
 }
 
+/* v1.4.1 — Preview banner asli dari katalog (previewImage).
+   Gambar 640x304 (2x retina) di-cover ke banner 152px tinggi; latar gelap
+   disiapkan supaya area transparan/letterbox tidak pernah putih. */
+.theme-banner-preview.has-preview-img {
+  background: #08101E;
+  padding: 0;
+}
+
+.theme-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
 /* Catalog Status Badges (top-right inside banner) */
 .theme-status-badge {
   position: absolute;

@@ -75,7 +75,7 @@
       "version": "1.0.0",
       "author": "Milkyponi",
       "previewColor": "#FFFFFF",
-      "downloadUrl": "https://github.com/Milkyponi/ky-poni-themes/releases/download/v1.0.0/undertale.zip",
+      "downloadUrl": "https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/dist/undertale.zip",
       "tags": ["8-Bit", "Pixel Art", "Retro RPG", "Monochrome"],
       "presets": {
         "fontFamily": "VT323",
@@ -96,7 +96,7 @@
       "version": "1.0.0",
       "author": "Milkyponi",
       "previewColor": "#FFE600",
-      "downloadUrl": "https://github.com/Milkyponi/ky-poni-themes/releases/download/v1.0.0/cyberpunk2077.zip",
+      "downloadUrl": "https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/dist/cyberpunk2077.zip",
       "tags": ["Cyberpunk", "Neon HUD", "Sci-Fi", "Glitch"],
       "presets": {
         "fontFamily": "Chakra Petch",
@@ -108,6 +108,28 @@
         {
           "name": "Chakra Petch",
           "label": "Chakra Petch (Cyberpunk Tech)"
+        }
+      ]
+    },
+    {
+      "id": "aceattorney",
+      "name": "Ace Attorney Courtroom",
+      "version": "1.0.0",
+      "author": "Milkyponi",
+      "previewColor": "#298ABD",
+      "downloadUrl": "https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/dist/aceattorney.zip",
+      "previewImage": "https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/previews/aceattorney.png",
+      "tags": ["Visual Novel", "Courtroom", "Asset-First", "Serif"],
+      "presets": {
+        "fontFamily": "P052",
+        "fontSize": 16,
+        "textColor": "#F5F7FA",
+        "recommendedLayout": "vertical"
+      },
+      "fonts": [
+        {
+          "name": "P052",
+          "label": "P052 Serif (Ace Attorney HD)"
         }
       ]
     }

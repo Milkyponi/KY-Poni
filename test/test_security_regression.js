@@ -492,7 +492,12 @@ z.close()
       const out = execFileSync('node', [path.join(tmpHome, 'probe.js')], {
         env: { ...process.env, HOME: tmpHome },
         encoding: 'utf8',
-        timeout: 15000,
+        // `openDownloadedFile()` memanggil `xdg-open`, dan di desktop nyata
+        // (KDE/GNOME, Wayland) panggilan itu bisa menunggu portal file-manager
+        // puluhan detik sebelum kembali. Timeout 15s membuat test ini gagal
+        // acak (`spawnSync node ETIMEDOUT`) padahal assert-nya benar. 60s tetap
+        // membatasi hang, tanpa false-negative.
+        timeout: 60000,
       });
       assert.ok(out.includes('Unduhan'), `folder lokal tidak terdeteksi: ${out}`);
     } finally {
@@ -661,6 +666,119 @@ z.close()
     assert.ok(src.includes('${escapeJsAttr(t.downloadUrl)}'), 'downloadUrl tidak di-escape di onclick');
     assert.ok(src.includes('${escapeJsAttr(t.id)}'), 'theme id tidak di-escape di onclick');
     assert.ok(src.includes('${escapeHtml(tag)}'), 'tag tidak di-escape');
+  });
+
+  // ---------------------------------------------------------------------
+  // K. v1.4.1 — previewImage katalog (allowlist), MIME .otf, allowlist CDN
+  // ---------------------------------------------------------------------
+
+  await checkAsync('safeCatalogPreviewUrl accepts official preview URL and fails closed', async () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'dashboard.js'), 'utf8');
+    const start = src.indexOf('const CATALOG_PREVIEW_ALLOWED_HOST');
+    const fnIdx = src.indexOf('function safeCatalogPreviewUrl');
+    assert.notStrictEqual(start, -1, 'konstanta allowlist previewImage tidak ditemukan');
+    assert.notStrictEqual(fnIdx, -1, 'dashboard tidak punya safeCatalogPreviewUrl');
+    const end = src.indexOf('\n}', fnIdx) + 2;
+    assert.ok(end > fnIdx, 'blok safeCatalogPreviewUrl tidak lengkap');
+
+    // new Function: konstanta + fungsi dievaluasi dalam satu scope tertutup,
+    // tanpa mengeksekusi sisa dashboard.js (yang butuh DOM).
+    const factory = new Function(
+      src.slice(start, end) + '\nreturn safeCatalogPreviewUrl;'
+    );
+    const safePreview = factory();
+    assert.strictEqual(typeof safePreview, 'function', 'safeCatalogPreviewUrl bukan fungsi');
+
+    const OFFICIAL = 'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/previews/aceattorney.png';
+    assert.strictEqual(safePreview(OFFICIAL), OFFICIAL, 'URL preview resmi ditolak');
+
+    // Query string diabaikan saat menentukan ekstensi.
+    assert.ok(safePreview(OFFICIAL + '?v=2'), 'URL resmi + query string ditolak');
+    // Path lokal tema diizinkan.
+    assert.strictEqual(safePreview('/themes/aceattorney/preview.png'), '/themes/aceattorney/preview.png');
+    // Ekstensi lain yang sah.
+    assert.ok(safePreview('https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/previews/a.webp'));
+    assert.ok(safePreview('https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/previews/a.jpg'));
+
+    const rejected = [
+      'https://evil.example/x.png',
+      'https://raw.githubusercontent.com/other/repo/x.png',
+      'javascript:alert(1)',
+      'data:image/png;base64,AAA',
+      '/themes/../etc/passwd.png',
+      'http://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/previews/a.png',
+      '//evil.example/x.png',
+      'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/previews/a.svg',
+      'https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/main/previews/a.png?x=" onerror="alert(1)',
+      '',
+      null,
+      undefined,
+      {},
+      '../../etc/x.png',
+      '/etc/passwd.png',
+    ];
+    for (const bad of rejected) {
+      assert.strictEqual(safePreview(bad), null, `URL tidak sah lolos allowlist: ${JSON.stringify(bad)}`);
+    }
+  });
+
+  await checkAsync('catalogCardHtml wires previewImage through escapeHtml', async () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'public', 'dashboard.js'), 'utf8');
+    assert.ok(/const hasPreviewImg = !!safeCatalogPreviewUrl\(/.test(src),
+      'catalogCardHtml tidak menghitung hasPreviewImg lewat safeCatalogPreviewUrl');
+    assert.ok(/has-preview-img/.test(src), 'kelas has-preview-img tidak pernah dipasang');
+    assert.ok(/themeBannerVisual\(t\)/.test(src), 'catalogCardHtml masih memanggil themeBannerVisual(t.id)');
+    assert.ok(src.includes('<img class="theme-banner-img" src="${escapeHtml(previewUrl)}"'),
+      'img preview tidak memakai escapeHtml pada src');
+    assert.ok(/\$\{escapeHtml\(t\.name \|\| t\.id \|\| 'Theme preview'\)\}/.test(src),
+      'alt img preview tidak di-escape');
+    assert.ok(/onerror="this\.style\.display='none'"/.test(src),
+      'img preview tanpa fallback onerror (gambar rusak akan meninggalkan kotak kosong)');
+  });
+
+  await checkAsync("MIME_TYPES['.otf'] is font/otf", async () => {
+    const { MIME_TYPES } = require('../src/routes/static');
+    assert.strictEqual(MIME_TYPES['.otf'], 'font/otf',
+      `MIME .otf = ${JSON.stringify(MIME_TYPES['.otf'])} (font OTF tema tidak akan dimuat browser)`);
+  });
+
+  await checkAsync('TRUSTED_THEME_HOSTS includes release-assets.githubusercontent.com', async () => {
+    const { TRUSTED_THEME_HOSTS, TRUSTED_THEME_PATH_PREFIXES } = require('../src/theme_manager');
+    assert.ok(TRUSTED_THEME_HOSTS.includes('release-assets.githubusercontent.com'),
+      'host signed CDN GitHub Releases tidak di-allowlist');
+    assert.ok(TRUSTED_THEME_HOSTS.includes('objects.githubusercontent.com'));
+    // Prefix path awal HARUS tetap ketat ke repo resmi.
+    assert.deepStrictEqual(TRUSTED_THEME_PATH_PREFIXES, ['/Milkyponi/ky-poni-themes/'],
+      'prefix path awal dilonggarkan — SSRF/repo lain bisa ikut lolos');
+  });
+
+  await checkAsync('downloadFile only relaxes path allowlist for signed CDN redirects', async () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'theme_manager.js'), 'utf8');
+    assert.ok(/redirectCount > 0 && GITHUB_RELEASE_CDN_HOSTS\.includes\(redirectHostname\)/.test(src),
+      'pelonggaran path tidak dibatasi redirectCount > 0 + host CDN');
+    assert.ok(/GITHUB_RELEASE_CDN_PATH_PREFIXES = \[[\s\S]*?'\/github-production-release-asset-',[\s\S]*?'\/github-production-release-asset\/',[\s\S]*?\]/.test(src),
+      'prefix path CDN salah (butuh bentuk tanda hubung DAN garis miring)');
+    assert.ok(!/allowedPathPrefixes:\s*\[[^\]]*github-production-release-asset/.test(src),
+      'prefix CDN dipasang tanpa syarat (harus hanya untuk redirect)');
+
+    // Perilaku NYATA: redirect signed CDN lolos, repo lain / host lain tetap ditolak.
+    const { validateDownloadUrl } = require('../src/url_guard');
+    const { TRUSTED_THEME_HOSTS } = require('../src/theme_manager');
+    const cdnPath = '/github-production-release-asset/1445492317/b349a83e-b454-4d2e-af2d-c51c2b48da0e?sp=r&sig=x';
+    for (const host of ['release-assets.githubusercontent.com', 'objects.githubusercontent.com']) {
+      const ok = validateDownloadUrl(`https://${host}${cdnPath}`, {
+        allowedHosts: TRUSTED_THEME_HOSTS,
+        allowedPathPrefixes: ['/Milkyponi/ky-poni-themes/', '/github-production-release-asset-', '/github-production-release-asset/'],
+        requireHttps: true,
+      });
+      assert.strictEqual(ok.ok, true, `redirect CDN resmi ditolak di ${host}: ${ok.reason}`);
+    }
+    const evil = validateDownloadUrl('https://release-assets.githubusercontent.com/evil/x.zip', {
+      allowedHosts: TRUSTED_THEME_HOSTS,
+      allowedPathPrefixes: ['/Milkyponi/ky-poni-themes/', '/github-production-release-asset-', '/github-production-release-asset/'],
+      requireHttps: true,
+    });
+    assert.strictEqual(evil.ok, false, 'path CDN lain ikut lolos');
   });
 
   // ---------------------------------------------------------------------

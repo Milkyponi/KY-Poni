@@ -27,10 +27,41 @@ const TRUSTED_THEME_HOSTS = [
   'raw.githubusercontent.com',
   'github.com',
   'objects.githubusercontent.com',
+  // v1.4.1: endpoint signed CDN baru GitHub Releases. Redirect 302 dari
+  // github.com/.../releases/download/... bisa mendarat di host ini.
+  'release-assets.githubusercontent.com',
   'codeload.github.com',
 ];
 const TRUSTED_THEME_PATH_PREFIXES = [
   '/Milkyponi/ky-poni-themes/',
+];
+
+/**
+ * Path khusus redirect CDN GitHub Releases.
+ *
+ * Saat GitHub membalas 302 ke signed asset, pathname-nya menjadi
+ * `/github-production-release-asset-<hash>/...` di `objects.githubusercontent.com`
+ * atau `release-assets.githubusercontent.com`. Tanpa pengecualian ini, allowlist
+ * path `/Milkyponi/ky-poni-themes/` menolak redirect yang SAH, sehingga tema yang
+ * di-host sebagai release asset selalu gagal diunduh.
+ *
+ * Pengecualian HANYA berlaku untuk redirect (redirectCount > 0) DAN hanya bila
+ * hostname tujuan persis salah satu host CDN di bawah. URL awal tetap wajib
+ * menunjuk repo resmi, jadi SSRF / repo lain tetap 100% diblokir.
+ */
+const GITHUB_RELEASE_CDN_HOSTS = [
+  'objects.githubusercontent.com',
+  'release-assets.githubusercontent.com',
+];
+/**
+ * Prefix path signed asset GitHub Releases. Dua bentuk dipakai GitHub:
+ *   /github-production-release-asset-2e65be/<id>/<guid>   (legacy, tanda hubung)
+ *   /github-production-release-asset/<id>/<guid>          (dipakai sejak 2025)
+ * Keduanya diterima HANYA pada redirect ke host CDN di atas.
+ */
+const GITHUB_RELEASE_CDN_PATH_PREFIXES = [
+  '/github-production-release-asset-',
+  '/github-production-release-asset/',
 ];
 
 /**
@@ -460,9 +491,17 @@ class ThemeManager {
       }
 
       // Validasi SETIAP URL yang dikunjungi, termasuk tujuan redirect.
+      // Allowlist path hanya dilonggarkan untuk redirect signed CDN GitHub
+      // Releases (lihat GITHUB_RELEASE_CDN_*); selain itu tetap ketat.
+      let redirectHostname = '';
+      try { redirectHostname = new URL(url).hostname; } catch (e) { redirectHostname = ''; }
+      const allowedPathPrefixes = (redirectCount > 0 && GITHUB_RELEASE_CDN_HOSTS.includes(redirectHostname))
+        ? [...TRUSTED_THEME_PATH_PREFIXES, ...GITHUB_RELEASE_CDN_PATH_PREFIXES]
+        : TRUSTED_THEME_PATH_PREFIXES;
+
       const verdict = validateDownloadUrl(url, {
         allowedHosts: TRUSTED_THEME_HOSTS,
-        allowedPathPrefixes: TRUSTED_THEME_PATH_PREFIXES,
+        allowedPathPrefixes,
         requireHttps: true,
       });
       if (!verdict.ok) {

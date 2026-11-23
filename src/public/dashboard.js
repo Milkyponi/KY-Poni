@@ -1206,11 +1206,85 @@ const ICON_DOWNLOAD = '<svg width="13" height="13" viewBox="0 0 24 24" fill="non
 const ICON_CLOCK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>';
 
 /**
+ * Allowlist URL gambar pratinjau katalog (`previewImage`).
+ *
+ * `previewImage` datang dari katalog remote (raw.githubusercontent.com) atau dari
+ * `theme.json` tema lokal yang bisa saja ditulis user. Nilainya masuk ke atribut
+ * `src`, jadi tanpa validasi ketat nilai seperti `javascript:alert(1)`,
+ * `data:image/svg+xml,...` atau URL eksternal bebas akan jadi permukaan XSS /
+ * pelacakan. Fungsi ini fail-closed: apa pun yang tidak persis memenuhi kontrak
+ * resmi di bawah menghasilkan `null` dan pemanggil memakai fallback mockup.
+ *
+ * Kontrak yang diterima HANYA:
+ *   - `https://raw.githubusercontent.com/Milkyponi/ky-poni-themes/...` (aset katalog resmi)
+ *   - path lokal `/themes/...` (aset tema yang dipasang di mesin ini)
+ * dengan ekstensi `.png`, `.webp`, atau `.jpg` (query string diabaikan), tanpa
+ * `..`, tanpa spasi/kutip/newline/backslash.
+ */
+const CATALOG_PREVIEW_ALLOWED_HOST = 'raw.githubusercontent.com';
+const CATALOG_PREVIEW_PATH_PREFIX = '/Milkyponi/ky-poni-themes/';
+const CATALOG_PREVIEW_EXTENSIONS = ['.png', '.webp', '.jpg'];
+
+function safeCatalogPreviewUrl(rawUrl) {
+  if (typeof rawUrl !== 'string') return null;
+
+  const raw = rawUrl.trim();
+  if (!raw || raw.length > 512) return null;
+  // Spasi, kutip, backtick, newline, karakter kontrol, kurung sudut, backslash:
+  // semua ini tidak pernah muncul pada URL aset resmi dan hanya membuka celah
+  // injeksi atribut.
+  if (/[\s"'`<>\\]/.test(raw)) return null;
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001F\u007F]/.test(raw)) return null;
+  // Protocol-relative ("//evil.example/x.png") bukan path lokal.
+  if (raw.startsWith('//')) return null;
+
+  const hasAllowedExtension = (value) => {
+    const pathOnly = String(value).split('?')[0].split('#')[0].toLowerCase();
+    return CATALOG_PREVIEW_EXTENSIONS.some(ext => pathOnly.endsWith(ext));
+  };
+
+  // A. Path lokal: /themes/<themeId>/...
+  if (raw.startsWith('/')) {
+    if (!raw.startsWith('/themes/')) return null;
+    if (raw.includes('..')) return null;
+    if (!hasAllowedExtension(raw)) return null;
+    return raw;
+  }
+
+  // B. URL absolut: wajib https + host + prefix repo resmi.
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch (e) {
+    return null;
+  }
+  if (parsed.protocol !== 'https:') return null;
+  if (parsed.username || parsed.password) return null;
+  if (parsed.hostname !== CATALOG_PREVIEW_ALLOWED_HOST) return null;
+  if (!parsed.pathname.startsWith(CATALOG_PREVIEW_PATH_PREFIX)) return null;
+  if (parsed.pathname.includes('..')) return null;
+  if (!hasAllowedExtension(parsed.pathname)) return null;
+
+  return raw;
+}
+
+/**
  * Mockup mini di dalam banner kartu. Hanya memakai kelas banner dari dashboard.css
  * (theme-banner-p5/p3r/classic/undertale/cyberpunk) — tidak ada teks dinamis di sini,
  * jadi tidak ada permukaan XSS tambahan.
+ *
+ * Menerima objek tema penuh (agar `previewImage` resmi bisa dipakai) atau string
+ * `themeId` untuk kompatibilitas pemanggil lama.
  */
-function themeBannerVisual(themeId) {
+function themeBannerVisual(theme) {
+  const t = (theme && typeof theme === 'object') ? theme : { id: theme };
+  const previewUrl = safeCatalogPreviewUrl(t.previewImage);
+  if (previewUrl) {
+    return `<img class="theme-banner-img" src="${escapeHtml(previewUrl)}" alt="${escapeHtml(t.name || t.id || 'Theme preview')}" loading="lazy" onerror="this.style.display='none'">`;
+  }
+  const themeId = t.id;
+
   if (themeId === 'persona5') {
     return `
       <div style="position: relative; width: 92%; height: 104px; filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.92));">
@@ -1296,6 +1370,9 @@ function catalogCardHtml(t) {
   const installed = isCatalogThemeInstalled(t);
   const isActive = !!t && t.id === activeId;
   const bannerClass = THEME_BANNER_CLASSES[t.id] || 'theme-banner-classic';
+  // Preview asli (previewImage) hanya dipakai bila lolos allowlist; kalau tidak,
+  // banner tetap memakai mockup CSS bawaan.
+  const hasPreviewImg = !!safeCatalogPreviewUrl(t && t.previewImage);
   const tags = (t.tags || []).map(tag => `<span class="theme-tag">${escapeHtml(tag)}</span>`).join('');
 
   let actions = '';
@@ -1314,8 +1391,8 @@ function catalogCardHtml(t) {
 
   return `
     <div class="theme-card-large ${isActive ? 'active-theme' : ''}">
-      <div class="theme-banner-preview ${bannerClass}">
-        ${themeBannerVisual(t.id)}
+      <div class="theme-banner-preview ${bannerClass}${hasPreviewImg ? ' has-preview-img' : ''}">
+        ${themeBannerVisual(t)}
         ${catalogStatusBadge(t, installed)}
       </div>
       <div class="theme-body">
