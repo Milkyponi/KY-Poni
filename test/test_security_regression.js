@@ -489,14 +489,22 @@ z.close()
       `;
       fs.writeFileSync(path.join(tmpHome, 'probe.js'), script);
       fs.writeFileSync(path.join(tmpHome, 'Unduhan', 'KY-Poni-test.AppImage'), 'x');
+      // v1.4.2: `openDownloadedFile()` memang menembak `xdg-open`. Di desktop
+      // nyata (KDE Plasma Wayland) panggilan itu memunculkan pop-up modal
+      // KIO Client ("launching executables is not allowed in this context")
+      // yang menggantung sampai di-OK — sumber pop-up desktop tiap `npm test`.
+      // Shim no-op di depan PATH tetap mengeksekusi jalur `execFile('xdg-open')`
+      // yang asli (deteksi ~/Unduhan tetap teruji), tapi tanpa peluncur OS.
+      const shimDir = path.join(tmpHome, 'bin');
+      fs.mkdirSync(shimDir, { recursive: true });
+      fs.writeFileSync(path.join(shimDir, 'xdg-open'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
       const out = execFileSync('node', [path.join(tmpHome, 'probe.js')], {
-        env: { ...process.env, HOME: tmpHome },
+        env: {
+          ...process.env,
+          HOME: tmpHome,
+          PATH: `${shimDir}${path.delimiter}${process.env.PATH || ''}`,
+        },
         encoding: 'utf8',
-        // `openDownloadedFile()` memanggil `xdg-open`, dan di desktop nyata
-        // (KDE/GNOME, Wayland) panggilan itu bisa menunggu portal file-manager
-        // puluhan detik sebelum kembali. Timeout 15s membuat test ini gagal
-        // acak (`spawnSync node ETIMEDOUT`) padahal assert-nya benar. 60s tetap
-        // membatasi hang, tanpa false-negative.
         timeout: 60000,
       });
       assert.ok(out.includes('Unduhan'), `folder lokal tidak terdeteksi: ${out}`);

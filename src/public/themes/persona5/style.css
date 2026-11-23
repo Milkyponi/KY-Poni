@@ -64,95 +64,15 @@ body {
 }
 
 /* ========================================================
-   OBS Canvas Container (Viewport Window)
+   v1.4.2 — KEPEMILIKAN LAYOUT DIPINDAH KE CORE
+   --------------------------------------------------------
+   Layout kanvas (#chat-canvas), 4 sudut anchor (pos-*), tumpukan
+   #chat-flow, dan mode `layout-horizontal` kini dipegang SATU berkas:
+   /overlay_layout.css (dimuat setelah stylesheet tema).
+   Tema ini sengaja TIDAK lagi mendeklarasikan aturan tersebut agar tidak
+   ada dua sumber kebenaran. Yang tersisa di sini hanya gaya visual tema
+   (font, warna, balon) + lebar `.chat-entry` untuk mode horizontal.
    ======================================================== */
-
-#chat-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  box-sizing: border-box;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-/* Screen Anchor Positions */
-#chat-canvas.pos-bottom-left {
-  justify-content: flex-end;
-  align-items: flex-start;
-}
-#chat-canvas.pos-bottom-right {
-  justify-content: flex-end;
-  align-items: flex-end;
-}
-#chat-canvas.pos-top-left {
-  justify-content: flex-start;
-  align-items: flex-start;
-}
-#chat-canvas.pos-top-right {
-  justify-content: flex-start;
-  align-items: flex-end;
-}
-
-/* ========================================================
-   Chat Flow Stack (Proportionally Scaled from Anchor Corner)
-   ======================================================== */
-
-#chat-flow {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 12px;
-  width: fit-content;
-  max-width: 100%;
-  pointer-events: none;
-  transform: scale(var(--overlay-scale, 1));
-  will-change: transform;
-}
-
-#chat-canvas.pos-bottom-left #chat-flow {
-  transform-origin: bottom left;
-  align-items: flex-start;
-}
-#chat-canvas.pos-bottom-right #chat-flow {
-  transform-origin: bottom right;
-  align-items: flex-end;
-}
-#chat-canvas.pos-top-left #chat-flow {
-  transform-origin: top left;
-  align-items: flex-start;
-}
-#chat-canvas.pos-top-right #chat-flow {
-  transform-origin: top right;
-  align-items: flex-end;
-}
-
-/* Horizontal Ticker Layout */
-#chat-canvas.layout-horizontal {
-  overflow-x: hidden;
-}
-#chat-canvas.layout-horizontal #chat-flow {
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 16px;
-}
-#chat-canvas.layout-horizontal.pos-top-left #chat-flow,
-#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
-  align-items: flex-start;
-}
-
-#chat-canvas.layout-horizontal.pos-bottom-left #chat-flow,
-#chat-canvas.layout-horizontal.pos-top-left #chat-flow {
-  justify-content: flex-start;
-}
-#chat-canvas.layout-horizontal.pos-bottom-right #chat-flow,
-#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
-  justify-content: flex-end;
-}
 
 #chat-canvas.layout-horizontal .chat-entry {
   flex-shrink: 0 !important;
@@ -162,11 +82,6 @@ body {
   margin-top: 0;
   margin-bottom: 0;
 }
-
-/* ========================================================
-   Chat Message Entry (Persona 5 Dialogue Bubble)
-   Natural Content-Driven Width, Uncoupled from Canvas
-   ======================================================== */
 
 .chat-entry {
   position: relative;
@@ -469,16 +384,6 @@ body {
   border: 1.5px solid #FFF;
   box-shadow: 2px 2px 0 #000;
   vertical-align: middle;
-}
-
-/* ========================================================
-   Right-Side Anchor Adjustments (pos-*-right)
-   ======================================================== */
-
-#chat-canvas.pos-bottom-right .chat-entry,
-#chat-canvas.pos-top-right .chat-entry {
-  align-self: flex-end;
-  transform-origin: bottom right;
 }
 
 /* ========================================================

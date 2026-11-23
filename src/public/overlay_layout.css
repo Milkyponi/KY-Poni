@@ -1,0 +1,186 @@
+/* ========================================================
+   KY-Poni — Core Overlay Layout (v1.4.2, Opsi B)
+   --------------------------------------------------------
+   SATU-SATUNYA SUMBER KEBENARAN untuk:
+     - #chat-canvas (viewport window, padding, flex-direction)
+     - 4 sudut anchor `pos-bottom-left|bottom-right|top-left|top-right`
+     - #chat-flow (skala, transform-origin, align/justify, gap)
+     - `layout-horizontal` (flow berjalan ke samping)
+
+   Aturan yang mengikat:
+   * `#chat-canvas` SELALU `flex-direction: column` di KEDUA mode.
+     Mode horizontal HANYA mengubah `#chat-flow` menjadi baris. Dengan
+     begitu `pos-bottom-*` = `justify-content: flex-end`,
+     `pos-top-*` = `flex-start`, `pos-*-left` = `align-items: flex-start`,
+     `pos-*-right` = `align-items: flex-end` berlaku identik di kedua mode.
+   * Tema TIDAK BOLEH lagi mendeklarasikan layout kanvas maupun anchor.
+     Tema hanya memegang gaya visual balon + lebar `.chat-entry` di
+     mode horizontal (lihat `#chat-canvas.layout-horizontal .chat-entry`).
+   * Berkas ini dimuat SETELAH stylesheet tema dan SEBELUM
+     `overlay_transitions.css`. Selektor `#chat-canvas.layout-horizontal.pos-*`
+     ditulis eksplisit (spesifisitas 1 id + 2 kelas) agar tetap mengalahkan
+     aturan lama dari tema katalog seperti `aceattorney` v1.0.0 yang sempat
+     menaruh `flex-direction: row` pada kanvas.
+   ======================================================== */
+
+/* --------------------------------------------------------
+   1. KANVAS — selalu kolom
+   -------------------------------------------------------- */
+
+#chat-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: var(--kyp-canvas-padding, 16px 20px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Kunci eksplisit kedua mode: `column`, bukan `row`. */
+#chat-canvas.layout-vertical,
+#chat-canvas.layout-horizontal {
+  flex-direction: column;
+}
+
+/* Kunci eksplisit 4 sudut × kedua mode (mengalahkan tema katalog lama). */
+#chat-canvas.layout-vertical.pos-bottom-left,
+#chat-canvas.layout-vertical.pos-bottom-right,
+#chat-canvas.layout-vertical.pos-top-left,
+#chat-canvas.layout-vertical.pos-top-right,
+#chat-canvas.layout-horizontal.pos-bottom-left,
+#chat-canvas.layout-horizontal.pos-bottom-right,
+#chat-canvas.layout-horizontal.pos-top-left,
+#chat-canvas.layout-horizontal.pos-top-right {
+  flex-direction: column;
+}
+
+/* --------------------------------------------------------
+   2. 4 SUDUT ANCHOR — mode VERTICAL
+   -------------------------------------------------------- */
+
+#chat-canvas.pos-bottom-left,
+#chat-canvas.layout-vertical.pos-bottom-left,
+#chat-canvas.layout-horizontal.pos-bottom-left {
+  justify-content: flex-end;
+  align-items: flex-start;
+}
+
+#chat-canvas.pos-bottom-right,
+#chat-canvas.layout-vertical.pos-bottom-right,
+#chat-canvas.layout-horizontal.pos-bottom-right {
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+#chat-canvas.pos-top-left,
+#chat-canvas.layout-vertical.pos-top-left,
+#chat-canvas.layout-horizontal.pos-top-left {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+#chat-canvas.pos-top-right,
+#chat-canvas.layout-vertical.pos-top-right,
+#chat-canvas.layout-horizontal.pos-top-right {
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+/* --------------------------------------------------------
+   3. CHAT FLOW — tumpukan (vertical) & ticker (horizontal)
+   -------------------------------------------------------- */
+
+#chat-flow {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: var(--kyp-flow-gap, 12px);
+  width: fit-content;
+  max-width: 100%;
+  pointer-events: none;
+  transform: scale(var(--overlay-scale, 1));
+  transform-origin: bottom left;
+  will-change: transform;
+}
+
+/* Sudut 4 anchor — vertical: transform-origin + perataan tumpukan. */
+#chat-canvas.pos-bottom-left #chat-flow,
+#chat-canvas.layout-vertical.pos-bottom-left #chat-flow {
+  transform-origin: bottom left;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+#chat-canvas.pos-bottom-right #chat-flow,
+#chat-canvas.layout-vertical.pos-bottom-right #chat-flow {
+  transform-origin: bottom right;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+#chat-canvas.pos-top-left #chat-flow,
+#chat-canvas.layout-vertical.pos-top-left #chat-flow {
+  transform-origin: top left;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+#chat-canvas.pos-top-right #chat-flow,
+#chat-canvas.layout-vertical.pos-top-right #chat-flow {
+  transform-origin: top right;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+/* --------------------------------------------------------
+   4. LAYOUT HORIZONTAL — HANYA flow yang jadi baris
+   -------------------------------------------------------- */
+
+#chat-canvas.layout-horizontal {
+  overflow-x: hidden;
+}
+
+#chat-canvas.layout-horizontal #chat-flow {
+  flex-direction: row;
+  gap: var(--kyp-flow-gap-horizontal, 16px);
+  max-width: 100%;
+}
+
+/* bottom-*: baris menempel bawah (align-items di baris = vertikal) */
+#chat-canvas.layout-horizontal.pos-bottom-left #chat-flow,
+#chat-canvas.layout-horizontal.pos-bottom-right #chat-flow {
+  align-items: flex-end;
+}
+
+/* top-*: baris menempel atas */
+#chat-canvas.layout-horizontal.pos-top-left #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
+  align-items: flex-start;
+}
+
+/* *-left: tumpukan tumbuh dari kiri */
+#chat-canvas.layout-horizontal.pos-bottom-left #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-left #chat-flow {
+  justify-content: flex-start;
+  transform-origin: bottom left;
+}
+
+#chat-canvas.layout-horizontal.pos-top-left #chat-flow {
+  transform-origin: top left;
+}
+
+/* *-right: tumpukan tumbuh dari kanan */
+#chat-canvas.layout-horizontal.pos-bottom-right #chat-flow,
+#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
+  justify-content: flex-end;
+  transform-origin: bottom right;
+}
+
+#chat-canvas.layout-horizontal.pos-top-right #chat-flow {
+  transform-origin: top right;
+}
